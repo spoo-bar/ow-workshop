@@ -1,0 +1,139 @@
+settings
+{
+	main
+	{
+		Mode Name: "Ｔｏｗｅｒ Ｍｅｉｆｅｎｓｅ"
+		Description: "Tower Meifense - BETA do not copy! by Zezombye v1.4.3\n\nThis is an extremely long string that takes advantage of the fact that the description can have up to 512 characters (not bytes). ¤§€ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat naz|"
+	}
+	lobby
+	{
+		Map Rotation: Paused
+		Max Spectators: 6
+		Return To Lobby: unknown value
+		Swap Teams After Match: No
+		unknownSetting: abc
+	}
+	modes
+	{
+		Assault
+		{
+			enabled maps
+			{
+				Temple of Anubis
+			}
+			Capture Speed Modifier: 60%
+			unknown value: 60
+		}
+		unknown gamemode
+		{
+			enabled maps
+			{
+				Temple of Anubis
+			}
+			captureSpeed%: 60
+		}
+		Escort
+		{
+			enabled maps
+			{
+				Dorado
+			}
+			Payload Speed Modifier: 200%
+		}
+		General
+		{
+			Game Mode Start: Manual
+			Hero Limit: Off
+			Respawn Time Scalar: 100%
+			Spawn Health Packs: Disabled
+		}
+	}
+	heroes
+	{
+		Team 1
+		{
+			enabled heroes
+			{
+				Ashe
+				Bastion
+				Torbjörn
+				Widowmaker
+			}
+		}
+		Team 2
+		{
+			Mei
+			{
+				Cryo-Freeze Cooldown Time: 200%
+				Ice Wall Cooldown Time: 200%
+				Secondary Fire: Off
+				Weapon Freeze Rate Scalar: 50%
+				unknown value: 123%
+			}
+		}
+		General
+		{
+			Anran
+			{
+				Inferno Rush Cooldown Time: 50%
+				Dancing Blaze Cooldown Time: 50%
+				Damage Dealt: 200%
+				Ultimate Generation Vermillion Ascent: 120%
+			}
+			Ashe
+			{
+				Ammunition Clip Size Scalar: 200%
+				Ultimate Duration: 400%
+			}
+			Bastion
+			{
+				Ammunition Clip Size Scalar: 200%
+			}
+			Domina
+			{
+				Reconstruction Heal Scalar: 125%
+				Ultimate Barrier Health Scalar Panopticon: 200%
+				Ammunition Clip Size Scalar: 200%
+				Sonic Repulsors Knockback Scalar: 125%
+			}
+			Emre
+			{
+				Cyber Frag Knockback Scalar: 50%
+				Siphon Blaster Duration Scalar: 200%
+				Siphon Blaster Heat Scalar: 125%
+				Override Protocol Knockback Scalar: 150%
+				Infinite Ultimate Duration: On
+			}
+			Jetpack Cat
+			{
+				Biotic Pawjectile Range: 150%
+				Frenetic Flight Maximum Time: 200%
+				Frenetic Flight Unlimited Fuel: On
+			}
+			Mizuki
+			{
+				Katashiro Return Duration Scalar: 200%
+				Role Passives: Off
+			}
+			Vendetta
+			{
+				Warding Stance Regen Scalar: 120%
+				Whirlwind Dash Cooldown Time: 10%
+				Whirlwind Dash Distance: 120%
+				Soaring Slice Cooldown Time: 10%
+				Soaring Slice Distance: 120%
+				Ultimate Generation Sundering Blade: 120%
+			}
+			Widowmaker
+			{
+				Damage Dealt: 120%
+				Grappling Hook Cooldown Time: 10%
+			}
+			Junker Queen
+			{
+				Jagged Blade Gracie Cooldown Time: 120%
+			}
+		}
+	}
+}
+
