@@ -14,7 +14,7 @@ permissions:
 jobs:
   pr-title:
     name: Validate PR title
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: amannn/action-semantic-pull-request@v6
         id: lint_pr_title
@@ -47,7 +47,7 @@ jobs:
 
   pr-changes:
     name: Validate PR Changes
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: oncilla/pr-bouncer@v1.0.0
