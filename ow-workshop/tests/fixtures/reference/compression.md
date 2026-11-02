@@ -1,0 +1,32 @@
+# compression
+
+Number and vector array compression and decompression.
+
+Expected output: `compression.txt` (OverPy v9.7.20, `spoo-bar/overpy@e349a32`, language en-US).
+
+## Source (reference only)
+
+The original OverPy program. It is not a supported input; read it to write the equivalent `Workshop` impl.
+
+```text
+rule "compression":
+    B = compress([1,2.53,3,-543])
+    B = decompressNumbers(B)
+    C = compressed([1,2.53,3,-543])
+    D = compress([vect(1,0,3), vect(-5, -7.342, 0), vect(-53, 4998.999, -4998.999)])
+    D = decompressVectors(D)
+    E = compressed([vect(1,2,3), vect(43, 65, 9)])
+    F = compress([123])
+    F = decompressNumbers(F)
+    G = compress([vect(0,0,0)])
+    G = decompressVectors(G)
+    H = compressed([vect(1,2,3), vect(-5, 0, 0), vect(-53, 4998.999, -4998.999)])
+
+    debug(B)
+    debug(C)
+    debug(D)
+    debug(E)
+    debug(F)
+    debug(G)
+    debug(H)
+```

@@ -1,0 +1,20 @@
+variables {
+    global:
+        0: A
+        1: B
+}
+
+//Optimize for size enabled
+rule ("dicts") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Set Global Variable(A, Value In Array(Array(2, 3), Index Of Array Value(Array(Hero(Pharah), Hero(Brigitte)), Global.B)));
+        "null"
+        Set Global Variable(A, Null);
+        "2"
+        Set Global Variable(A, 2);
+    }
+}
+

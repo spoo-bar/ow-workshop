@@ -1,0 +1,189 @@
+# elementSaving
+
+Optimize-for-size literal replacements (0 → Null/False, 1 → True, null vector, empty string).
+
+Expected output: `elementSaving.txt` (OverPy v9.7.20, `spoo-bar/overpy@e349a32`, language en-US).
+
+## Source (reference only)
+
+The original OverPy program. It is not a supported input; read it to write the equivalent `Workshop` impl.
+
+```text
+#!optimizeForSize
+#!optimizeForSizeAggressive
+#!suppressWarnings w_chased_var_in_for
+
+rule "0 to null":
+    A = B > 0
+    A = 0 > B
+    A = B >= 0
+    A = 0 >= B
+    A = B < 0
+    A = 0 < B
+    A = B <= 0
+    A = 0 <= B
+    A = B.concat(0)
+    A = [0,1,0]
+    A = 0 in B
+    A = B == 0
+    A = 0 == B
+    A = B != 0
+    A = 0 != B
+    A = "{}{}{}".format(0,0,0)
+    A = l"{0}, {1}, and {2}".format(0,0,0)
+    bigMessage(getAllPlayers(), 0)
+    A = 0
+    A[B] = 0
+    B.A = 0
+    B.A[C] = 0
+    smallMessage(getAllPlayers(), 0)
+
+rule "0 to false":
+    A = max(0, B)
+    A = max(B, 0)
+    A = min(0, B)
+    A = min(B, 0)
+    A = random.randint(0, B)
+    A = random.randint(B, 0)
+    A = 0-B
+    A = vect(0,0,0)
+    chase(A, 0, rate=0, ChaseReeval.NONE)
+    chase(A, 0, duration=0, ChaseReeval.NONE)
+    chase(B.A, 0, rate=0, ChaseReeval.NONE)
+    chase(B.A, 0, duration=0, ChaseReeval.NONE)
+    createDummy(Hero.ANA, Team.2, 0, B, C)
+    hudHeader(getAllPlayers(), "123", HudPosition.LEFT, 0, Color.WHITE, HudReeval.VISIBILITY, SpecVisibility.ALWAYS)
+    for A in range(0,0,0):
+    for B.A in range(0,0,0):
+    A[0] = B
+    B.A[0] = C
+    wait(0)
+    wait(0.016)
+    wait()
+
+rule "1 to true":
+    #should not be changed, inequalities with true/false no longer work
+    @Condition B > 1
+    @Condition 1 > B
+    @Condition B >= 1
+    @Condition 1 >= B
+    @Condition B < 1
+    @Condition 1 < B
+    @Condition B <= 1
+    @Condition 1 <= B
+    A = B > 1
+    A = 1 > B
+    A = B >= 1
+    A = 1 >= B
+    A = B < 1
+    A = 1 < B
+    A = B <= 1
+    A = 1 <= B
+
+    A = B+1
+    A = 1+B
+    A = 1/B
+    A = max(1, B)
+    A = max(B, 1)
+    A = min(1, B)
+    A = min(B, 1)
+    A = random.randint(1, B)
+    A = random.randint(B, 1)
+    A = 1-B
+    A = B-1
+    A = B[1]
+    A = vect(1,1,1)
+    chase(A, 1, rate=1, ChaseReeval.NONE)
+    chase(A, 1, duration=1, ChaseReeval.NONE)
+    chase(B.A, 1, rate=1, ChaseReeval.NONE)
+    chase(B.A, 1, duration=1, ChaseReeval.NONE)
+    createDummy(Hero.ANA, Team.2, 1, B, C)
+    hudHeader(getAllPlayers(), "123", HudPosition.LEFT, 1, Color.WHITE, HudReeval.VISIBILITY, SpecVisibility.ALWAYS)
+    for A in range(1,1,1):
+    for B.A in range(1,1,1):
+    A[1] = B
+    B.A[1] = C
+    wait(1)
+
+rule "null vector to null":
+    createDummy(Hero.ANA, Team.2, A, vect(0,0,0), vect(0,0,0))
+
+rule "empty string":
+    hudText(header=A, subheader="", text="")
+    A = "".strIndex(B)
+    A = B.strIndex("")
+    A = "".charAt(B)
+    A = "".replace(B, C)
+    A = B.replace("", C)
+    A = B.replace(C, "")
+    A = B.split("")
+    A = "".split(B)
+    A = "".substring(B, C)
+    A = strContains("", B)
+    A = strContains(B, "")
+    A = ""
+
+rule "if to skip if":
+    if A == B: #should be skip if
+        D = 4
+    if A == B: # should stay if
+        D = 4
+        E = 5
+    if not B: #should be skip if
+        D = 4
+        E = 5
+
+    if A == 2:
+        if A == 3:
+            B = 4
+        switch A:
+            case B:
+                C++
+        D++
+        E++
+    elif false: #should be removed
+        B = 3
+        
+    if A == B: # should stay if
+        D = 4
+
+rule "auto array compression":
+    A = [B, B, B, B, B, B, B, B, C] #shouldn't be compressed
+    A = B.map(lambda x: x+[C,C,C,C,C,C,C]) #shouldn't be compressed, can't nest mapped arrays
+    A = [B, B, B, B, B, B, B, B, B] #should be compressed
+    A = ["abc", "def", "ghi"]
+    A = ["abc", "def", "ghi{}".format(B)] #shouldn't be compressed
+
+rule "other optimizations":
+    A = vect(0, 0, 0) #left + right
+
+    A = vect(1, 0, 0) #left
+    A = Vector.LEFT #left
+    A = vect(-1, 0, 0) #right
+    A = Vector.RIGHT #right
+    A = vect(0, 1, 0) #up
+    A = Vector.UP #up
+    A = vect(0, -1, 0) #down
+    A = Vector.DOWN #down
+    A = vect(0, 0, 1) #forward
+    A = Vector.FORWARD #forward
+    A = vect(0, 0, -1) #backward
+    A = Vector.BACKWARD #backward
+    
+    A = vect(1, 1, 0) #left + up
+    A = vect(1, -1, 0) #left + down
+    A = vect(1, 0, 1) #left + forward
+    A = vect(1, 0, -1) #left + backward
+    A = vect(-1, 1, 0) #right + up
+    A = vect(-1, -1, 0) #right + down
+    A = vect(-1, 0, 1) #right + forward
+    A = vect(-1, 0, -1) #right + backward
+    A = vect(0, 1, 1) #up + forward
+    A = vect(0, 1, -1) #up + backward
+    A = vect(0, -1, 1) #down + forward
+    A = vect(0, -1, -1) #down + backward
+
+    A = vect(B, 0, 0) #B * left
+    A = vect(0, B, 0) #B * up
+    A = vect(0, 0, B) #B * forward
+```
