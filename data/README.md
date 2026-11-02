@@ -2,7 +2,7 @@
 
 Source data for `cargo xtask codegen`. Schema: spoo-bar/ow-workshop#20 and #25, with the additions below.
 
-Imported once from OverPy (`spoo-bar/overpy@e349a32`, v9.7.20) by `extract/`. From now on this repo owns the data; edit the JSON directly.
+Imported once from OverPy (`spoo-bar/overpy@e349a32`, v9.7.20). This repo owns the data now; edit the JSON directly.
 
 | File | Contents |
 |---|---|
@@ -32,7 +32,7 @@ Imported once from OverPy (`spoo-bar/overpy@e349a32`, v9.7.20) by `extract/`. Fr
 
 ## Corrections
 
-The source had these defaults wrong; `extract/transform.mjs` fixes them:
+These defaults were wrong in the source and are corrected here:
 
 - `createIcon.reevaluation` → `IconReeval.VISIBILITY_AND_POSITION`
 - `createIcon.color` → `Color.WHITE`
