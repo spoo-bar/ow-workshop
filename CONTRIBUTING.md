@@ -1,0 +1,27 @@
+# Contributing
+
+## Design
+- Typed values (`Expr<T>`); comparisons are methods (`eq`, `lt`, ...), not `PartialEq`.
+- Statements are recorded on an explicit `&mut Block`, never through hidden state.
+- Optional arguments use an args struct with `Default`, not long positional lists.
+- No preprocessor: reuse is plain Rust (functions, extension traits, modules).
+
+## Rust style
+- Idiomatic and clippy-clean (workspace lints). No `unsafe`.
+- No `unwrap`/`expect` outside tests.
+- Keep modules small.
+
+## Comments
+- One-line `///` doc on every public item.
+- Inline comments only for non-obvious edge cases (usually workshop quirks). No long prose.
+
+## Architecture
+- No global or thread-local mutable state.
+- The core does no I/O and no printing.
+- `ow-workshop` stays WASM-safe: no `std::fs`, `std::time`, `std::process`, threads or `getrandom`.
+
+## Workflow
+- PR titles follow [Conventional Commits](https://www.conventionalcommits.org/) (checked by `lint-pr.yml`).
+- Keep PRs under ~1000 changed lines.
+- Before pushing: `cargo fmt`, `cargo clippy --workspace --all-targets`, `cargo test --workspace`.
+- Regenerate data tables with `cargo xtask codegen`.
