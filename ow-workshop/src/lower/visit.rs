@@ -72,7 +72,8 @@ pub(crate) fn map_children(kind: &ExprKind, g: &mut impl FnMut(&Expr) -> Expr) -
         | K::GlobalVar(_)
         | K::ArrayElem
         | K::ArrayIndex
-        | K::RuleCondition => kind.clone(),
+        | K::RuleCondition
+        | K::LabelDistance(_) => kind.clone(),
         K::Vector([x, y, z]) => K::Vector([g(x), g(y), g(z)]),
         K::Array(items) => K::Array(items.iter().map(&mut *g).collect()),
         K::Str(StrExpr::Custom { tokens, args }) => K::Str(StrExpr::Custom {

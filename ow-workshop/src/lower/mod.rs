@@ -7,6 +7,7 @@
 // The passes that use the context land in the following changes.
 #![allow(dead_code)]
 
+pub(crate) mod labels;
 pub(crate) mod visit;
 
 use ow_workshop_data::Lang;
@@ -116,7 +117,7 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("lower dictionaries", noop),
     ("lower functions", noop),
     ("optimize", noop),
-    ("resolve labels", noop),
+    ("resolve labels", labels::resolve_labels),
     ("flatten", noop),
 ];
 
@@ -134,3 +135,5 @@ pub(crate) fn run_passes(
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+pub(crate) mod testutil;

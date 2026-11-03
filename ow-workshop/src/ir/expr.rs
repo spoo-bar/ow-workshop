@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use ow_workshop_data::{LocalizedString, ValueId};
 
-use super::{Location, VarId};
+use super::{LabelId, Location, VarId};
 
 /// A generated enum member, as (enum name, member key).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -157,6 +157,8 @@ pub(crate) enum ExprKind {
     Translated(Translated),
     /// The enclosing rule's own condition; removed by lowering.
     RuleCondition,
+    /// Distance from the enclosing `Skip` to a label; resolved to a number with the labels.
+    LabelDistance(LabelId),
 }
 
 /// An expression node: cheap to clone, with its source location.
@@ -204,7 +206,8 @@ impl ExprKind {
             | Self::GlobalVar(_)
             | Self::ArrayElem
             | Self::ArrayIndex
-            | Self::RuleCondition => Vec::new(),
+            | Self::RuleCondition
+            | Self::LabelDistance(_) => Vec::new(),
             Self::Vector(parts) => parts.iter().collect(),
             Self::Array(items) => items.iter().collect(),
             Self::Str(StrExpr::Custom { args, .. }) | Self::Value { args, .. } => {

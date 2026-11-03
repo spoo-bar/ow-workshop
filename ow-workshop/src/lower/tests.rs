@@ -50,7 +50,11 @@ fn pipeline_of_noops_leaves_the_program_alone() {
     let options = CompileOptions::default();
     let mut diags = Diagnostics::default();
     let mut ctx = Ctx::new(&options, Lang::EnUs, &mut diags, &program);
-    run_passes(PIPELINE, &mut program, &mut ctx).expect("noop passes succeed");
+    let noops: Vec<(&str, Pass)> = PIPELINE
+        .iter()
+        .map(|&(name, _)| (name, noop as Pass))
+        .collect();
+    run_passes(&noops, &mut program, &mut ctx).expect("noop passes succeed");
     assert_eq!(program, before);
     assert_eq!(diags.0.len(), 0);
 }
