@@ -23,7 +23,7 @@ pub enum Gamemode {
     /// `Control Community`
     ControlCommunity,
     /// `Capture The Flag`
-    Ctf,
+    CaptureTheFlag,
     /// `Elimination`
     Elimination,
     /// `Escort`
@@ -35,7 +35,7 @@ pub enum Gamemode {
     /// `Escort Community`
     EscortCommunity,
     /// `Deathmatch`
-    Ffa,
+    Deathmatch,
     /// `Flashpoint`
     Flashpoint,
     /// `Flashpoint April Fools`
@@ -73,7 +73,7 @@ pub enum Gamemode {
     /// `Stadium Practice Range`
     StadiumPracticeRange,
     /// `Team Deathmatch`
-    Tdm,
+    TeamDeathmatch,
     /// `Yeti Hunter`
     YetiHunter,
 }
@@ -88,13 +88,13 @@ impl Gamemode {
         Self::ControlAprilFools,
         Self::ControlBalancedOverwatch,
         Self::ControlCommunity,
-        Self::Ctf,
+        Self::CaptureTheFlag,
         Self::Elimination,
         Self::Escort,
         Self::EscortAprilFools,
         Self::EscortBalancedOverwatch,
         Self::EscortCommunity,
-        Self::Ffa,
+        Self::Deathmatch,
         Self::Flashpoint,
         Self::FlashpointAprilFools,
         Self::FreezethawElimination,
@@ -113,7 +113,7 @@ impl Gamemode {
         Self::Skirmish,
         Self::SnowballFfa,
         Self::StadiumPracticeRange,
-        Self::Tdm,
+        Self::TeamDeathmatch,
         Self::YetiHunter,
     ];
     /// The data key, for debugging.
@@ -127,13 +127,13 @@ impl Gamemode {
             Self::ControlAprilFools => "controlAprilFools",
             Self::ControlBalancedOverwatch => "controlBalancedOverwatch",
             Self::ControlCommunity => "controlCommunity",
-            Self::Ctf => "ctf",
+            Self::CaptureTheFlag => "ctf",
             Self::Elimination => "elimination",
             Self::Escort => "escort",
             Self::EscortAprilFools => "escortAprilFools",
             Self::EscortBalancedOverwatch => "escortBalancedOverwatch",
             Self::EscortCommunity => "escortCommunity",
-            Self::Ffa => "ffa",
+            Self::Deathmatch => "ffa",
             Self::Flashpoint => "flashpoint",
             Self::FlashpointAprilFools => "flashpointAprilFools",
             Self::FreezethawElimination => "freezethawElimination",
@@ -152,7 +152,7 @@ impl Gamemode {
             Self::Skirmish => "skirmish",
             Self::SnowballFfa => "snowballFfa",
             Self::StadiumPracticeRange => "stadiumPracticeRange",
-            Self::Tdm => "tdm",
+            Self::TeamDeathmatch => "tdm",
             Self::YetiHunter => "yetiHunter",
         }
     }
@@ -219,13 +219,13 @@ impl Gamemode {
             team1: match self {
                 Self::Elimination => Some(1),
                 Self::Lucioball => Some(3),
-                Self::Tdm => Some(4),
+                Self::TeamDeathmatch => Some(4),
                 Self::Assault
                 | Self::Clash
                 | Self::Control
                 | Self::ControlAprilFools
                 | Self::ControlCommunity
-                | Self::Ctf
+                | Self::CaptureTheFlag
                 | Self::Escort
                 | Self::EscortAprilFools
                 | Self::EscortCommunity
@@ -249,13 +249,13 @@ impl Gamemode {
                 Self::Junkenstein | Self::PracticeRange => Some(0),
                 Self::Elimination | Self::YetiHunter => Some(1),
                 Self::Lucioball => Some(3),
-                Self::Tdm => Some(4),
+                Self::TeamDeathmatch => Some(4),
                 Self::Assault
                 | Self::Clash
                 | Self::Control
                 | Self::ControlAprilFools
                 | Self::ControlCommunity
-                | Self::Ctf
+                | Self::CaptureTheFlag
                 | Self::Escort
                 | Self::EscortAprilFools
                 | Self::EscortCommunity
@@ -274,7 +274,7 @@ impl Gamemode {
             },
             ffa: match self {
                 Self::BountyHunter => Some(6),
-                Self::Ffa | Self::SnowballFfa => Some(12),
+                Self::Deathmatch | Self::SnowballFfa => Some(12),
                 _ => None,
             },
         }
