@@ -1,5 +1,6 @@
 //! `cargo xtask codegen`: one-time migration of `data/*.json` into checked-in Rust tables.
 
+mod api;
 mod enums;
 mod naming;
 mod settings;
@@ -14,7 +15,7 @@ use proc_macro2::TokenStream;
 use crate::data::Data;
 
 /// Generates `ow-workshop-data/src/generated/*.rs` from the data in `data_dir`.
-pub fn run(data_dir: &Path, out_dir: &Path) -> Result<(), String> {
+pub fn run(data_dir: &Path, out_dir: &Path, api_dir: &Path, renames: &Path) -> Result<(), String> {
     let data = Data::load(data_dir)?;
     let mut files = enums::generate(&data)?;
     files.extend(signatures::generate(&data)?);
@@ -26,6 +27,18 @@ pub fn run(data_dir: &Path, out_dir: &Path) -> Result<(), String> {
     fs::create_dir_all(out_dir).map_err(|e| format!("{}: {e}", out_dir.display()))?;
     for (name, tokens) in files {
         let path = out_dir.join(format!("{name}.rs"));
+        fs::write(&path, format(tokens)?).map_err(|e| format!("{}: {e}", path.display()))?;
+    }
+
+    let renames = fs::read_to_string(renames).map_err(|e| format!("{}: {e}", renames.display()))?;
+    let renames = api::Renames::parse(&renames)?;
+    fs::create_dir_all(api_dir).map_err(|e| format!("{}: {e}", api_dir.display()))?;
+    for (name, part) in [
+        ("values", api::Part::Values),
+        ("actions", api::Part::Actions),
+    ] {
+        let path = api_dir.join(format!("{name}.rs"));
+        let tokens = api::generate(&data, &renames, part)?;
         fs::write(&path, format(tokens)?).map_err(|e| format!("{}: {e}", path.display()))?;
     }
     Ok(())

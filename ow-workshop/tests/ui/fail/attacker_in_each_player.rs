@@ -1,0 +1,11 @@
+use ow_workshop::prelude::*;
+
+fn build(ws: &mut Builder) {
+    ws.rule("Wrong", OngoingEachPlayer, |r, ev| {
+        r.condition(ev.attacker().ne(ev.event_player()));
+    });
+}
+
+fn main() {
+    let _ = build;
+}

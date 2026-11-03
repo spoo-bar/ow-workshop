@@ -180,6 +180,8 @@ pub(crate) enum StmtKind {
         cases: Vec<(Expr, Block)>,
         /// The default case.
         default: Option<Block>,
+        /// How many cases precede the default; it may sit anywhere among them.
+        default_at: usize,
     },
     /// Leaves the innermost loop or switch; removed by lowering.
     Break,
@@ -213,6 +215,32 @@ impl Stmt {
             kind,
             loc: Some(Location::caller()),
             comment: None,
+        }
+    }
+}
+
+impl Stmt {
+    /// Whether the statement does nothing at runtime.
+    pub(crate) fn is_noop(&self) -> bool {
+        matches!(self.kind, StmtKind::Pass | StmtKind::Comment(_))
+    }
+
+    /// The blocks nested directly inside this statement.
+    pub(crate) fn blocks(&self) -> Vec<&Block> {
+        match &self.kind {
+            StmtKind::If {
+                then, elifs, else_, ..
+            } => std::iter::once(then)
+                .chain(elifs.iter().map(|(_, b)| b))
+                .chain(else_)
+                .collect(),
+            StmtKind::While { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::DoWhile { body, .. } => vec![body],
+            StmtKind::Switch { cases, default, .. } => {
+                cases.iter().map(|(_, b)| b).chain(default).collect()
+            }
+            _ => Vec::new(),
         }
     }
 }

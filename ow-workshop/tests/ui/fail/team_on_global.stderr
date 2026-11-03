@@ -1,0 +1,13 @@
+error[E0599]: the method `team` exists for mutable reference `&mut Rule<ow_workshop::OngoingGlobal>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/team_on_global.rs:5:11
+  |
+5 |         r.team(TeamFilter::Team1);
+  |           ^^^^ private field, not a method
+  |
+ ::: src/event.rs
+  |
+  |         pub struct $name;
+  |         ----------------- doesn't satisfy `ow_workshop::OngoingGlobal: PlayerEvent`
+  |
+  = note: the following trait bounds were not satisfied:
+          `ow_workshop::OngoingGlobal: PlayerEvent`

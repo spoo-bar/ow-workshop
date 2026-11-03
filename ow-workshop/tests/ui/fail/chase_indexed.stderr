@@ -1,0 +1,29 @@
+error[E0277]: the trait bound `Indexed<ow_workshop::Num>: Plain<_>` is not satisfied
+  --> tests/ui/fail/chase_indexed.rs:12:21
+   |
+12 |     b.chase_at_rate(g.list.at(0), 1, 1, ChaseRateReeval::DestinationAndRate);
+   |       ------------- ^^^^^^^^^^^^ the trait `Plain<_>` is not implemented for `Indexed<ow_workshop::Num>`
+   |       |
+   |       required by a bound introduced by this call
+   |
+help: the following other types implement trait `Plain<T>`
+  --> src/vars.rs
+   |
+   | impl<T: ValueType> Plain<T> for Global<T> {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `ow_workshop::Global<T>`
+...
+   | impl<T: ValueType> Plain<T> for PlayerVarRef<T> {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `PlayerVarRef<T>`
+note: required by a bound in `ow_workshop::Block::chase_at_rate`
+  --> src/block.rs
+   |
+   |     pub fn chase_at_rate<T: ValueType>(
+   |            ------------- required by a bound in this associated function
+   |         &mut self,
+   |         place: impl Plain<T>,
+   |                     ^^^^^^^^ required by this bound in `Block::chase_at_rate`
+help: consider removing this method call, as the receiver has type `ow_workshop::Global<ow_workshop::Array<ow_workshop::Num>>` and `ow_workshop::Global<ow_workshop::Array<ow_workshop::Num>>: Plain<_>` trivially holds
+   |
+12 -     b.chase_at_rate(g.list.at(0), 1, 1, ChaseRateReeval::DestinationAndRate);
+12 +     b.chase_at_rate(g.list, 1, 1, ChaseRateReeval::DestinationAndRate);
+   |

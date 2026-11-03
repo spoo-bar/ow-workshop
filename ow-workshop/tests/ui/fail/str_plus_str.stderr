@@ -1,0 +1,23 @@
+error[E0369]: cannot add `ow_workshop::Expr<ow_workshop::Str>` to `ow_workshop::Expr<ow_workshop::Str>`
+ --> tests/ui/fail/str_plus_str.rs:6:15
+  |
+6 |     let _ = a + b;
+  |             - ^ - ow_workshop::Expr<ow_workshop::Str>
+  |             |
+  |             ow_workshop::Expr<ow_workshop::Str>
+  |
+note: `ow_workshop::Str` does not implement `Apply<ow_workshop::ops::AddOp, ow_workshop::Str>`
+ --> src/ty.rs
+  |
+  |           pub enum $name {}
+  |           ^^^^^^^^^^^^^^^^^ `ow_workshop::Str` is defined in another crate
+...
+  | / markers! {
+  | |     /// A number.
+  | |     Num,
+  | |     /// A whole number; a subtype of [`Num`].
+... |
+  | |     Any,
+  | | }
+  | |_- in this macro invocation
+  = note: this error originates in the macro `markers` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -13,11 +13,13 @@ serde = ["dep:serde"]
 
 [dependencies]
 ow-workshop-data = { path = "../ow-workshop-data", version = "0.1.0" }
+ow-workshop-macros = { path = "../ow-workshop-macros", version = "0.1.0" }
 serde = { version = "1", default-features = false, features = ["derive"], optional = true }
 
 [dev-dependencies]
 insta = "1"
 similar = "2"
+trybuild = "1"
 wasm-bindgen-test = "0.3"
 
 [lints]

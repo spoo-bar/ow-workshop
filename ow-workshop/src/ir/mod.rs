@@ -12,15 +12,16 @@ mod rule;
 mod stmt;
 mod vars;
 
-pub(crate) use diag::{Diagnostic, Diagnostics, Severity};
+pub use diag::{Diagnostic, Diagnostics, Severity};
 pub(crate) use expr::{CmpOp, ConstRef, Expr, ExprKind, StrExpr, StrToken, Translated};
 pub(crate) use ids::{LabelId, SubId, VarId};
-pub(crate) use loc::Location;
-pub(crate) use program::{CompileOptions, Program, Settings};
+pub use loc::Location;
+pub(crate) use program::Program;
+pub use program::Settings;
 pub(crate) use rule::{
-    Cond, Event, MAX_SLOT, OptOverride, PlayerFilter, PlayerSlot, Rule, RuleError, TeamFilter,
-    WarningSet,
+    Cond, Event, MAX_SLOT, OptOverride, PlayerFilter, PlayerSlot, Rule, RuleError,
 };
+pub use rule::{TeamFilter, WarningSet};
 pub(crate) use stmt::{Block, ModifyOp, Place, SkipTarget, Stmt, StmtKind};
 pub(crate) use vars::{
     Allocation, CallGraph, MAX_SLOTS, SubDecl, SubUsage, Subs, VarDecl, VarFlags, Vars,

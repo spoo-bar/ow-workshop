@@ -48,7 +48,7 @@ impl Event {
 
 /// Which team a player-event rule applies to.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub(crate) enum TeamFilter {
+pub enum TeamFilter {
     /// Both teams.
     #[default]
     All,
@@ -95,7 +95,7 @@ pub(crate) struct OptOverride {
 
 /// Names of warnings suppressed for a rule.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct WarningSet(pub(crate) BTreeSet<String>);
+pub struct WarningSet(pub BTreeSet<String>);
 
 /// One condition of a rule.
 #[derive(Clone, Debug, PartialEq)]
@@ -127,6 +127,8 @@ pub(crate) struct Rule {
     pub(crate) new_page: Option<String>,
     /// Warnings suppressed for this rule.
     pub(crate) suppressed: WarningSet,
+    /// A free-form note on the rule; the emitter decides how to print it.
+    pub(crate) comment: Option<String>,
     /// Where it was declared.
     pub(crate) location: Option<Location>,
 }
@@ -156,6 +158,7 @@ impl Rule {
             delimiter: false,
             new_page: None,
             suppressed: WarningSet::default(),
+            comment: None,
             location: Some(Location::caller()),
         }
     }
