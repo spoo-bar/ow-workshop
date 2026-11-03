@@ -1,0 +1,18 @@
+[package]
+name = "ow-workshop"
+description = "Write Overwatch Workshop mods in Rust."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[dependencies]
+serde = { version = "1", default-features = false, features = ["derive"], optional = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,11 @@
+[package]
+name = "ow-workshop-data"
+description = "Static game data tables for ow-workshop."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
