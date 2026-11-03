@@ -1,5 +1,8 @@
 //! The statement list actions are recorded on.
 
+use std::cell::Cell;
+use std::rc::Rc;
+
 use ow_workshop_data::{ChaseRateReeval, ChaseTimeReeval};
 
 use crate::ir::{self, ModifyOp, Stmt, StmtKind};
@@ -10,6 +13,8 @@ use crate::vars::{Place, Plain};
 #[derive(Debug, Default)]
 pub struct Block {
     pub(crate) ir: ir::Block,
+    /// Label counter shared by every block of the mod, so label ids are unique across rules.
+    labels: Rc<Cell<u32>>,
 }
 
 // Constructed by the rule builder.
@@ -18,6 +23,28 @@ impl Block {
     /// An empty block.
     pub(crate) fn new() -> Self {
         Self::default()
+    }
+
+    /// An empty block drawing label ids from `labels`.
+    pub(crate) fn with_labels(labels: Rc<Cell<u32>>) -> Self {
+        Self {
+            ir: ir::Block::default(),
+            labels,
+        }
+    }
+
+    /// Runs `body` on a fresh block that shares this block's label counter.
+    pub(crate) fn record(&self, body: impl FnOnce(&mut Block)) -> ir::Block {
+        let mut block = Self::with_labels(Rc::clone(&self.labels));
+        body(&mut block);
+        block.into_ir()
+    }
+
+    /// Hands out the next label id.
+    pub(crate) fn next_label(&self) -> u32 {
+        let id = self.labels.get();
+        self.labels.set(id + 1);
+        id
     }
 
     /// The recorded statements.

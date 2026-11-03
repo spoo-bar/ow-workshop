@@ -5,6 +5,7 @@ pub use crate::builder::Builder;
 pub use crate::control::{ForRange, IfBuilder, RangeStep, range, rule_condition};
 pub use crate::event::*;
 pub use crate::expr::{Expr, null, vect};
+pub use crate::label::Label;
 pub use crate::ops::if_then_else;
 pub use crate::options::{CompileOptions, OptLevel};
 pub use crate::output::CompileOutput;

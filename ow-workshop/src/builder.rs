@@ -1,5 +1,8 @@
 //! The builder a mod records its rules and subroutines on.
 
+use std::cell::Cell;
+use std::rc::Rc;
+
 use crate::event::{Ev, EventType};
 use crate::ir::{Diagnostics, Program, Rule};
 use crate::rule::Rule as RuleBuilder;
@@ -9,6 +12,7 @@ use crate::rule::Rule as RuleBuilder;
 pub struct Builder {
     rules: Vec<Rule>,
     diagnostics: Diagnostics,
+    labels: Rc<Cell<u32>>,
 }
 
 // Recording methods are used as the API grows.
@@ -27,7 +31,7 @@ impl Builder {
         event: E,
         build: impl FnOnce(&mut RuleBuilder<E>, Ev<E>),
     ) {
-        let mut rule = RuleBuilder::new();
+        let mut rule = RuleBuilder::new(Rc::clone(&self.labels));
         build(&mut rule, Ev::new());
         let rule = rule.finish(name.into(), event, &mut self.diagnostics);
         self.rules.push(rule);

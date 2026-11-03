@@ -1,6 +1,8 @@
 //! The rule a mod defines with `Builder::rule`.
 
+use std::cell::Cell;
 use std::marker::PhantomData;
+use std::rc::Rc;
 
 use ow_workshop_data::Hero;
 
@@ -27,6 +29,7 @@ pub struct Rule<E> {
     team: Option<TeamFilter>,
     slot: Option<u8>,
     hero: Option<Hero>,
+    labels: Rc<Cell<u32>>,
     _event: PhantomData<fn() -> E>,
 }
 
@@ -45,7 +48,7 @@ impl ConditionRef<'_> {
 
 impl<E: EventType> Rule<E> {
     /// A rule without conditions or actions.
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(labels: Rc<Cell<u32>>) -> Self {
         Self {
             conditions: Vec::new(),
             body: ir::Block::default(),
@@ -57,6 +60,7 @@ impl<E: EventType> Rule<E> {
             team: None,
             slot: None,
             hero: None,
+            labels,
             _event: PhantomData,
         }
     }
@@ -76,7 +80,7 @@ impl<E: EventType> Rule<E> {
 
     /// Records actions; repeated calls append.
     pub fn actions(&mut self, build: impl FnOnce(&mut Block)) {
-        let mut block = Block::new();
+        let mut block = Block::with_labels(Rc::clone(&self.labels));
         build(&mut block);
         self.body.stmts.extend(block.into_ir().stmts);
     }

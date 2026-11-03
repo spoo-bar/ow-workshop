@@ -24,14 +24,14 @@ pub struct SwitchBuilder<'a, T> {
 impl<T: ValueType> SwitchBuilder<'_, T> {
     /// Adds a case; usually `value` is a literal.
     pub fn case(mut self, value: impl IntoExpr<T>, body: impl FnOnce(&mut Block)) -> Self {
-        self.cases
-            .push((value.into_expr().into_ir(), Block::record(body)));
+        let body = self.block.record(body);
+        self.cases.push((value.into_expr().into_ir(), body));
         self
     }
 
     /// Adds the default case; it may appear between cases.
     pub fn default(mut self, body: impl FnOnce(&mut Block)) -> Self {
-        self.default = Some((self.cases.len(), Block::record(body)));
+        self.default = Some((self.cases.len(), self.block.record(body)));
         self
     }
 }
@@ -90,7 +90,7 @@ mod tests {
     use crate::prelude::*;
 
     fn body(f: impl FnOnce(&mut Block)) -> Vec<Stmt> {
-        Block::record(f).stmts
+        Block::new().record(f).stmts
     }
 
     fn switch_parts(stmt: &Stmt) -> (&[(ir::Expr, ir::Block)], Option<&ir::Block>, usize) {

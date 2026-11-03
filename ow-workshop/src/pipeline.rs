@@ -15,6 +15,7 @@ pub(crate) fn run(
     if let Err(found) = program.validate() {
         diagnostics.0.extend(found.0);
     }
+    crate::check::check_labels(&program.rules, &mut diagnostics);
     if diagnostics.has_errors() {
         return Err(diagnostics);
     }

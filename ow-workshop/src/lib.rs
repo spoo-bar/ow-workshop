@@ -10,6 +10,7 @@ mod control;
 mod event;
 mod expr;
 mod ir;
+mod label;
 mod ops;
 mod options;
 mod output;
@@ -34,6 +35,7 @@ pub use event::{
 };
 pub use expr::{Expr, null, vect};
 pub use ir::{Diagnostic, Diagnostics, Location, Settings, Severity, TeamFilter, WarningSet};
+pub use label::Label;
 pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
 pub use options::{CompileOptions, OptLevel};
 pub use output::{Catalog, CompileOutput};

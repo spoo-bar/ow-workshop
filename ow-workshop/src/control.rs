@@ -82,14 +82,14 @@ pub struct IfBuilder<'a> {
 impl IfBuilder<'_> {
     /// Adds an `Else If` branch.
     pub fn elif(mut self, cond: impl IntoExpr<Bool>, body: impl FnOnce(&mut Block)) -> Self {
-        self.elifs
-            .push((cond.into_expr().into_ir(), Block::record(body)));
+        let body = self.block.record(body);
+        self.elifs.push((cond.into_expr().into_ir(), body));
         self
     }
 
     /// Adds the `Else` branch.
     pub fn else_(mut self, body: impl FnOnce(&mut Block)) {
-        self.else_ = Some(Block::record(body));
+        self.else_ = Some(self.block.record(body));
     }
 }
 
@@ -118,13 +118,6 @@ pub fn rule_condition() -> Expr<Bool> {
 }
 
 impl Block {
-    /// Runs `body` on a fresh block and returns what it recorded.
-    pub(crate) fn record(body: impl FnOnce(&mut Block)) -> ir::Block {
-        let mut block = Block::new();
-        body(&mut block);
-        block.into_ir()
-    }
-
     /// `If`; chain `.elif(..)` and `.else_(..)` on the result.
     #[track_caller]
     pub fn if_(
@@ -135,7 +128,7 @@ impl Block {
         IfBuilder {
             loc: Location::caller(),
             cond: cond.into_expr().into_ir(),
-            then: Block::record(body),
+            then: self.record(body),
             elifs: Vec::new(),
             else_: None,
             block: self,
@@ -147,7 +140,7 @@ impl Block {
     pub fn while_(&mut self, cond: impl IntoExpr<Bool>, body: impl FnOnce(&mut Block)) {
         self.push(StmtKind::While {
             cond: cond.into_expr().into_ir(),
-            body: Block::record(body),
+            body: self.record(body),
         });
     }
 
@@ -159,7 +152,7 @@ impl Block {
     pub fn do_while(&mut self, cond: impl IntoExpr<Bool>, body: impl FnOnce(&mut Block)) {
         self.push(StmtKind::DoWhile {
             cond: cond.into_expr().into_ir(),
-            body: Block::record(body),
+            body: self.record(body),
         });
     }
 
@@ -177,7 +170,7 @@ impl Block {
             start: range.start,
             stop: range.stop,
             step: range.step,
-            body: Block::record(body),
+            body: self.record(body),
         });
     }
 
@@ -246,7 +239,7 @@ mod tests {
     }
 
     fn body(f: impl FnOnce(&mut Block)) -> Vec<Stmt> {
-        Block::record(f).stmts
+        Block::new().record(f).stmts
     }
 
     #[test]
