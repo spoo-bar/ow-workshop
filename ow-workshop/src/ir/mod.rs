@@ -18,10 +18,10 @@ pub(crate) use ids::{LabelId, SubId, VarId};
 pub use loc::Location;
 pub(crate) use program::Program;
 pub use program::Settings;
-pub use rule::WarningSet;
 pub(crate) use rule::{
-    Cond, Event, MAX_SLOT, OptOverride, PlayerFilter, PlayerSlot, Rule, RuleError, TeamFilter,
+    Cond, Event, MAX_SLOT, OptOverride, PlayerFilter, PlayerSlot, Rule, RuleError,
 };
+pub use rule::{TeamFilter, WarningSet};
 pub(crate) use stmt::{Block, ModifyOp, Place, SkipTarget, Stmt, StmtKind};
 pub(crate) use vars::{
     Allocation, CallGraph, MAX_SLOTS, SubDecl, SubUsage, Subs, VarDecl, VarFlags, Vars,

@@ -31,6 +31,13 @@ impl Block {
         self.ir.stmts.push(Stmt::new(kind));
     }
 
+    /// Records a no-op.
+    #[cfg(test)]
+    #[track_caller]
+    pub(crate) fn pass_placeholder(&mut self) {
+        self.push(StmtKind::Pass);
+    }
+
     #[track_caller]
     fn modify<T: ValueType>(
         &mut self,
