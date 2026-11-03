@@ -172,6 +172,9 @@ pub(crate) enum StmtKind {
     Pass,
     /// A standalone comment line.
     Comment(String),
+    /// The `If(True)` that opens a lowered switch; the cases follow at the same depth until a
+    /// matching `End`. Never removed or simplified by the optimizer.
+    SwitchIf,
     /// Multi-way branch; removed by lowering.
     Switch {
         /// The scrutinee.

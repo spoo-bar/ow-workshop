@@ -6,8 +6,11 @@
 
 // The passes that use the context land in the following changes.
 #![allow(dead_code)]
+// Every pass shares one signature, even when it cannot fail.
+#![allow(clippy::unnecessary_wraps)]
 
 pub(crate) mod labels;
+pub(crate) mod switch;
 pub(crate) mod visit;
 
 use ow_workshop_data::Lang;
@@ -112,7 +115,7 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("generated rules", noop),
     ("variable usage", noop),
     ("subroutine checks", noop),
-    ("lower switch", noop),
+    ("lower switch", switch::lower),
     ("lower loops", noop),
     ("lower dictionaries", noop),
     ("lower functions", noop),
