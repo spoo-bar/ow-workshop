@@ -18,7 +18,7 @@ pub fn pascal(key: &str) -> Result<String, String> {
         return Ok((*name).to_owned());
     }
     let mut out = String::new();
-    for part in key.split('_').filter(|p| !p.is_empty()) {
+    for part in key.split(['_', '.', ' ']).filter(|p| !p.is_empty()) {
         let mut chars = part.chars();
         let Some(first) = chars.next() else { continue };
         out.extend(first.to_uppercase());

@@ -2,6 +2,7 @@
 
 mod enums;
 mod naming;
+mod signatures;
 
 use std::fs;
 use std::path::Path;
@@ -14,6 +15,8 @@ use crate::data::Data;
 pub fn run(data_dir: &Path, out_dir: &Path) -> Result<(), String> {
     let data = Data::load(data_dir)?;
     let mut files = enums::generate(&data)?;
+    files.extend(signatures::generate(&data)?);
+    files.sort_by_key(|(name, _)| *name);
     files.push(("mod", module_list(files.iter().map(|(name, _)| *name))));
 
     fs::create_dir_all(out_dir).map_err(|e| format!("{}: {e}", out_dir.display()))?;

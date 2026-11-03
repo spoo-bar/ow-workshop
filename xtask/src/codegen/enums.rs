@@ -11,10 +11,10 @@ use crate::data::model::Names;
 pub type File = (&'static str, TokenStream);
 
 /// One enum variant: its Rust name, data key and English name.
-struct Variant<'a> {
-    key: &'a str,
-    name: proc_macro2::Ident,
-    doc: String,
+pub struct Variant<'a> {
+    pub key: &'a str,
+    pub name: proc_macro2::Ident,
+    pub doc: String,
 }
 
 fn english(names: &Names) -> String {
@@ -25,7 +25,9 @@ fn doc_name(text: &str) -> String {
     format!(" `{}`", text.replace('`', "'"))
 }
 
-fn build<'a>(entries: impl Iterator<Item = (&'a str, String)>) -> Result<Vec<Variant<'a>>, String> {
+pub fn build<'a>(
+    entries: impl Iterator<Item = (&'a str, String)>,
+) -> Result<Vec<Variant<'a>>, String> {
     let entries: Vec<_> = entries.collect();
     let names = variants(entries.iter().map(|(k, _)| *k))?;
     Ok(names
@@ -40,7 +42,7 @@ fn build<'a>(entries: impl Iterator<Item = (&'a str, String)>) -> Result<Vec<Var
 }
 
 /// Enum definition plus `ALL` and `key()`.
-fn enum_def(name: &str, doc: &str, variants: &[Variant]) -> TokenStream {
+pub fn enum_def(name: &str, doc: &str, variants: &[Variant]) -> TokenStream {
     let ident = format_ident!("{name}");
     let names: Vec<_> = variants.iter().map(|v| &v.name).collect();
     let docs = variants.iter().map(|v| doc_name(&v.doc));
