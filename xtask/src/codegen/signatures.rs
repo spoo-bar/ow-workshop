@@ -292,6 +292,7 @@ fn table(functions: &[Function], id: &str, title: &str) -> Result<TokenStream, S
 
 pub fn generate(data: &Data) -> Result<Vec<super::enums::File>, String> {
     Ok(vec![
+        ("actions", table(&data.actions, "ActionId", "action")?),
         ("ty", ty_file(data)?),
         ("values", table(&data.values, "ValueId", "value")?),
     ])

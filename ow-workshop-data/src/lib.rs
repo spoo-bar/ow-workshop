@@ -8,6 +8,7 @@
 pub mod generated;
 pub mod signature;
 
+pub use generated::actions::ActionId;
 pub use generated::constants::*;
 pub use generated::extension::*;
 pub use generated::gamemodes::*;

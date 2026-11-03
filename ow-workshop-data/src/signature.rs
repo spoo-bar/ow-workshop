@@ -1,6 +1,6 @@
 //! Action and value signatures and the type-compatibility rules.
 
-use crate::{Ty, ValueId, VectorKind};
+use crate::{ActionId, Ty, ValueId, VectorKind};
 
 /// Whether `child` may be passed where `parent` is expected.
 pub fn is_subtype(child: &Ty, parent: &Ty) -> bool {
@@ -216,6 +216,13 @@ impl Signature {
     /// Builds a signature.
     pub const fn new(args: &'static [Arg], ret: Ty, flags: SigFlags) -> Self {
         Self { args, ret, flags }
+    }
+}
+
+impl ActionId {
+    /// The action's signature.
+    pub fn signature(self) -> &'static Signature {
+        &crate::generated::actions::SIGNATURES[self as usize]
     }
 }
 
