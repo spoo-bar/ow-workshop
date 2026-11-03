@@ -1,5 +1,6 @@
 //! Repo automation tasks (`cargo xtask <task>`).
 
+mod codegen;
 mod data;
 
 use std::path::PathBuf;
@@ -14,7 +15,11 @@ fn main() -> ExitCode {
                 .map_or_else(|| PathBuf::from("data"), PathBuf::from);
             data::validate_dir(&dir)
         }
-        _ => Err("usage: cargo xtask validate-data [dir]".to_owned()),
+        Some("codegen") => codegen::run(
+            &PathBuf::from("data"),
+            &PathBuf::from("ow-workshop-data/src/generated"),
+        ),
+        _ => Err("usage: cargo xtask <validate-data [dir] | codegen>".to_owned()),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,

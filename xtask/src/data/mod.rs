@@ -1,7 +1,7 @@
 //! `cargo xtask validate-data`: typed parse and consistency checks of `data/*.json`.
 
-#[allow(dead_code, reason = "fields are read by the codegen that follows")]
-mod model;
+#[allow(dead_code, reason = "mirrors the full schema")]
+pub mod model;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -12,6 +12,45 @@ use model::{
     LocalizedString, Map, Names, Setting, Ty, TypeNode,
 };
 use serde::de::DeserializeOwned;
+
+/// All bootstrap data, parsed.
+#[allow(dead_code, reason = "consumed by the codegen steps as they land")]
+pub struct Data {
+    pub actions: Vec<Function>,
+    pub values: Vec<Function>,
+    pub constants: Constants,
+    pub heroes: BTreeMap<String, Hero>,
+    pub maps: BTreeMap<String, Map>,
+    pub gamemodes: BTreeMap<String, Gamemode>,
+    pub keywords: Keywords,
+    pub settings: CustomGameSettings,
+    pub strings: Vec<LocalizedString>,
+    pub entities: BTreeMap<String, u32>,
+    pub textures: BTreeMap<String, String>,
+    pub fonts: FontWidths,
+    pub tree: Vec<TypeNode>,
+}
+
+impl Data {
+    /// Reads and parses every data file in `dir`.
+    pub fn load(dir: &Path) -> Result<Self, String> {
+        Ok(Self {
+            actions: load(dir, "actions.json")?,
+            values: load(dir, "values.json")?,
+            constants: load(dir, "constants.json")?,
+            heroes: load(dir, "heroes.json")?,
+            maps: load(dir, "maps.json")?,
+            gamemodes: load(dir, "gamemodes.json")?,
+            keywords: load(dir, "keywords.json")?,
+            settings: load(dir, "custom_game_settings.json")?,
+            strings: load(dir, "localized_strings.json")?,
+            entities: load(dir, "string_entities.json")?,
+            textures: load(dir, "textures.json")?,
+            fonts: load(dir, "font_widths.json")?,
+            tree: load(dir, "types.json")?,
+        })
+    }
+}
 
 /// Types that appear in signatures but not in `types.json` or `constants.json`.
 const INTERNAL_TYPES: [&str; 6] = [
@@ -25,19 +64,20 @@ const INTERNAL_TYPES: [&str; 6] = [
 
 /// Parses every data file in `dir` and checks cross-references.
 pub fn validate_dir(dir: &Path) -> Result<(), String> {
-    let actions: Vec<Function> = load(dir, "actions.json")?;
-    let values: Vec<Function> = load(dir, "values.json")?;
-    let constants: Constants = load(dir, "constants.json")?;
-    let heroes: BTreeMap<String, Hero> = load(dir, "heroes.json")?;
-    let maps: BTreeMap<String, Map> = load(dir, "maps.json")?;
-    let gamemodes: BTreeMap<String, Gamemode> = load(dir, "gamemodes.json")?;
-    let keywords: Keywords = load(dir, "keywords.json")?;
-    let settings: CustomGameSettings = load(dir, "custom_game_settings.json")?;
-    let strings: Vec<LocalizedString> = load(dir, "localized_strings.json")?;
-    let _: BTreeMap<String, u32> = load(dir, "string_entities.json")?;
-    let _: BTreeMap<String, String> = load(dir, "textures.json")?;
-    let fonts: FontWidths = load(dir, "font_widths.json")?;
-    let tree: Vec<TypeNode> = load(dir, "types.json")?;
+    let Data {
+        actions,
+        values,
+        constants,
+        heroes,
+        maps,
+        gamemodes,
+        keywords,
+        settings,
+        strings,
+        fonts,
+        tree,
+        ..
+    } = Data::load(dir)?;
 
     let mut problems = Vec::new();
     let mut check = Checker {
