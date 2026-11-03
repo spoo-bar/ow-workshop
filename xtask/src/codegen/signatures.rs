@@ -40,11 +40,10 @@ pub fn ty_file(data: &Data) -> Result<TokenStream, String> {
         parents.entry(name).or_default().insert(parent);
     }
 
-    let vars =
-        build(names.iter().map(|n| (*n, (*n).to_owned()))).map_err(|e| format!("types: {e}"))?;
+    let vars = build(names.iter().map(|n| (*n, None))).map_err(|e| format!("types: {e}"))?;
     let ident = |name: &str| format_ident!("{}", pascal(name).unwrap_or_default());
     let variants = vars.iter().map(|v| &v.name);
-    let docs = vars.iter().map(|v| format!(" `{}`", v.doc));
+    let docs = vars.iter().map(|v| format!(" `{}`", v.key));
     let mut arms: BTreeMap<Vec<&str>, Vec<&str>> = BTreeMap::new();
     for (child, set) in &parents {
         arms.entry(set.iter().copied().collect())
@@ -240,13 +239,8 @@ fn signature(f: &Function) -> Result<TokenStream, String> {
 fn table(functions: &[Function], id: &str, title: &str) -> Result<TokenStream, String> {
     let mut sorted: Vec<&Function> = functions.iter().collect();
     sorted.sort_by(|a, b| a.key.cmp(&b.key));
-    let vars = build(sorted.iter().map(|f| {
-        (
-            f.key.as_str(),
-            f.names.get("en-US").cloned().unwrap_or_default(),
-        )
-    }))
-    .map_err(|e| format!("{id}: {e}"))?;
+    let vars = build(sorted.iter().map(|f| (f.key.as_str(), Some(&f.names))))
+        .map_err(|e| format!("{id}: {e}"))?;
     let def = enum_def(id, &format!("An {title}."), &vars);
     let signatures = sorted
         .iter()
@@ -283,7 +277,9 @@ fn table(functions: &[Function], id: &str, title: &str) -> Result<TokenStream, S
     Ok(quote! {
         #![doc = #module_doc]
 
+        use crate::Lang;
         use crate::Ty;
+        use crate::lang::localized;
         #( #imports )*
 
         #body

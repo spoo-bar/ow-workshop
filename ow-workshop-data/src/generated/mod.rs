@@ -5,6 +5,7 @@ pub mod constants;
 pub mod extension;
 pub mod gamemodes;
 pub mod heroes;
+pub mod keywords;
 pub mod maps;
 pub mod ty;
 pub mod values;

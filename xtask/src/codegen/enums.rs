@@ -5,7 +5,7 @@ use quote::{format_ident, quote};
 
 use super::naming::variants;
 use crate::data::Data;
-use crate::data::model::Names;
+use crate::data::model::{LANGS, Names};
 
 /// A generated file: module name and its tokens.
 pub type File = (&'static str, TokenStream);
@@ -15,6 +15,8 @@ pub struct Variant<'a> {
     pub key: &'a str,
     pub name: proc_macro2::Ident,
     pub doc: String,
+    /// All translations joined by `\u{1f}`, in `Lang` order; empty slots fall back to English.
+    pub packed: String,
 }
 
 fn english(names: &Names) -> String {
@@ -25,18 +27,41 @@ fn doc_name(text: &str) -> String {
     format!(" `{}`", text.replace('`', "'"))
 }
 
+/// Joins translations in `LANGS` order; untranslated or English-equal slots stay empty.
+fn pack(names: Option<&Names>) -> String {
+    let Some(names) = names else {
+        return String::new();
+    };
+    let english = english(names);
+    let mut slots: Vec<&str> = LANGS
+        .iter()
+        .map(|lang| match names.get(*lang).map(String::as_str) {
+            // `<en>..<en>` marks a name the game never translated.
+            Some(text) if text.starts_with("<en>") => "",
+            Some(text) if *lang != "en-US" && text == english => "",
+            Some(text) => text,
+            None => "",
+        })
+        .collect();
+    while slots.last() == Some(&"") {
+        slots.pop();
+    }
+    slots.join("\u{1f}")
+}
+
 pub fn build<'a>(
-    entries: impl Iterator<Item = (&'a str, String)>,
+    entries: impl Iterator<Item = (&'a str, Option<&'a Names>)>,
 ) -> Result<Vec<Variant<'a>>, String> {
     let entries: Vec<_> = entries.collect();
     let names = variants(entries.iter().map(|(k, _)| *k))?;
     Ok(names
         .into_iter()
         .zip(entries)
-        .map(|((key, name), (_, doc))| Variant {
+        .map(|((key, name), (_, names))| Variant {
             key,
             name: format_ident!("{name}"),
-            doc,
+            doc: names.map(english).unwrap_or_default(),
+            packed: pack(names),
         })
         .collect())
 }
@@ -47,6 +72,8 @@ pub fn enum_def(name: &str, doc: &str, variants: &[Variant]) -> TokenStream {
     let names: Vec<_> = variants.iter().map(|v| &v.name).collect();
     let docs = variants.iter().map(|v| doc_name(&v.doc));
     let keys = variants.iter().map(|v| v.key);
+    let packed = variants.iter().map(|v| &v.packed);
+    let count = variants.len();
     let doc = format!(" {doc}");
     quote! {
         #[doc = #doc]
@@ -65,6 +92,13 @@ pub fn enum_def(name: &str, doc: &str, variants: &[Variant]) -> TokenStream {
                 match self {
                     #( Self::#names => #keys, )*
                 }
+            }
+
+            /// The name as written in workshop code of the given language.
+            pub fn name(self, lang: Lang) -> &'static str {
+                // Translations joined by U+001F in `Lang` order; empty means English.
+                static NAMES: [&str; #count] = [ #( #packed ),* ];
+                localized(NAMES[self as usize], lang)
             }
         }
     }
@@ -100,6 +134,7 @@ pub fn generate(data: &Data) -> Result<Vec<File>, String> {
         ("extension", extension(data)?),
         ("gamemodes", gamemodes(data)?),
         ("heroes", heroes(data)?),
+        ("keywords", keywords(data)?),
         ("maps", maps(data)?),
     ])
 }
@@ -109,13 +144,8 @@ fn constants(data: &Data) -> Result<TokenStream, String> {
     for (enum_name, members) in &data.constants {
         // Tooling-only colors are not workshop values; the stdlib exposes them as `rgb()` constants.
         let kept: Vec<_> = members.iter().filter(|(_, m)| !m.only_in_tooling).collect();
-        let vars = build(kept.iter().map(|(k, m)| {
-            (
-                k.as_str(),
-                m.names.as_ref().map(english).unwrap_or_default(),
-            )
-        }))
-        .map_err(|e| format!("{enum_name}: {e}"))?;
+        let vars = build(kept.iter().map(|(k, m)| (k.as_str(), m.names.as_ref())))
+            .map_err(|e| format!("{enum_name}: {e}"))?;
         let doc = format!("Workshop constant `{enum_name}`.");
         let mut item = enum_def(enum_name, &doc, &vars);
 
@@ -179,6 +209,8 @@ fn constants(data: &Data) -> Result<TokenStream, String> {
         //! Constant enums used as workshop action and value arguments.
 
         use super::extension::Extension;
+        use crate::Lang;
+        use crate::lang::localized;
 
         #( #items )*
     })
@@ -195,12 +227,15 @@ fn extension(data: &Data) -> Result<TokenStream, String> {
             .extensions
             .values
             .iter()
-            .map(|(k, e)| (k.as_str(), english(&e.names))),
+            .map(|(k, e)| (k.as_str(), Some(&e.names))),
     )
     .map_err(|e| format!("extensions: {e}"))?;
     let def = enum_def("Extension", "A workshop extension.", &vars);
     Ok(quote! {
         //! Workshop extensions.
+
+        use crate::Lang;
+        use crate::lang::localized;
 
         #def
     })
@@ -210,7 +245,7 @@ fn gamemodes(data: &Data) -> Result<TokenStream, String> {
     let vars = build(
         data.gamemodes
             .iter()
-            .map(|(k, m)| (k.as_str(), english(&m.names))),
+            .map(|(k, m)| (k.as_str(), Some(&m.names))),
     )
     .map_err(|e| format!("gamemodes: {e}"))?;
     let def = enum_def("Gamemode", "A game mode.", &vars);
@@ -247,6 +282,9 @@ fn gamemodes(data: &Data) -> Result<TokenStream, String> {
     Ok(quote! {
         //! Game modes.
 
+        use crate::Lang;
+        use crate::lang::localized;
+
         #def
 
         /// Default player slots per team of a game mode.
@@ -278,24 +316,23 @@ fn heroes(data: &Data) -> Result<TokenStream, String> {
     let vars = build(
         data.heroes
             .iter()
-            .map(|(k, h)| (k.as_str(), english(&h.names))),
+            .map(|(k, h)| (k.as_str(), Some(&h.names))),
     )
     .map_err(|e| format!("heroes: {e}"))?;
     let def = enum_def("Hero", "A playable hero.", &vars);
     Ok(quote! {
         //! Heroes.
 
+        use crate::Lang;
+        use crate::lang::localized;
+
         #def
     })
 }
 
 fn maps(data: &Data) -> Result<TokenStream, String> {
-    let vars = build(
-        data.maps
-            .iter()
-            .map(|(k, m)| (k.as_str(), english(&m.names))),
-    )
-    .map_err(|e| format!("maps: {e}"))?;
+    let vars = build(data.maps.iter().map(|(k, m)| (k.as_str(), Some(&m.names))))
+        .map_err(|e| format!("maps: {e}"))?;
     let def = enum_def("Map", "A map.", &vars);
     let maps: Vec<_> = data.maps.values().collect();
     let flagged = |pick: fn(&crate::data::model::Map) -> bool| {
@@ -357,6 +394,8 @@ fn maps(data: &Data) -> Result<TokenStream, String> {
         //! Maps.
 
         use super::gamemodes::Gamemode;
+        use crate::Lang;
+        use crate::lang::localized;
 
         #def
 
@@ -387,5 +426,36 @@ fn maps(data: &Data) -> Result<TokenStream, String> {
                 }
             }
         }
+    })
+}
+
+fn keywords(data: &Data) -> Result<TokenStream, String> {
+    let k = &data.keywords;
+    let groups = [
+        ("", &k.structure),
+        ("event.", &k.event),
+        ("event_team.", &k.event_team),
+        ("event_player.", &k.event_player),
+        ("settings.", &k.settings),
+    ];
+    // Group-qualified keys keep words like `global` (block vs. event) apart.
+    let keys: Vec<(String, &Names)> = groups
+        .iter()
+        .flat_map(|(prefix, words)| {
+            words
+                .iter()
+                .map(move |(key, names)| (format!("{prefix}{key}"), names))
+        })
+        .collect();
+    let vars = build(keys.iter().map(|(key, names)| (key.as_str(), Some(*names))))
+        .map_err(|e| format!("keywords: {e}"))?;
+    let def = enum_def("Keyword", "A structural workshop word.", &vars);
+    Ok(quote! {
+        //! Structural keywords: blocks, events, event filters and settings words.
+
+        use crate::Lang;
+        use crate::lang::localized;
+
+        #def
     })
 }
