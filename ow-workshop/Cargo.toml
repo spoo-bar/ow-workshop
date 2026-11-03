@@ -14,5 +14,10 @@ serde = ["dep:serde"]
 [dependencies]
 serde = { version = "1", default-features = false, features = ["derive"], optional = true }
 
+[dev-dependencies]
+insta = "1"
+similar = "2"
+wasm-bindgen-test = "0.3"
+
 [lints]
 workspace = true
