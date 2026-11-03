@@ -408,9 +408,19 @@ impl Map {
                 &[
                     Gamemode::Assault,
                     Gamemode::Skirmish,
-                    Gamemode::Ffa,
+                    Gamemode::Deathmatch,
                     Gamemode::BountyHunter,
-                    Gamemode::Tdm,
+                    Gamemode::TeamDeathmatch,
+                ]
+            }
+            Self::BusanDowntownLny | Self::BusanSanctuaryLny => {
+                &[Gamemode::CaptureTheFlag]
+            }
+            Self::Ayutthaya => {
+                &[
+                    Gamemode::CaptureTheFlag,
+                    Gamemode::Elimination,
+                    Gamemode::FreezethawElimination,
                 ]
             }
             Self::Hanaoka | Self::ThroneOfAnubis => {
@@ -425,9 +435,12 @@ impl Map {
             | Self::Nepal
             | Self::Oasis
             | Self::Samoa => &[Gamemode::Control, Gamemode::Skirmish],
-            Self::BusanDowntownLny | Self::BusanSanctuaryLny => &[Gamemode::Ctf],
-            Self::Ayutthaya => {
-                &[Gamemode::Ctf, Gamemode::Elimination, Gamemode::FreezethawElimination]
+            Self::ChateauGuillard
+            | Self::ChateauGuillardHalloween
+            | Self::Kanezaka
+            | Self::Malevento
+            | Self::Petra => {
+                &[Gamemode::Deathmatch, Gamemode::BountyHunter, Gamemode::TeamDeathmatch]
             }
             Self::IliosLighthouse
             | Self::IliosRuins
@@ -446,10 +459,10 @@ impl Map {
             | Self::OasisUniversity => {
                 &[
                     Gamemode::Elimination,
-                    Gamemode::Ctf,
-                    Gamemode::Ffa,
+                    Gamemode::CaptureTheFlag,
+                    Gamemode::Deathmatch,
                     Gamemode::BountyHunter,
-                    Gamemode::Tdm,
+                    Gamemode::TeamDeathmatch,
                 ]
             }
             Self::BlackForest
@@ -459,18 +472,18 @@ impl Map {
                 &[
                     Gamemode::Elimination,
                     Gamemode::FreezethawElimination,
-                    Gamemode::Ffa,
+                    Gamemode::Deathmatch,
                     Gamemode::BountyHunter,
-                    Gamemode::Tdm,
+                    Gamemode::TeamDeathmatch,
                 ]
             }
             Self::BlackForestWinter | Self::EcopointAntarcticaWinter => {
                 &[
                     Gamemode::Elimination,
                     Gamemode::FreezethawElimination,
-                    Gamemode::Ffa,
+                    Gamemode::Deathmatch,
                     Gamemode::BountyHunter,
-                    Gamemode::Tdm,
+                    Gamemode::TeamDeathmatch,
                     Gamemode::MeisSnowballOffensive,
                     Gamemode::SnowballFfa,
                 ]
@@ -483,19 +496,19 @@ impl Map {
                 &[
                     Gamemode::Escort,
                     Gamemode::Skirmish,
-                    Gamemode::Ffa,
+                    Gamemode::Deathmatch,
                     Gamemode::BountyHunter,
-                    Gamemode::Tdm,
+                    Gamemode::TeamDeathmatch,
                 ]
             }
             Self::Route66 => {
-                &[Gamemode::Escort, Gamemode::Skirmish, Gamemode::Ffa, Gamemode::Tdm]
+                &[
+                    Gamemode::Escort,
+                    Gamemode::Skirmish,
+                    Gamemode::Deathmatch,
+                    Gamemode::TeamDeathmatch,
+                ]
             }
-            Self::ChateauGuillard
-            | Self::ChateauGuillardHalloween
-            | Self::Kanezaka
-            | Self::Malevento
-            | Self::Petra => &[Gamemode::Ffa, Gamemode::BountyHunter, Gamemode::Tdm],
             Self::Midtown => &[Gamemode::Hybrid],
             Self::Numbani => &[Gamemode::Hybrid, Gamemode::Skirmish],
             Self::BlizzWorld
@@ -508,13 +521,18 @@ impl Map {
                 &[
                     Gamemode::Hybrid,
                     Gamemode::Skirmish,
-                    Gamemode::Ffa,
+                    Gamemode::Deathmatch,
                     Gamemode::BountyHunter,
-                    Gamemode::Tdm,
+                    Gamemode::TeamDeathmatch,
                 ]
             }
             Self::HollywoodHalloween => {
-                &[Gamemode::Hybrid, Gamemode::Skirmish, Gamemode::Ffa, Gamemode::Tdm]
+                &[
+                    Gamemode::Hybrid,
+                    Gamemode::Skirmish,
+                    Gamemode::Deathmatch,
+                    Gamemode::TeamDeathmatch,
+                ]
             }
             Self::Junkenstein => &[Gamemode::Junkenstein],
             Self::BusanStadium
@@ -533,9 +551,9 @@ impl Map {
                 &[
                     Gamemode::Skirmish,
                     Gamemode::Elimination,
-                    Gamemode::Ffa,
+                    Gamemode::Deathmatch,
                     Gamemode::BountyHunter,
-                    Gamemode::Tdm,
+                    Gamemode::TeamDeathmatch,
                 ]
             }
             Self::CircuitRoyal | Self::ShambaliMonastery => {
