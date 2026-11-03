@@ -1,7 +1,7 @@
 //! Rust identifiers for data keys.
 
-/// Symbolic or numeric keys that don't convert mechanically.
-const OVERRIDES: [(&str, &str); 8] = [
+/// Keys that don't convert mechanically (symbols, numbers, abbreviations).
+const OVERRIDES: [(&str, &str); 11] = [
     ("1", "One"),
     ("2", "Two"),
     ("==", "Eq"),
@@ -10,6 +10,9 @@ const OVERRIDES: [(&str, &str); 8] = [
     (">=", "Ge"),
     ("<", "Lt"),
     (">", "Gt"),
+    ("ctf", "CaptureTheFlag"),
+    ("ffa", "Deathmatch"),
+    ("tdm", "TeamDeathmatch"),
 ];
 
 /// `UPPER_SNAKE`, `camelCase` or `__camelCase__` to `PascalCase`.
