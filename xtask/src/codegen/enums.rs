@@ -94,11 +94,97 @@ fn any_of(names: &[&proc_macro2::Ident]) -> TokenStream {
 
 pub fn generate(data: &Data) -> Result<Vec<File>, String> {
     Ok(vec![
+        ("constants", constants(data)?),
         ("extension", extension(data)?),
         ("gamemodes", gamemodes(data)?),
         ("heroes", heroes(data)?),
         ("maps", maps(data)?),
     ])
+}
+
+fn constants(data: &Data) -> Result<TokenStream, String> {
+    let mut items = Vec::new();
+    for (enum_name, members) in &data.constants {
+        // Tooling-only colors are not workshop values; the stdlib exposes them as `rgb()` constants.
+        let kept: Vec<_> = members.iter().filter(|(_, m)| !m.only_in_tooling).collect();
+        let vars = build(kept.iter().map(|(k, m)| {
+            (
+                k.as_str(),
+                m.names.as_ref().map(english).unwrap_or_default(),
+            )
+        }))
+        .map_err(|e| format!("{enum_name}: {e}"))?;
+        let doc = format!("Workshop constant `{enum_name}`.");
+        let mut item = enum_def(enum_name, &doc, &vars);
+
+        let ident = format_ident!("{enum_name}");
+        let rgba: Vec<_> = kept
+            .iter()
+            .zip(&vars)
+            .filter_map(|((_, m), v)| m.rgba.map(|c| (&v.name, c)))
+            .collect();
+        if !rgba.is_empty() {
+            let (names, colors): (Vec<_>, Vec<_>) = rgba
+                .into_iter()
+                .map(|(name, c)| {
+                    let [r, g, b, a] = c.map(proc_macro2::Literal::u8_unsuffixed);
+                    (name, quote!([#r, #g, #b, #a]))
+                })
+                .unzip();
+            item.extend(quote! {
+                impl #ident {
+                    /// The color's RGBA components, if it has fixed ones.
+                    pub fn rgba(self) -> Option<[u8; 4]> {
+                        match self {
+                            #( Self::#names => Some(#colors), )*
+                            _ => None,
+                        }
+                    }
+                }
+            });
+        }
+        // Group effects by extension so equal arms collapse into one or-pattern.
+        let mut by_extension: std::collections::BTreeMap<String, Vec<&proc_macro2::Ident>> =
+            std::collections::BTreeMap::new();
+        for ((_, member), variant) in kept.iter().zip(&vars) {
+            if let Some(extension) = &member.extension {
+                by_extension
+                    .entry(pascal_key(extension))
+                    .or_default()
+                    .push(&variant.name);
+            }
+        }
+        if !by_extension.is_empty() {
+            let exts = by_extension.keys().map(|e| format_ident!("{e}"));
+            let groups = by_extension
+                .values()
+                .map(|names| quote!( #( Self::#names )|* ));
+            item.extend(quote! {
+                impl #ident {
+                    /// The workshop extension this effect requires, if any.
+                    pub fn extension(self) -> Option<Extension> {
+                        match self {
+                            #( #groups => Some(Extension::#exts), )*
+                            _ => None,
+                        }
+                    }
+                }
+            });
+        }
+        items.push(item);
+    }
+    Ok(quote! {
+        //! Constant enums used as workshop action and value arguments.
+
+        use super::extension::Extension;
+
+        #( #items )*
+    })
+}
+
+/// Variant name of an extension key (`beamEffects` to `BeamEffects`).
+fn pascal_key(key: &str) -> String {
+    super::naming::pascal(key).unwrap_or_default()
 }
 
 fn extension(data: &Data) -> Result<TokenStream, String> {

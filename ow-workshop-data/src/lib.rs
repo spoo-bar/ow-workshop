@@ -7,6 +7,7 @@
 #[rustfmt::skip]
 pub mod generated;
 
+pub use generated::constants::*;
 pub use generated::extension::*;
 pub use generated::gamemodes::*;
 pub use generated::heroes::*;
