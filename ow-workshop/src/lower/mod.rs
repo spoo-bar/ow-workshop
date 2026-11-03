@@ -10,6 +10,7 @@
 #![allow(clippy::unnecessary_wraps)]
 
 pub(crate) mod checks;
+pub(crate) mod client_args;
 pub(crate) mod dicts;
 pub(crate) mod functions;
 pub(crate) mod generated;
