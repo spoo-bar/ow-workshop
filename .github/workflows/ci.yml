@@ -52,10 +52,16 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - run: cargo build -p ow-workshop --target wasm32-unknown-unknown
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-bindgen-cli
-      - run: cargo test -p ow-workshop --target wasm32-unknown-unknown
+      # Skipped until a crate depends on wasm-bindgen (see Cargo.lock).
+      # The runner version must match the wasm-bindgen version in Cargo.lock.
+      - id: wbg
+        run: |
+          v=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/[^0-9.]/,"",$0); print; exit}' Cargo.lock)
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - if: steps.wbg.outputs.version != ''
+        run: cargo install wasm-bindgen-cli --locked --version "${{ steps.wbg.outputs.version }}"
+      - if: steps.wbg.outputs.version != ''
+        run: cargo test -p ow-workshop --target wasm32-unknown-unknown
         env:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
 
