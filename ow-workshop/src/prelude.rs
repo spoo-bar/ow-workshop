@@ -2,6 +2,7 @@
 
 pub use crate::block::Block;
 pub use crate::builder::Builder;
+pub use crate::control::{ForRange, IfBuilder, RangeStep, range, rule_condition};
 pub use crate::event::*;
 pub use crate::expr::{Expr, null, vect};
 pub use crate::ops::if_then_else;

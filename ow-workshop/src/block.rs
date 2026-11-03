@@ -9,7 +9,7 @@ use crate::vars::{Place, Plain};
 /// A list of statements: a rule's actions or the body of a control-flow construct.
 #[derive(Debug, Default)]
 pub struct Block {
-    ir: ir::Block,
+    pub(crate) ir: ir::Block,
 }
 
 // Constructed by the rule builder.

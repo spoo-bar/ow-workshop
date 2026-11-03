@@ -5,6 +5,8 @@ extern crate self as ow_workshop;
 
 mod block;
 mod builder;
+mod check;
+mod control;
 mod event;
 mod expr;
 mod ir;
@@ -22,6 +24,7 @@ mod workshop;
 
 pub use block::Block;
 pub use builder::Builder;
+pub use control::{ForRange, IfBuilder, IntoForRange, RangeStep, range, rule_condition};
 pub use event::{
     Ev, EventType, HasDamage, HasDamageOrHealing, HasEventPlayer, HasHealing, OngoingEachPlayer,
     OngoingGlobal, PlayerDealtDamage, PlayerDealtFinalBlow, PlayerDealtHealing,

@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 use ow_workshop_data::Hero;
 
 use crate::block::Block;
+use crate::check::check_do_while;
 use crate::event::{EventType, PlayerEvent};
 use crate::expr::Expr;
 use crate::ir::{
@@ -113,6 +114,7 @@ impl<E: EventType> Rule<E> {
     /// Finishes the rule located at the caller; records problems in `diagnostics`.
     #[track_caller]
     pub(crate) fn finish(self, name: String, event: E, diagnostics: &mut Diagnostics) -> ir::Rule {
+        check_do_while(&self.body, &name, diagnostics);
         let mut rule = ir::Rule::new(name, event.raw().0, self.body);
         rule.conditions = self.conditions;
         rule.disabled = self.disabled;
