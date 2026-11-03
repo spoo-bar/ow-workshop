@@ -18,6 +18,8 @@ fn main() -> ExitCode {
         Some("codegen") => codegen::run(
             &PathBuf::from("data"),
             &PathBuf::from("ow-workshop-data/src/generated"),
+            &PathBuf::from("ow-workshop/src/generated"),
+            &PathBuf::from("xtask/renames.toml"),
         ),
         _ => Err("usage: cargo xtask <validate-data [dir] | codegen>".to_owned()),
     };

@@ -87,6 +87,12 @@ markers! {
     HealthPoolId,
     /// An assist id.
     AssistId,
+    /// A hero or an array of heroes.
+    Heroes,
+    /// A player or a position.
+    PlayerOrPosition,
+    /// An entity id or a player.
+    EntityOrPlayer,
     /// Any value; the escape hatch for workshop type tricks.
     Any,
 }
@@ -126,6 +132,9 @@ plain_types!(
     Velocity,
     Player,
     Players,
+    Heroes,
+    PlayerOrPosition,
+    EntityOrPlayer,
     EntityId,
     TextId,
     DamageModId,
@@ -166,6 +175,28 @@ subtype! {
     Vector => Direction,
     Vector => Velocity,
     Player => Players,
+    Player => PlayerOrPosition,
+    Position => PlayerOrPosition,
+    Player => EntityOrPlayer,
+    EntityId => EntityOrPlayer,
+}
+
+impl<T: Is<Hero>> Is<Heroes> for Array<T> {}
+impl Is<Heroes> for Hero {}
+impl<T: Is<Hero>> From<Expr<Array<T>>> for Expr<Heroes> {
+    fn from(e: Expr<Array<T>>) -> Self {
+        Self::from_ir(e.into_ir())
+    }
+}
+impl From<Expr<Hero>> for Expr<Heroes> {
+    fn from(e: Expr<Hero>) -> Self {
+        Self::from_ir(e.into_ir())
+    }
+}
+impl IntoExpr<Heroes> for Hero {
+    fn into_expr(self) -> Expr<Heroes> {
+        Expr::from(Expr::<Hero>::from(self))
+    }
 }
 
 impl<T: Is<Player>> From<Expr<Array<T>>> for Expr<Players> {
