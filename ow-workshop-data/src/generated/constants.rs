@@ -3,7 +3,7 @@
 use super::extension::Extension;
 use crate::Lang;
 use crate::lang::localized;
-/// Workshop constant `AccelReeval`.
+/// Acceleration Reevaluation (`AccelReeval`): options for the `reevaluation` argument of `Start Accelerating`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum AccelReeval {
@@ -31,7 +31,7 @@ impl AccelReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `AssistReeval`.
+/// Assist Reevaluation (`AssistReeval`): options for the `reevaluation` argument of `Start Assist`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum AssistReeval {
@@ -59,7 +59,7 @@ impl AssistReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `BarrierLos`.
+/// Barrier Line Of Sight (`BarrierLos`): options for the `barriers` argument of `Is In Line of Sight`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum BarrierLos {
@@ -95,7 +95,7 @@ impl BarrierLos {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Beam`.
+/// Beam (`Beam`): options for the `type` argument of `Create Beam Effect`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Beam {
@@ -241,7 +241,7 @@ impl Beam {
         }
     }
 }
-/// Workshop constant `Button`.
+/// Button (`Button`): options for the `button` argument of `Allow Button`, `Disallow Button` and 12 more.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Button {
@@ -312,7 +312,7 @@ impl Button {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `ChaseRateReeval`.
+/// Chase Rate Reevaluation (`ChaseRateReeval`): options for the `reevaluation` argument of `Chase Global Variable At Rate`, `Chase Player Variable At Rate`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ChaseRateReeval {
@@ -340,7 +340,7 @@ impl ChaseRateReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `ChaseTimeReeval`.
+/// Chase Time Reevaluation (`ChaseTimeReeval`): options for the `reevaluation` argument of `Chase Global Variable Over Time`, `Chase Player Variable Over Time`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ChaseTimeReeval {
@@ -368,7 +368,7 @@ impl ChaseTimeReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Clip`.
+/// Clip (`Clip`): options for the `clipping` argument of `Create In-World Text`, `Create Progress Bar In-World Text`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Clip {
@@ -396,7 +396,7 @@ impl Clip {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Color`.
+/// Color (`Color`): options for the `color` argument of `Create Beam Effect`, `Create Effect` and 7 more.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Color {
@@ -525,7 +525,7 @@ impl Color {
         }
     }
 }
-/// Workshop constant `Comms`.
+/// Communication (`Comms`): options for the `type` argument of `Communicate`, `Is Communicating`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Comms {
@@ -726,7 +726,7 @@ impl Comms {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `CompareOp`.
+/// Compare Operation (`CompareOp`): options for the `comparison` argument of `Compare`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum CompareOp {
@@ -777,7 +777,7 @@ impl CompareOp {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `DamageReeval`.
+/// Damage Reevaluation (`DamageReeval`): options for the `reevaluation` argument of `Start Damage Modification`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum DamageReeval {
@@ -813,7 +813,7 @@ impl DamageReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `DynamicEffect`.
+/// Dynamic Effect (`DynamicEffect`): options for the `explosionEffect` argument of `Create Homing Projectile`, `Create Projectile` and 1 more.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum DynamicEffect {
@@ -1472,7 +1472,7 @@ impl DynamicEffect {
         }
     }
 }
-/// Workshop constant `Effect`.
+/// Effect (`Effect`): options for the `type` argument of `Create Effect`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Effect {
@@ -1929,7 +1929,7 @@ impl Effect {
         }
     }
 }
-/// Workshop constant `EffectReeval`.
+/// Effect Reevaluation (`EffectReeval`): options for the `reevaluation` argument of `Create Beam Effect`, `Create Effect`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum EffectReeval {
@@ -1992,7 +1992,7 @@ impl EffectReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `FacingReeval`.
+/// Facing Reevaluation (`FacingReeval`): options for the `reevaluation` argument of `Start Facing`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum FacingReeval {
@@ -2020,7 +2020,7 @@ impl FacingReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `HealingReeval`.
+/// Healing Reevaluation (`HealingReeval`): options for the `reevaluation` argument of `Start Healing Modification`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum HealingReeval {
@@ -2056,7 +2056,7 @@ impl HealingReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Health`.
+/// Health (`Health`): options for the `healthType` argument of `Add Health Pool To Player`, `Health Of Type` and 1 more.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Health {
@@ -2088,7 +2088,7 @@ impl Health {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `HeroStat`.
+/// Hero Stat (`HeroStat`): options for the `stat` argument of `Player Hero Stat`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum HeroStat {
@@ -2274,7 +2274,7 @@ impl HeroStat {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `HudPosition`.
+/// HUD Position (`HudPosition`): options for the `location` argument of `Create HUD Text`, `Create Progress Bar HUD Text`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum HudPosition {
@@ -2315,7 +2315,7 @@ impl HudPosition {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `HudReeval`.
+/// HUD Reevaluation (`HudReeval`): options for the `reevaluation` argument of `Create HUD Text`, `Set Objective Description`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum HudReeval {
@@ -2418,7 +2418,7 @@ impl HudReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Icon`.
+/// Icon (`Icon`): options for the `icon` argument of `Create Icon`, `Icon String`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Icon {
@@ -2619,7 +2619,7 @@ impl Icon {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `IconReeval`.
+/// Icon Reevaluation (`IconReeval`): options for the `reevaluation` argument of `Create Icon`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum IconReeval {
@@ -2680,7 +2680,7 @@ impl IconReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Impulse`.
+/// Impulse (`Impulse`): options for the `motion` argument of `Apply Impulse`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Impulse {
@@ -2716,7 +2716,7 @@ impl Impulse {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Invis`.
+/// Invis (`Invis`): options for the `invisibleTo` argument of `Set Invisible`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Invis {
@@ -2748,7 +2748,7 @@ impl Invis {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `LosCheck`.
+/// Line Of Sight Check (`LosCheck`): options for the `losCheck` argument of `Players Within Radius`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum LosCheck {
@@ -2789,7 +2789,7 @@ impl LosCheck {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `ModifyHealth`.
+/// Modify Health (`ModifyHealth`): options for the `modifyHealthType` argument of `Create Homing Projectile`, `Create Projectile`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ModifyHealth {
@@ -2817,7 +2817,7 @@ impl ModifyHealth {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `ModifyOp`.
+/// Modify Operation (`ModifyOp`): options for the `operation` argument of `Modify Global Variable`, `Modify Global Variable At Index` and 2 more.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ModifyOp {
@@ -2893,7 +2893,7 @@ impl ModifyOp {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `OutlineVisibility`.
+/// Outline Visibility (`OutlineVisibility`): options for the `visibility` argument of `Start Forcing Player Outlines`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum OutlineVisibility {
@@ -2925,7 +2925,7 @@ impl OutlineVisibility {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `ProgressHudReeval`.
+/// Progress HUD Reevaluation (`ProgressHudReeval`): options for the `reevaluation` argument of `Create Progress Bar HUD Text`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ProgressHudReeval {
@@ -2986,7 +2986,7 @@ impl ProgressHudReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `ProgressWorldTextReeval`.
+/// Progress World Text Reevaluation (`ProgressWorldTextReeval`): options for the `reevaluation` argument of `Create Progress Bar In-World Text`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ProgressWorldTextReeval {
@@ -3089,7 +3089,7 @@ impl ProgressWorldTextReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Projectile`.
+/// Projectile (`Projectile`): options for the `type` argument of `Create Homing Projectile`, `Create Projectile` and 1 more.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Projectile {
@@ -3210,7 +3210,7 @@ impl Projectile {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `ProjectileEffectReeval`.
+/// Projectile Effect Reevaluation (`ProjectileEffectReeval`): options for the `reevaluation` argument of `Create Projectile Effect`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ProjectileEffectReeval {
@@ -3277,7 +3277,7 @@ impl ProjectileEffectReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Relativity`.
+/// Relativity (`Relativity`): options for the `relativity` argument of `Apply Impulse`, `Create Homing Projectile` and 5 more.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Relativity {
@@ -3305,7 +3305,7 @@ impl Relativity {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Rounding`.
+/// Rounding (`Rounding`): options for the `roundingType` argument of `Round To Integer`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Rounding {
@@ -3341,7 +3341,7 @@ impl Rounding {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `SpecVisibility`.
+/// Spectator Visibility (`SpecVisibility`): options for the `specVisibility` argument of `Create In-World Text`, `Create Progress Bar In-World Text` and 2 more.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum SpecVisibility {
@@ -3373,7 +3373,7 @@ impl SpecVisibility {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `StartRuleBehavior`.
+/// Start Rule Behavior (`StartRuleBehavior`): options for the `ifAlreadyExecuting` argument of `Start Rule`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum StartRuleBehavior {
@@ -3401,7 +3401,7 @@ impl StartRuleBehavior {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Stat`.
+/// Stat (`Stat`): options for the `statistic` argument of `Player Stat`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Stat {
@@ -3522,7 +3522,7 @@ impl Stat {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Status`.
+/// Status (`Status`): options for the `status` argument of `Clear Status`, `Set Status` and 1 more.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Status {
@@ -3593,7 +3593,7 @@ impl Status {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Team`.
+/// Team (`Team`): options for the `team` argument of `Modify Team Score`, `Create Dummy Bot` and 38 more.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Team {
@@ -3625,7 +3625,7 @@ impl Team {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Throttle`.
+/// Throttle (`Throttle`): options for the `behavior` argument of `Start Throttle In Direction`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Throttle {
@@ -3653,7 +3653,7 @@ impl Throttle {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `ThrottleReeval`.
+/// Throttle Reevaluation (`ThrottleReeval`): options for the `reevaluation` argument of `Start Throttle In Direction`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ThrottleReeval {
@@ -3681,7 +3681,7 @@ impl ThrottleReeval {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Transform`.
+/// Transform (`Transform`): options for the `transformation` argument of `Local Vector Of`, `World Vector Of`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Transform {
@@ -3709,7 +3709,7 @@ impl Transform {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `Wait`.
+/// Wait (`Wait`): options for the `waitBehavior` argument of `Wait`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Wait {
@@ -3745,7 +3745,7 @@ impl Wait {
         localized(NAMES[self as usize], lang)
     }
 }
-/// Workshop constant `WorldTextReeval`.
+/// World Text Reevaluation (`WorldTextReeval`): options for the `reevaluation` argument of `Create In-World Text`. Reevaluation decides which of the action's arguments are re-read while it runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum WorldTextReeval {
