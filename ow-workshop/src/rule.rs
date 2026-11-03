@@ -85,6 +85,11 @@ impl<E: EventType> Rule<E> {
         self.body.stmts.extend(block.into_ir().stmts);
     }
 
+    /// Whether `delimiter` was called.
+    pub(crate) fn is_delimiter(&self) -> bool {
+        self.delimiter
+    }
+
     /// Emits the rule disabled.
     pub fn disabled(&mut self) {
         self.disabled = true;

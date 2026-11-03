@@ -48,14 +48,15 @@ impl<W: Workshop> WorkshopExt for W {
         let globals = W::Globals::declare(&mut global_reg);
         let players = W::Players::declare(&mut player_reg);
 
-        let mut ws = Builder::new();
+        let options = self.options();
+        let mut ws = Builder::with_template(options.rule_name_template);
         self.build(&mut ws, &globals, &players);
 
         let program = Program {
             globals: global_reg.vars,
             players: player_reg.vars,
             settings: self.settings(),
-            options: self.options(),
+            options,
             ..Program::default()
         };
         let (program, diagnostics) = ws.finish(program);

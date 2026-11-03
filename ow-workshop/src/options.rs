@@ -1,6 +1,7 @@
 //! Compile options.
 
 use crate::ir::WarningSet;
+use crate::rule_name::{RuleMeta, default_rule_name};
 
 /// How hard the optimizer works.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -16,7 +17,7 @@ pub enum OptLevel {
 }
 
 /// Options controlling a compilation.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 #[non_exhaustive]
 #[allow(clippy::struct_excessive_bools)]
 pub struct CompileOptions {
@@ -36,6 +37,8 @@ pub struct CompileOptions {
     pub suppress: WarningSet,
     /// Emit tags around generated rules.
     pub tags: bool,
+    /// Builds the final rule name from its name and group prefix.
+    pub rule_name_template: fn(&RuleMeta) -> String,
 }
 
 impl Default for CompileOptions {
@@ -49,6 +52,23 @@ impl Default for CompileOptions {
             player_init_rule_name: "Initialize player variables".to_owned(),
             suppress: WarningSet::default(),
             tags: false,
+            rule_name_template: default_rule_name,
         }
     }
 }
+
+impl PartialEq for CompileOptions {
+    fn eq(&self, other: &Self) -> bool {
+        self.optimize == other.optimize
+            && self.exclude_variables_block == other.exclude_variables_block
+            && self.debug_element_count == other.debug_element_count
+            && self.disable_inspector == other.disable_inspector
+            && self.global_init_rule_name == other.global_init_rule_name
+            && self.player_init_rule_name == other.player_init_rule_name
+            && self.suppress == other.suppress
+            && self.tags == other.tags
+            && std::ptr::fn_addr_eq(self.rule_name_template, other.rule_name_template)
+    }
+}
+
+impl Eq for CompileOptions {}

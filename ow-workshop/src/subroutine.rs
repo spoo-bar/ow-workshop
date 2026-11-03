@@ -125,7 +125,7 @@ impl Builder {
             );
             return;
         }
-        let rule_name = state.rule_name.clone();
+        let rule_name = self.resolve_name(&state.rule_name, false, loc);
 
         let mut block = Block::with_labels(self.labels());
         body(&mut block, Ev::new());
