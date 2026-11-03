@@ -1,6 +1,6 @@
 # ow-workshop
 
-Write Overwatch Workshop mods in idiomatic Rust. Implement `Workshop` for a type and compile it to the text you paste into *Custom Game → Settings → Workshop*. The core is WASM-safe and does no I/O.
+Write Overwatch Workshop mods in Rust. Implement `Workshop` for a type and compile it to the text you paste into *Custom Game → Settings → Workshop*.
 
 ```rust
 use ow_workshop::prelude::*;

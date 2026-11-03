@@ -1,6 +1,10 @@
 # Contributing
 
-Design and conventions: [#30](https://github.com/spoo-bar/ow-workshop/issues/30).
+## Design
+- Typed values (`Expr<T>`); comparisons are methods (`eq`, `lt`, ...), not `PartialEq`.
+- Statements are recorded on an explicit `&mut Block`, never through hidden state.
+- Optional arguments use an args struct with `Default`, not long positional lists.
+- No preprocessor: reuse is plain Rust (functions, extension traits, modules).
 
 ## Rust style
 - Idiomatic and clippy-clean (workspace lints). No `unsafe`.
