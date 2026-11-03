@@ -29,6 +29,8 @@ mod ty;
 mod vars;
 mod warning;
 mod workshop;
+#[cfg(test)]
+mod workshop_enum;
 
 pub use block::Block;
 pub use builder::Builder;
@@ -49,7 +51,7 @@ pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
 pub use options::{CompileOptions, OptLevel};
 pub use output::{Catalog, CompileOutput};
 pub use ow_workshop_data::Lang;
-pub use ow_workshop_macros::{GlobalVars, PlayerVars};
+pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum};
 pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
 pub use switch::SwitchBuilder;

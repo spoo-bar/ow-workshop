@@ -1,0 +1,5 @@
+error: variants must not have fields
+ --> tests/ui/fail/enum_with_fields.rs:5:5
+  |
+5 |     A(u8),
+  |     ^
