@@ -1,6 +1,6 @@
 //! Enums for constants, heroes, maps, gamemodes and extensions.
 
-use proc_macro2::TokenStream;
+use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
 
 use super::naming::variants;
@@ -57,23 +57,67 @@ pub fn build<'a>(
     Ok(names
         .into_iter()
         .zip(entries)
-        .map(|((key, name), (_, names))| Variant {
-            key,
-            name: format_ident!("{name}"),
-            doc: names.map(english).unwrap_or_default(),
-            packed: pack(names),
-        })
+        .map(|((key, name), (_, names))| variant(key, &name, names))
         .collect())
+}
+
+/// A variant with an explicit Rust name.
+pub fn variant<'a>(key: &'a str, name: &str, names: Option<&Names>) -> Variant<'a> {
+    Variant {
+        key,
+        name: format_ident!("{name}"),
+        doc: names.map(english).unwrap_or_default(),
+        packed: pack(names),
+    }
 }
 
 /// Enum definition plus `ALL` and `key()`.
 pub fn enum_def(name: &str, doc: &str, variants: &[Variant]) -> TokenStream {
+    enum_def_with(name, doc, variants, Some("name"), true)
+}
+
+/// Like `enum_def`; `names` is the lookup method's name, or `None` for enums without translations.
+pub fn enum_def_with(
+    name: &str,
+    doc: &str,
+    variants: &[Variant],
+    lookup_method: Option<&str>,
+    with_key: bool,
+) -> TokenStream {
     let ident = format_ident!("{name}");
     let names: Vec<_> = variants.iter().map(|v| &v.name).collect();
-    let docs = variants.iter().map(|v| doc_name(&v.doc));
+    let docs = variants.iter().map(|v| {
+        let text = if v.doc.is_empty() { v.key } else { &v.doc };
+        if text.is_empty() {
+            " The empty phrase.".to_owned()
+        } else {
+            doc_name(text)
+        }
+    });
     let keys = variants.iter().map(|v| v.key);
     let packed = variants.iter().map(|v| &v.packed);
     let count = variants.len();
+    let key_fn = with_key.then(|| {
+        quote! {
+            /// The data key, for debugging.
+            pub fn key(self) -> &'static str {
+                match self {
+                    #( Self::#names => #keys, )*
+                }
+            }
+        }
+    });
+    let lookup = lookup_method.map(|method| {
+        let method = format_ident!("{method}");
+        quote! {
+            /// The name as written in workshop code of the given language.
+            pub fn #method(self, lang: Lang) -> &'static str {
+                // Translations joined by U+001F in `Lang` order; empty means English.
+                static NAMES: [&str; #count] = [ #( #packed ),* ];
+                localized(NAMES[self as usize], lang)
+            }
+        }
+    });
     let doc = format!(" {doc}");
     quote! {
         #[doc = #doc]
@@ -87,25 +131,15 @@ pub fn enum_def(name: &str, doc: &str, variants: &[Variant]) -> TokenStream {
             /// Every variant, in declaration order.
             pub const ALL: &'static [Self] = &[ #( Self::#names ),* ];
 
-            /// The data key, for debugging.
-            pub fn key(self) -> &'static str {
-                match self {
-                    #( Self::#names => #keys, )*
-                }
-            }
+            #key_fn
 
-            /// The name as written in workshop code of the given language.
-            pub fn name(self, lang: Lang) -> &'static str {
-                // Translations joined by U+001F in `Lang` order; empty means English.
-                static NAMES: [&str; #count] = [ #( #packed ),* ];
-                localized(NAMES[self as usize], lang)
-            }
+            #lookup
         }
     }
 }
 
 /// Groups variants sharing a value so equal match arms collapse into one or-pattern.
-fn grouped<'a, K: Ord>(
+pub fn grouped<'a, K: Ord>(
     entries: impl Iterator<Item = (&'a proc_macro2::Ident, K)>,
 ) -> Vec<(Vec<&'a proc_macro2::Ident>, K)> {
     let mut groups: std::collections::BTreeMap<K, Vec<&proc_macro2::Ident>> =
@@ -320,13 +354,55 @@ fn heroes(data: &Data) -> Result<TokenStream, String> {
     )
     .map_err(|e| format!("heroes: {e}"))?;
     let def = enum_def("Hero", "A playable hero.", &vars);
+
+    let ability_keys: std::collections::BTreeSet<&str> = data
+        .heroes
+        .values()
+        .flat_map(|h| h.abilities.keys().map(String::as_str))
+        .collect();
+    let abilities =
+        build(ability_keys.iter().map(|k| (*k, None))).map_err(|e| format!("abilities: {e}"))?;
+    let ability_def = enum_def_with("Ability", "A hero ability slot.", &abilities, None, true);
+    let mut arms = Vec::new();
+    for (hero, data) in vars.iter().zip(data.heroes.values()) {
+        if data.abilities.is_empty() {
+            continue;
+        }
+        let name = &hero.name;
+        let entries = data.abilities.iter().map(|(key, names)| {
+            let slot = abilities
+                .iter()
+                .find(|a| a.key == key)
+                .map_or_else(|| format_ident!("Unknown"), |a| a.name.clone());
+            let packed = variant(key, "X", Some(names)).packed;
+            quote!((Ability::#slot, Names(#packed)))
+        });
+        arms.push(quote! { Self::#name => &[ #( #entries ),* ], });
+    }
+    let fallback = if arms.len() < vars.len() {
+        quote!(_ => &[],)
+    } else {
+        quote!()
+    };
     Ok(quote! {
         //! Heroes.
 
+        use crate::lang::{Names, localized};
         use crate::Lang;
-        use crate::lang::localized;
 
         #def
+
+        #ability_def
+
+        impl Hero {
+            /// The names of the hero's abilities, by slot.
+            pub fn abilities(self) -> &'static [(Ability, Names)] {
+                match self {
+                    #( #arms )*
+                    #fallback
+                }
+            }
+        }
     })
 }
 
@@ -344,6 +420,7 @@ fn maps(data: &Data) -> Result<TokenStream, String> {
             .collect();
         any_of(&names)
     };
+    let symmetry_arms = symmetry_arms(&vars, &maps)?;
     let workshop = flagged(|m| m.is_workshop_map);
     let ow1 = flagged(|m| m.only_in_ow1);
 
@@ -399,6 +476,20 @@ fn maps(data: &Data) -> Result<TokenStream, String> {
 
         #def
 
+        /// A map's symmetry axis, as given in the source data.
+        #[derive(Clone, Copy, Debug, PartialEq)]
+        pub enum Symmetry {
+            /// An axis described by the parameters `a` and `b`.
+            Axis {
+                /// First parameter.
+                a: f64,
+                /// Second parameter.
+                b: f64,
+            },
+            /// A vertical axis at `x`.
+            AxisX(f64),
+        }
+
         impl Map {
             /// Whether this is a workshop-only map.
             pub fn is_workshop_map(self) -> bool {
@@ -415,6 +506,14 @@ fn maps(data: &Data) -> Result<TokenStream, String> {
                 match self {
                     #( #mode_arms )*
                     #mode_fallback
+                }
+            }
+
+            /// The map's symmetry axis, if it has one.
+            pub fn symmetry(self) -> Option<Symmetry> {
+                match self {
+                    #( #symmetry_arms )*
+                    _ => None,
                 }
             }
 
@@ -458,4 +557,39 @@ fn keywords(data: &Data) -> Result<TokenStream, String> {
 
         #def
     })
+}
+
+/// Match arms returning each map's symmetry; equal symmetries share an arm.
+fn symmetry_arms(
+    vars: &[Variant],
+    maps: &[&crate::data::model::Map],
+) -> Result<Vec<TokenStream>, String> {
+    let mut symmetry: std::collections::BTreeMap<String, (TokenStream, Vec<&proc_macro2::Ident>)> =
+        std::collections::BTreeMap::new();
+    for (v, m) in vars.iter().zip(maps) {
+        let Some(axis) = m.symmetry.as_ref().and_then(|s| s.get("axis")) else {
+            continue;
+        };
+        let num = |key: &str| axis.get(key).and_then(serde_json::Value::as_f64);
+        let value = match (num("a"), num("b"), num("x")) {
+            (Some(a), Some(b), None) => {
+                let (a, b) = (Literal::f64_unsuffixed(a), Literal::f64_unsuffixed(b));
+                quote!(Symmetry::Axis { a: #a, b: #b })
+            }
+            (None, None, Some(x)) => {
+                let x = Literal::f64_unsuffixed(x);
+                quote!(Symmetry::AxisX(#x))
+            }
+            _ => return Err(format!("map `{}`: unknown symmetry {axis}", v.key)),
+        };
+        symmetry
+            .entry(value.to_string())
+            .or_insert_with(|| (value, Vec::new()))
+            .1
+            .push(&v.name);
+    }
+    Ok(symmetry
+        .values()
+        .map(|(value, names)| quote!( #( Self::#names )|* => Some(#value), ))
+        .collect())
 }

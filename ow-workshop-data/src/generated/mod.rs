@@ -2,10 +2,13 @@
 //! Game data tables generated from the bootstrap data.
 pub mod actions;
 pub mod constants;
+pub mod entities;
 pub mod extension;
+pub mod fonts;
 pub mod gamemodes;
 pub mod heroes;
 pub mod keywords;
 pub mod maps;
+pub mod textures;
 pub mod ty;
 pub mod values;

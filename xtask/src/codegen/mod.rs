@@ -3,6 +3,7 @@
 mod enums;
 mod naming;
 mod signatures;
+mod tables;
 
 use std::fs;
 use std::path::Path;
@@ -16,6 +17,7 @@ pub fn run(data_dir: &Path, out_dir: &Path) -> Result<(), String> {
     let data = Data::load(data_dir)?;
     let mut files = enums::generate(&data)?;
     files.extend(signatures::generate(&data)?);
+    files.extend(tables::generate(&data)?);
     files.sort_by_key(|(name, _)| *name);
     files.push(("mod", module_list(files.iter().map(|(name, _)| *name))));
 

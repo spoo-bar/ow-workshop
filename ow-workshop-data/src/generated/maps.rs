@@ -479,6 +479,19 @@ impl Map {
         localized(NAMES[self as usize], lang)
     }
 }
+/// A map's symmetry axis, as given in the source data.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Symmetry {
+    /// An axis described by the parameters `a` and `b`.
+    Axis {
+        /// First parameter.
+        a: f64,
+        /// Second parameter.
+        b: f64,
+    },
+    /// A vertical axis at `x`.
+    AxisX(f64),
+}
 impl Map {
     /// Whether this is a workshop-only map.
     pub fn is_workshop_map(self) -> bool {
@@ -648,6 +661,68 @@ impl Map {
                 &[Gamemode::Skirmish, Gamemode::Push]
             }
             Self::NepalVillageWinter => &[Gamemode::YetiHunter],
+        }
+    }
+    /// The map's symmetry axis, if it has one.
+    pub fn symmetry(self) -> Option<Symmetry> {
+        match self {
+            Self::Castillo => {
+                Some(Symmetry::Axis {
+                    a: -0.19009,
+                    b: 38.79879,
+                })
+            }
+            Self::IliosLighthouse => {
+                Some(Symmetry::Axis {
+                    a: -0.41437,
+                    b: 96.86593,
+                })
+            }
+            Self::OasisGardens => {
+                Some(Symmetry::Axis {
+                    a: -1.00042,
+                    b: -106.1637,
+                })
+            }
+            Self::Ayutthaya => Some(Symmetry::Axis { a: 0.0, b: -7.0 }),
+            Self::EcopointAntarctica
+            | Self::EcopointAntarcticaWinter
+            | Self::Necropolis
+            | Self::NepalSanctum
+            | Self::NepalShrine
+            | Self::NepalVillage
+            | Self::OasisUniversity
+            | Self::WorkshopChamber
+            | Self::WorkshopExpanse
+            | Self::WorkshopExpanseNight
+            | Self::WorkshopIsland
+            | Self::WorkshopIslandNight => Some(Symmetry::Axis { a: 0.0, b: 0.0 }),
+            Self::BlackForest | Self::BlackForestWinter => {
+                Some(Symmetry::Axis { a: 0.0, b: 5.0 })
+            }
+            Self::OasisCityCenter => {
+                Some(Symmetry::Axis {
+                    a: 1.00002,
+                    b: 103.99783,
+                })
+            }
+            Self::IliosWell => {
+                Some(Symmetry::Axis {
+                    a: 1.00409,
+                    b: 192.85907,
+                })
+            }
+            Self::BusanSanctuaryLny => Some(Symmetry::AxisX(-328.565)),
+            Self::LijiangControlCenter
+            | Self::LijiangControlCenterLny
+            | Self::LijiangGarden
+            | Self::LijiangGardenLny => Some(Symmetry::AxisX(0.0)),
+            Self::LijiangNightMarket | Self::LijiangNightMarketLny => {
+                Some(Symmetry::AxisX(1.0))
+            }
+            Self::IliosRuins => Some(Symmetry::AxisX(28.6)),
+            Self::BusanDowntownLny => Some(Symmetry::AxisX(51.9)),
+            _ => None,
         }
     }
     /// Map variants as `(key, id)` pairs.

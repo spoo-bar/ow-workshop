@@ -115,3 +115,14 @@ pub(crate) fn localized(packed: &'static str, lang: Lang) -> &'static str {
     };
     slot(lang).or_else(|| slot(Lang::EnUs)).unwrap_or_default()
 }
+
+/// All translations of one name.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Names(pub(crate) &'static str);
+
+impl Names {
+    /// The name in `lang`, or in English if it has no translation.
+    pub fn get(self, lang: Lang) -> &'static str {
+        localized(self.0, lang)
+    }
+}

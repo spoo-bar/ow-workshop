@@ -11,11 +11,14 @@ pub mod signature;
 
 pub use generated::actions::ActionId;
 pub use generated::constants::*;
+pub use generated::entities::entity;
 pub use generated::extension::*;
+pub use generated::fonts::{DEFAULT_WIDTH, Glyph, SPACES, char_width, lowercase_metrics};
 pub use generated::gamemodes::*;
 pub use generated::heroes::*;
 pub use generated::keywords::*;
 pub use generated::maps::*;
+pub use generated::textures::Texture;
 pub use generated::ty::*;
 pub use generated::values::ValueId;
-pub use lang::{Lang, ParseLangError};
+pub use lang::{Lang, Names, ParseLangError};
