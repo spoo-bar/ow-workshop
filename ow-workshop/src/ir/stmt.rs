@@ -2,7 +2,7 @@
 
 use ow_workshop_data::{ActionId, StartRuleBehavior};
 
-use super::{Expr, LabelId, Location, SubId, VarId};
+use super::{Expr, LabelId, Location, OptOverride, SubId, VarId};
 
 /// An assignable target.
 #[derive(Clone, Debug, PartialEq)]
@@ -66,6 +66,8 @@ pub(crate) enum SkipTarget {
 pub(crate) struct Block {
     /// The statements, in order.
     pub(crate) stmts: Vec<Stmt>,
+    /// Optimizer settings for this block and its children; `None` inherits.
+    pub(crate) opt: Option<OptOverride>,
 }
 
 /// The shape of a statement.

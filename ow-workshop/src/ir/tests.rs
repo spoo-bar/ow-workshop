@@ -11,6 +11,7 @@ fn num(n: f64) -> Expr {
 fn block(kinds: Vec<StmtKind>) -> Block {
     Block {
         stmts: kinds.into_iter().map(Stmt::new).collect(),
+        ..Block::default()
     }
 }
 
