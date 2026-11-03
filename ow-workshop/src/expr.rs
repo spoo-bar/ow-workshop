@@ -128,6 +128,18 @@ macro_rules! int_literals {
 
 int_literals!(i32, u32);
 
+macro_rules! any_literals {
+    ($($t:ty => $m:ty),*) => {$(
+        impl IntoExpr<Any> for $t {
+            fn into_expr(self) -> Expr<Any> {
+                Expr::<$m>::from(self).erase()
+            }
+        }
+    )*};
+}
+
+any_literals!(f64 => Num, i32 => Num, u32 => Num, bool => Bool, &str => Str, String => Str);
+
 impl From<bool> for Expr<Bool> {
     fn from(b: bool) -> Self {
         Self::literal(ExprKind::Bool(b))

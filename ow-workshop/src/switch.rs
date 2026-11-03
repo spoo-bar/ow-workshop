@@ -109,7 +109,7 @@ mod tests {
     #[test]
     fn cases_fall_through_unless_they_break() {
         let stmts = body(|b| {
-            b.switch(Hero::Ana)
+            b.switch::<Hero>(Hero::Ana)
                 .case(Hero::Ana, |b| {
                     b.pass();
                     b.break_();
@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn switch_without_default() {
         let stmts = body(|b| {
-            b.switch(true).case(true, |b| b.pass());
+            b.switch::<Bool>(true).case(true, |b| b.pass());
         });
         let (_, default, default_at) = switch_parts(&stmts[0]);
         assert!(default.is_none());
