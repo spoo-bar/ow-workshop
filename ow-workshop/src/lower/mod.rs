@@ -9,6 +9,7 @@
 // Every pass shares one signature, even when it cannot fail.
 #![allow(clippy::unnecessary_wraps)]
 
+pub(crate) mod dicts;
 pub(crate) mod labels;
 pub(crate) mod loops;
 pub(crate) mod switch;
@@ -148,7 +149,7 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("subroutine checks", noop),
     ("lower switch", switch::lower),
     ("lower loops", loops::lower),
-    ("lower dictionaries", noop),
+    ("lower dictionaries", dicts::lower),
     ("lower functions", noop),
     ("optimize", noop),
     ("resolve labels", labels::resolve_labels),

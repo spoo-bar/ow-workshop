@@ -98,3 +98,25 @@ pub(crate) fn kinds(program: &Program) -> Vec<&StmtKind> {
 pub(crate) fn codes(d: &Diagnostics) -> Vec<&'static str> {
     d.0.iter().map(|d| d.code).collect()
 }
+
+/// A compact, stable rendering of an expression for snapshot-style assertions.
+pub(crate) fn show(e: &Expr) -> String {
+    let list = |items: &[Expr]| items.iter().map(show).collect::<Vec<_>>().join(", ");
+    match e.kind() {
+        ExprKind::Num(n) => format!("{n}"),
+        ExprKind::Bool(b) => format!("{b}"),
+        ExprKind::Null => "Null".to_owned(),
+        ExprKind::GlobalVar(v) => format!("g{}", v.0),
+        ExprKind::PlayerVar { player, var } => format!("{}.p{}", show(player), var.0),
+        ExprKind::Array(items) => format!("[{}]", list(items)),
+        ExprKind::Value { id, args } => format!("{id:?}({})", list(args)),
+        ExprKind::Index { array, index } => format!("{}[{}]", show(array), show(index)),
+        ExprKind::Add(a, b) => format!("({} + {})", show(a), show(b)),
+        ExprKind::Sub(a, b) => format!("({} - {})", show(a), show(b)),
+        ExprKind::Mul(a, b) => format!("({} * {})", show(a), show(b)),
+        ExprKind::Compare { op, lhs, rhs } => format!("({} {op:?} {})", show(lhs), show(rhs)),
+        ExprKind::ArrayIndex => "#".to_owned(),
+        ExprKind::ArrayElem => "@".to_owned(),
+        other => format!("{other:?}"),
+    }
+}
