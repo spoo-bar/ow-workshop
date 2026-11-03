@@ -1,4 +1,5 @@
 //! A small deathmatch mod: `cargo run -p ow-workshop --example deathmatch`.
+#![cfg_attr(target_arch = "wasm32", no_main)]
 
 use ow_workshop::prelude::*;
 
