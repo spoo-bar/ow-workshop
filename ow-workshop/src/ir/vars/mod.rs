@@ -39,7 +39,8 @@ pub(crate) struct VarDecl {
 }
 
 impl VarDecl {
-    /// A user variable with no explicit index, initial value or flags.
+    /// A user variable located at the caller, with no explicit index, initial value or flags.
+    #[track_caller]
     pub(crate) fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
@@ -47,7 +48,7 @@ impl VarDecl {
             init: None,
             internal: false,
             flags: VarFlags::default(),
-            location: None,
+            location: Some(Location::caller()),
         }
     }
 }
@@ -81,7 +82,8 @@ pub(crate) struct SubDecl {
 }
 
 impl SubDecl {
-    /// A user subroutine with no explicit index, calls or flags.
+    /// A user subroutine located at the caller, with no explicit index, calls or flags.
+    #[track_caller]
     pub(crate) fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
@@ -89,7 +91,7 @@ impl SubDecl {
             internal: false,
             calls: Vec::new(),
             usage: SubUsage::default(),
-            location: None,
+            location: Some(Location::caller()),
         }
     }
 }

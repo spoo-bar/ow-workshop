@@ -175,6 +175,12 @@ impl Expr {
         }
     }
 
+    /// Creates an expression located at the caller.
+    #[track_caller]
+    pub(crate) fn here(kind: ExprKind) -> Self {
+        Self::new(kind, Some(Location::caller()))
+    }
+
     /// The expression's shape.
     pub(crate) fn kind(&self) -> &ExprKind {
         &self.kind

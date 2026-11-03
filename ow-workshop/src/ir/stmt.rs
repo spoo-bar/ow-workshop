@@ -206,11 +206,12 @@ pub(crate) struct Stmt {
 }
 
 impl Stmt {
-    /// Creates a statement without a location or comment.
+    /// Creates a statement located at the caller, without a comment.
+    #[track_caller]
     pub(crate) fn new(kind: StmtKind) -> Self {
         Self {
             kind,
-            loc: None,
+            loc: Some(Location::caller()),
             comment: None,
         }
     }

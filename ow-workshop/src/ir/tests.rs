@@ -114,3 +114,43 @@ fn nodes_carry_locations_and_comments() {
     s.loc = Some(loc);
     assert_eq!(s.comment.as_deref(), Some("note"));
 }
+
+/// Wraps `Rule::new` the way a user-facing builder would.
+#[track_caller]
+fn build_rule() -> Rule {
+    Rule::new("Init", Event::OngoingGlobal, Block::default())
+}
+
+#[test]
+fn rule_location_is_the_outermost_call_site() {
+    let (rule, line) = (build_rule(), line!());
+    let loc = rule.location.expect("rule has a location");
+    assert_eq!(loc.file, file!());
+    assert_eq!(loc.line, line);
+    assert_eq!(
+        loc.to_string(),
+        format!("{}:{line}:{}", file!(), loc.column)
+    );
+}
+
+#[test]
+fn other_nodes_capture_locations() {
+    let (stmt, line) = (Stmt::new(StmtKind::Pass), line!());
+    assert_eq!(stmt.loc.map(|l| l.line), Some(line));
+    let (expr, line) = (Expr::here(ExprKind::Null), line!());
+    assert_eq!(expr.loc().map(|l| l.line), Some(line));
+    let (var, line) = (VarDecl::new("v"), line!());
+    assert_eq!(var.location.map(|l| l.line), Some(line));
+    let (sub, line) = (SubDecl::new("s"), line!());
+    assert_eq!(sub.location.map(|l| l.line), Some(line));
+}
+
+#[test]
+fn display_formats_file_line_column() {
+    let loc = Location {
+        file: "src/main.rs",
+        line: 12,
+        column: 5,
+    };
+    assert_eq!(loc.to_string(), "src/main.rs:12:5");
+}

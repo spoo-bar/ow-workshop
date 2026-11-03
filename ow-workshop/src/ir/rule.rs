@@ -143,7 +143,8 @@ pub(crate) enum RuleError {
 }
 
 impl Rule {
-    /// A rule with the given event and no conditions, filter or flags.
+    /// A rule located at the caller, with the given event and no conditions, filter or flags.
+    #[track_caller]
     pub(crate) fn new(name: impl Into<String>, event: Event, body: Block) -> Self {
         Self {
             name: name.into(),
@@ -155,7 +156,7 @@ impl Rule {
             delimiter: false,
             new_page: None,
             suppressed: WarningSet::default(),
-            location: None,
+            location: Some(Location::caller()),
         }
     }
 
