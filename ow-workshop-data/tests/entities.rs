@@ -29,7 +29,7 @@ fn gamemode_slots() {
             ffa: None
         }
     );
-    assert_eq!(Gamemode::Ffa.default_slots().ffa, Some(12));
+    assert_eq!(Gamemode::Deathmatch.default_slots().ffa, Some(12));
 }
 
 #[test]
