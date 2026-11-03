@@ -366,8 +366,6 @@ fn name_items(
 
 /// Which generated file to produce.
 #[derive(Clone, Copy)]
-// `Actions` is only requested once its output is wired in.
-#[allow(dead_code)]
 pub enum Part {
     /// Free functions, receiver traits and their argument structs.
     Values,

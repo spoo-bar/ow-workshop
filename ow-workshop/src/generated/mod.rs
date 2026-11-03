@@ -14,8 +14,22 @@
 )]
 mod values;
 
+#[rustfmt::skip]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::too_many_lines,
+    clippy::doc_markdown,
+    clippy::similar_names,
+    clippy::wildcard_imports,
+    clippy::unreadable_literal,
+    dead_code,
+    missing_docs
+)]
+mod actions;
+
 /// Everything generated, under one path.
 pub mod api {
+    pub use super::actions::*;
     pub use super::values::*;
 }
 

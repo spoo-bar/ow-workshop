@@ -12,7 +12,6 @@ pub(crate) fn value<R>(id: ValueId, args: Vec<ir::Expr>) -> Expr<R> {
 }
 
 /// A call of a workshop value inside a default argument.
-#[allow(dead_code)] // used by the defaults of generated actions
 pub(crate) fn value_ir(id: ValueId, args: Vec<ir::Expr>) -> ir::Expr {
     ir::Expr::new(ExprKind::Value { id, args }, None)
 }
@@ -23,13 +22,11 @@ pub(crate) fn num(n: f64) -> ir::Expr {
 }
 
 /// A boolean literal.
-#[allow(dead_code)] // used by the defaults of generated actions
 pub(crate) fn boolean(b: bool) -> ir::Expr {
     ir::Expr::new(ExprKind::Bool(b), None)
 }
 
 /// `Null`.
-#[allow(dead_code)] // used by the defaults of generated actions
 pub(crate) fn null() -> ir::Expr {
     ir::Expr::new(ExprKind::Null, None)
 }
@@ -40,7 +37,6 @@ pub(crate) fn constant(enum_name: &'static str, key: &'static str) -> ir::Expr {
 }
 
 /// A vector literal.
-#[allow(dead_code)] // used by the defaults of generated actions
 pub(crate) fn vector([x, y, z]: [f64; 3]) -> ir::Expr {
     ir::Expr::new(ExprKind::Vector([num(x), num(y), num(z)]), None)
 }

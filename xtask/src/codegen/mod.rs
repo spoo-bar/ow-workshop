@@ -33,10 +33,14 @@ pub fn run(data_dir: &Path, out_dir: &Path, api_dir: &Path, renames: &Path) -> R
     let renames = fs::read_to_string(renames).map_err(|e| format!("{}: {e}", renames.display()))?;
     let renames = api::Renames::parse(&renames)?;
     fs::create_dir_all(api_dir).map_err(|e| format!("{}: {e}", api_dir.display()))?;
-    // `Part::Actions` is wired in by the next change.
-    let path = api_dir.join("values.rs");
-    let values = api::generate(&data, &renames, api::Part::Values)?;
-    fs::write(&path, format(values)?).map_err(|e| format!("{}: {e}", path.display()))?;
+    for (name, part) in [
+        ("values", api::Part::Values),
+        ("actions", api::Part::Actions),
+    ] {
+        let path = api_dir.join(format!("{name}.rs"));
+        let tokens = api::generate(&data, &renames, part)?;
+        fs::write(&path, format(tokens)?).map_err(|e| format!("{}: {e}", path.display()))?;
+    }
     Ok(())
 }
 
