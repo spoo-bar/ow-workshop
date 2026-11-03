@@ -12,6 +12,7 @@
 pub(crate) mod dicts;
 pub(crate) mod labels;
 pub(crate) mod loops;
+pub(crate) mod subs;
 pub(crate) mod switch;
 pub(crate) mod visit;
 
@@ -146,7 +147,7 @@ pub(crate) fn noop(_: &mut Program, _: &mut Ctx<'_>) -> Result<(), Diagnostics> 
 pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("generated rules", noop),
     ("variable usage", noop),
-    ("subroutine checks", noop),
+    ("subroutine checks", subs::check),
     ("lower switch", switch::lower),
     ("lower loops", loops::lower),
     ("lower dictionaries", dicts::lower),

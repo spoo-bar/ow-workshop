@@ -8,6 +8,10 @@ pub enum Warning {
     BreakOutsideLoop,
     /// `continue_()` outside a loop.
     ContinueOutsideLoop,
+    /// A subroutine reads event values the calling rule's event does not provide.
+    MismatchedSubroutineEvent,
+    /// `Start Rule(.., Restart Rule)` on a subroutine that waits, which eventually crashes the server.
+    StartRuleCrash,
 }
 
 impl Warning {
@@ -17,6 +21,8 @@ impl Warning {
         match self {
             Self::BreakOutsideLoop => "break-outside-loop",
             Self::ContinueOutsideLoop => "continue-outside-loop",
+            Self::MismatchedSubroutineEvent => "mismatched-subroutine-event",
+            Self::StartRuleCrash => "start-rule-crash",
         }
     }
 }
