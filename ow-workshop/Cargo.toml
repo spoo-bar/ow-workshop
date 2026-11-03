@@ -13,6 +13,7 @@ serde = ["dep:serde"]
 
 [dependencies]
 ow-workshop-data = { path = "../ow-workshop-data", version = "0.1.0" }
+ow-workshop-macros = { path = "../ow-workshop-macros", version = "0.1.0" }
 serde = { version = "1", default-features = false, features = ["derive"], optional = true }
 
 [dev-dependencies]
