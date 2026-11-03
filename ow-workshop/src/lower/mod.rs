@@ -10,13 +10,18 @@
 #![allow(clippy::unnecessary_wraps)]
 
 pub(crate) mod labels;
+pub(crate) mod loops;
 pub(crate) mod switch;
 pub(crate) mod visit;
 
 use ow_workshop_data::Lang;
 
-use crate::ir::{Diagnostics, Event, LabelId, Program, Rule, Stmt, StmtKind};
+use crate::ir::{
+    Diagnostics, Event, Expr, ExprKind, LabelId, Location, Program, Rule, Severity, Stmt, StmtKind,
+    WarningSet,
+};
 use crate::options::{CompileOptions, OptLevel};
+use crate::warning::Warning;
 
 /// State shared by the passes of one compilation.
 pub(crate) struct Ctx<'a> {
@@ -56,11 +61,37 @@ impl<'a> Ctx<'a> {
         }
     }
 
+    /// Reports `warning` unless the rule (`suppressed`) or the options silence it.
+    pub(crate) fn warn(
+        &mut self,
+        suppressed: &WarningSet,
+        warning: Warning,
+        message: String,
+        loc: Option<Location>,
+    ) {
+        let code = warning.code();
+        if suppressed.0.contains(code) || self.options.suppress.0.contains(code) {
+            return;
+        }
+        self.diags.push(Severity::Warning, code, message, loc);
+    }
+
     /// A label no statement uses yet.
     pub(crate) fn fresh_label(&mut self) -> LabelId {
         let id = LabelId(self.next_label);
         self.next_label += 1;
         id
+    }
+}
+
+/// Whether `expr` is a constant that is definitely true or false in a condition.
+pub(crate) fn const_truthiness(expr: &Expr) -> Option<bool> {
+    match expr.kind() {
+        ExprKind::Bool(b) => Some(*b),
+        ExprKind::Num(n) => Some(*n != 0.0),
+        ExprKind::Null => Some(false),
+        ExprKind::Not(inner) => const_truthiness(inner).map(|b| !b),
+        _ => None,
     }
 }
 
@@ -116,7 +147,7 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("variable usage", noop),
     ("subroutine checks", noop),
     ("lower switch", switch::lower),
-    ("lower loops", noop),
+    ("lower loops", loops::lower),
     ("lower dictionaries", noop),
     ("lower functions", noop),
     ("optimize", noop),
