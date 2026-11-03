@@ -10,6 +10,7 @@
 #![allow(clippy::unnecessary_wraps)]
 
 pub(crate) mod dicts;
+pub(crate) mod generated;
 pub(crate) mod labels;
 pub(crate) mod loops;
 pub(crate) mod subs;
@@ -146,7 +147,7 @@ pub(crate) fn noop(_: &mut Program, _: &mut Ctx<'_>) -> Result<(), Diagnostics> 
 
 /// The passes run before emitting, in order.
 pub(crate) const PIPELINE: &[(&str, Pass)] = &[
-    ("generated rules", noop),
+    ("generated rules", generated::add_rules),
     ("variable usage", varflags::collect),
     ("subroutine checks", subs::check),
     ("lower switch", switch::lower),
