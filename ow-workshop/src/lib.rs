@@ -1,4 +1,39 @@
 //! Write Overwatch Workshop mods in Rust.
+//!
+//! Implement [`Workshop`] for a type and call [`WorkshopExt::compile`]; the core does no I/O.
+//! [`main!`] defines a native command-line `main` for it.
+//!
+//! # Using it from WASM
+//!
+//! `ow-workshop` has no `wasm-bindgen` dependency. Export a function from your own crate, which
+//! depends on `wasm-bindgen`:
+//!
+//! ```
+//! use ow_workshop::prelude::*;
+//!
+//! struct MyMode;
+//!
+//! impl Workshop for MyMode {
+//!     type Globals = ();
+//!     type Players = ();
+//!
+//!     fn build(&self, ws: &mut Builder, _: &(), _: &()) {
+//!         ws.rule("Init", OngoingGlobal, |_, _| {});
+//!     }
+//! }
+//!
+//! // #[wasm_bindgen::prelude::wasm_bindgen]
+//! pub fn compile(lang: &str) -> Result<String, String> {
+//!     let lang: Lang = lang.parse().map_err(|e| format!("{e}"))?;
+//!     MyMode
+//!         .compile(lang)
+//!         .map(|output| output.code)
+//!         .map_err(|diagnostics| diagnostics.to_string())
+//! }
+//!
+//! assert_eq!(compile("en-US"), Ok(String::new()));
+//! assert!(compile("xx-XX").is_err());
+//! ```
 
 // Lets the derives refer to `::ow_workshop` from inside this crate's own tests.
 extern crate self as ow_workshop;
@@ -7,6 +42,7 @@ mod array;
 mod block;
 mod builder;
 mod check;
+mod cli;
 mod control;
 mod dict;
 mod event;
@@ -36,6 +72,8 @@ mod workshop_enum;
 
 pub use block::Block;
 pub use builder::Builder;
+#[doc(hidden)]
+pub use cli::lang_from_args;
 pub use control::{ForRange, IfBuilder, IntoForRange, RangeStep, range, rule_condition};
 pub use dict::{Dict, dict};
 pub use event::{

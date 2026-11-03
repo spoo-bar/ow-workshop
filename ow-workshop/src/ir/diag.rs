@@ -50,3 +50,37 @@ impl Diagnostics {
         self.0.iter().any(|d| d.severity == Severity::Error)
     }
 }
+
+impl std::fmt::Display for Severity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Warning => "warning",
+            Self::Error => "error",
+        })
+    }
+}
+
+/// `file:line:col: warning[code]: message`, without the location when it is unknown.
+impl std::fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(loc) = &self.location {
+            write!(f, "{loc}: ")?;
+        }
+        write!(f, "{}[{}]: {}", self.severity, self.code, self.message)
+    }
+}
+
+/// One diagnostic per line.
+impl std::fmt::Display for Diagnostics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (i, diagnostic) in self.0.iter().enumerate() {
+            if i > 0 {
+                f.write_str("\n")?;
+            }
+            write!(f, "{diagnostic}")?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for Diagnostics {}
