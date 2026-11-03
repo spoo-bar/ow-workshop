@@ -16,6 +16,7 @@ mod output;
 mod pipeline;
 pub mod prelude;
 mod rule;
+mod switch;
 mod translations;
 mod ty;
 mod vars;
@@ -39,6 +40,7 @@ pub use output::{Catalog, CompileOutput};
 pub use ow_workshop_data::Lang;
 pub use ow_workshop_macros::{GlobalVars, PlayerVars};
 pub use rule::{ConditionRef, Rule};
+pub use switch::SwitchBuilder;
 pub use translations::Translations;
 pub use ty::*;
 pub use vars::{

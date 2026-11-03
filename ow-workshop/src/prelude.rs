@@ -9,6 +9,7 @@ pub use crate::ops::if_then_else;
 pub use crate::options::{CompileOptions, OptLevel};
 pub use crate::output::CompileOutput;
 pub use crate::rule::{ConditionRef, Rule};
+pub use crate::switch::SwitchBuilder;
 pub use crate::translations::Translations;
 pub use crate::ty::*;
 pub use crate::vars::{

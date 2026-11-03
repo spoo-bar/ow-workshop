@@ -79,7 +79,6 @@ pub struct IfBuilder<'a> {
 
 impl IfBuilder<'_> {
     /// Adds an `Else If` branch.
-    #[must_use]
     pub fn elif(mut self, cond: impl IntoExpr<Bool>, body: impl FnOnce(&mut Block)) -> Self {
         self.elifs
             .push((cond.into_expr().into_ir(), Block::record(body)));

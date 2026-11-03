@@ -180,6 +180,8 @@ pub(crate) enum StmtKind {
         cases: Vec<(Expr, Block)>,
         /// The default case.
         default: Option<Block>,
+        /// How many cases precede the default; it may sit anywhere among them.
+        default_at: usize,
     },
     /// Leaves the innermost loop or switch; removed by lowering.
     Break,
