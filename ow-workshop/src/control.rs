@@ -77,6 +77,8 @@ pub struct IfBuilder<'a> {
     else_: Option<ir::Block>,
 }
 
+// The builder is recorded on drop, so the chain needs no `#[must_use]`.
+#[allow(clippy::return_self_not_must_use)]
 impl IfBuilder<'_> {
     /// Adds an `Else If` branch.
     pub fn elif(mut self, cond: impl IntoExpr<Bool>, body: impl FnOnce(&mut Block)) -> Self {
