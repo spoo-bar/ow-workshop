@@ -191,3 +191,44 @@ impl Expr {
         self.loc
     }
 }
+
+impl ExprKind {
+    /// The expressions directly nested inside this one.
+    pub(crate) fn children(&self) -> Vec<&Expr> {
+        match self {
+            Self::Num(_)
+            | Self::Bool(_)
+            | Self::Null
+            | Self::Const(_)
+            | Self::Str(StrExpr::Localized(_))
+            | Self::GlobalVar(_)
+            | Self::ArrayElem
+            | Self::ArrayIndex
+            | Self::RuleCondition => Vec::new(),
+            Self::Vector(parts) => parts.iter().collect(),
+            Self::Array(items) => items.iter().collect(),
+            Self::Str(StrExpr::Custom { args, .. }) | Self::Value { args, .. } => {
+                args.iter().collect()
+            }
+            Self::PlayerVar { player, .. } => vec![player],
+            Self::Index { array, index } => vec![array, index],
+            Self::Compare { lhs, rhs, .. } => vec![lhs, rhs],
+            Self::And(a, b)
+            | Self::Or(a, b)
+            | Self::Add(a, b)
+            | Self::Sub(a, b)
+            | Self::Mul(a, b)
+            | Self::Div(a, b)
+            | Self::Mod(a, b)
+            | Self::Pow(a, b) => vec![a, b],
+            Self::Not(a) | Self::Neg(a) => vec![a],
+            Self::IfThenElse { cond, then, else_ } => vec![cond, then, else_],
+            Self::Dict { entries, default } => entries
+                .iter()
+                .flat_map(|(k, v)| [k, v])
+                .chain(default)
+                .collect(),
+            Self::Translated(t) => t.args.iter().collect(),
+        }
+    }
+}

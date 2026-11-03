@@ -129,7 +129,7 @@ fn values_are_functions_and_receiver_methods() {
         }
     ));
     assert!(
-        matches!(items.slice(1).ir().kind(), ExprKind::Value { id: ValueId::Slice, args } if args.len() == 3)
+        matches!(items.slice(1, 5).ir().kind(), ExprKind::Value { id: ValueId::Slice, args } if args.len() == 3)
     );
 }
 

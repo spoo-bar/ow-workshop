@@ -3,6 +3,7 @@
 // Lets the derives refer to `::ow_workshop` from inside this crate's own tests.
 extern crate self as ow_workshop;
 
+mod array;
 mod block;
 mod builder;
 mod check;

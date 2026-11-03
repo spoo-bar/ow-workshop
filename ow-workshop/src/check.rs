@@ -2,7 +2,11 @@
 
 use std::collections::BTreeMap;
 
-use crate::ir::{Block, Diagnostics, LabelId, Location, Rule, Severity, SkipTarget, StmtKind};
+use ow_workshop_data::ValueId;
+
+use crate::ir::{
+    Block, Diagnostics, Expr, ExprKind, LabelId, Location, Rule, Severity, SkipTarget, StmtKind,
+};
 
 /// Reports `do_while` loops that are not the first statement of the rule body.
 ///
@@ -110,5 +114,62 @@ fn collect(
         for child in stmt.blocks() {
             collect(child, rule, order, labels);
         }
+    }
+}
+
+/// Reports array lambdas (`filter`, `map`, …) used inside another lambda's body: the inner one
+/// would rebind `Current Array Element` and `Current Array Index`.
+pub(crate) fn check_nested_lambdas(rules: &[Rule], diagnostics: &mut Diagnostics) {
+    for rule in rules {
+        for cond in &rule.conditions {
+            walk(&cond.expr, false, diagnostics);
+        }
+        walk_block(&rule.body, diagnostics);
+    }
+}
+
+fn walk_block(block: &Block, diagnostics: &mut Diagnostics) {
+    for stmt in &block.stmts {
+        for expr in stmt.exprs() {
+            walk(expr, false, diagnostics);
+        }
+        for child in stmt.blocks() {
+            walk_block(child, diagnostics);
+        }
+    }
+}
+
+fn is_lambda(id: ValueId) -> bool {
+    matches!(
+        id,
+        ValueId::FilteredArray
+            | ValueId::MappedArray
+            | ValueId::SortedArray
+            | ValueId::All
+            | ValueId::Any
+    )
+}
+
+fn walk(expr: &Expr, in_lambda: bool, diagnostics: &mut Diagnostics) {
+    if let ExprKind::Value { id, args } = expr.kind() {
+        if is_lambda(*id) {
+            if in_lambda {
+                diagnostics.push(
+                    Severity::Error,
+                    "nested-lambda",
+                    "array lambdas cannot be nested: the inner one would rebind the element and index"
+                        .to_owned(),
+                    expr.loc(),
+                );
+            }
+            if let [array, body] = args.as_slice() {
+                walk(array, in_lambda, diagnostics);
+                walk(body, true, diagnostics);
+                return;
+            }
+        }
+    }
+    for child in expr.kind().children() {
+        walk(child, in_lambda, diagnostics);
     }
 }
