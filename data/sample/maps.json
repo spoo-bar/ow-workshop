@@ -1,0 +1,11 @@
+{
+  "hanamura": {
+    "names": {
+      "en-US": "Hanamura"
+    },
+    "gamemodes": [
+      "assault"
+    ],
+    "is_workshop_map": false
+  }
+}

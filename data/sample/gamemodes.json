@@ -1,0 +1,9 @@
+{
+  "assault": {
+    "names": {
+      "en-US": "Assault"
+    },
+    "default_team1_slots": 5,
+    "default_team2_slots": 5
+  }
+}

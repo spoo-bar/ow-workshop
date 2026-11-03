@@ -1,0 +1,79 @@
+{
+  "main": {
+    "names": {
+      "en-US": "main"
+    },
+    "values": {
+      "description": {
+        "names": {
+          "en-US": "Description"
+        },
+        "kind": "string",
+        "max_chars": 64
+      }
+    }
+  },
+  "lobby": {
+    "names": {
+      "en-US": "lobby"
+    },
+    "values": {}
+  },
+  "gamemodes": {
+    "names": {
+      "en-US": "gamemodes"
+    },
+    "enabled_maps": {
+      "en-US": "enabled maps"
+    },
+    "disabled_maps": {
+      "en-US": "disabled maps"
+    },
+    "values": {
+      "general": {
+        "names": {
+          "en-US": "General"
+        },
+        "values": {
+          "respawnTime%": {
+            "names": {
+              "en-US": "Respawn Time Scalar"
+            },
+            "kind": "percent"
+          }
+        }
+      }
+    }
+  },
+  "heroes": {
+    "names": {
+      "en-US": "heroes"
+    },
+    "teams": {
+      "allTeams": {
+        "en-US": "General"
+      }
+    },
+    "enabled_heroes": {
+      "en-US": "enabled heroes"
+    },
+    "disabled_heroes": {
+      "en-US": "disabled heroes"
+    },
+    "general": {},
+    "per_hero": {
+      "ashe": {}
+    }
+  },
+  "workshop": {
+    "names": {
+      "en-US": "workshop"
+    }
+  },
+  "extensions": {
+    "names": {
+      "en-US": "extensions"
+    },
+    "values": {}
+  }
+}

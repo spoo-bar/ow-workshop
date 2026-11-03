@@ -1,0 +1,50 @@
+[
+  {
+    "key": "abortIf",
+    "source_key": "__abortIf__",
+    "internal": true,
+    "names": {
+      "en-US": "Abort If",
+      "fr-FR": "Interrompre si",
+      "ja-JP": "中止する条件"
+    },
+    "args": [
+      {
+        "name": "condition",
+        "ty": "bool"
+      }
+    ],
+    "ret": "void",
+    "can_be_put_in_boolean": true
+  },
+  {
+    "key": "teleport",
+    "source_key": ".teleport",
+    "member": true,
+    "names": {
+      "en-US": "Teleport",
+      "fr-FR": "Téléportation",
+      "ja-JP": "テレポート"
+    },
+    "args": [
+      {
+        "name": "player",
+        "ty": [
+          "Player",
+          {
+            "Array": "Player"
+          }
+        ]
+      },
+      {
+        "name": "position",
+        "ty": "Position",
+        "replace": {
+          "zero_by_null": true
+        }
+      }
+    ],
+    "ret": "void",
+    "can_be_put_in_boolean": true
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "structure": {
+    "rule": {
+      "en-US": "rule",
+      "fr-FR": "règle"
+    }
+  },
+  "event": {},
+  "event_team": {},
+  "event_player": {},
+  "settings": {}
+}
