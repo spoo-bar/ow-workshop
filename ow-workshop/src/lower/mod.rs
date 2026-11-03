@@ -14,6 +14,7 @@ pub(crate) mod labels;
 pub(crate) mod loops;
 pub(crate) mod subs;
 pub(crate) mod switch;
+pub(crate) mod varflags;
 pub(crate) mod visit;
 
 use ow_workshop_data::Lang;
@@ -146,7 +147,7 @@ pub(crate) fn noop(_: &mut Program, _: &mut Ctx<'_>) -> Result<(), Diagnostics> 
 /// The passes run before emitting, in order.
 pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("generated rules", noop),
-    ("variable usage", noop),
+    ("variable usage", varflags::collect),
     ("subroutine checks", subs::check),
     ("lower switch", switch::lower),
     ("lower loops", loops::lower),
