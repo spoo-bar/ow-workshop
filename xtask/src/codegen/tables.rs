@@ -1,15 +1,16 @@
-//! String entities, textures and font metrics.
+//! String entities, textures, localized strings and font metrics.
 
 use proc_macro2::{Literal, TokenStream};
 use quote::{format_ident, quote};
 
-use super::enums::{File, build, enum_def_with, grouped};
+use super::enums::{File, build, enum_def_with, grouped, variant};
 use crate::data::Data;
 
 pub fn generate(data: &Data) -> Result<Vec<File>, String> {
     Ok(vec![
         ("entities", entities(data)?),
         ("fonts", fonts(data)?),
+        ("strings", strings(data)?),
         ("textures", textures(data)?),
     ])
 }
@@ -59,6 +60,139 @@ fn textures(data: &Data) -> Result<TokenStream, String> {
                 match self {
                     #( #names => #tags, )*
                 }
+            }
+        }
+    })
+}
+
+/// Words for symbols in phrases; longer tokens first.
+const SYMBOLS: [(&str, &str); 27] = [
+    ("<->", "BothArrows"),
+    ("->", "RightArrow"),
+    ("<-", "LeftArrow"),
+    ("!=", "Ne"),
+    ("<=", "Le"),
+    (">=", "Ge"),
+    ("==", "EqEq"),
+    ("{0}", "A"),
+    ("{1}", "B"),
+    ("{2}", "C"),
+    ("!", "Bang"),
+    ("?", "Question"),
+    ("¡", "InvBang"),
+    ("¿", "InvQuestion"),
+    ("*", "Star"),
+    ("+", "Plus"),
+    ("-", "Dash"),
+    ("/", "Slash"),
+    ("<", "Lt"),
+    (">", "Gt"),
+    ("=", "Eq"),
+    (":", "Colon"),
+    (",", "Comma"),
+    ("%", "Percent"),
+    (".", "Dot"),
+    ("#", "Hash"),
+    ("(", "Parens"),
+];
+
+/// A Rust variant name for a phrase.
+fn phrase_name(text: &str) -> String {
+    if text.is_empty() {
+        return "Empty".to_owned();
+    }
+    let mut out = String::new();
+    let symbols_only = !text.chars().any(char::is_alphabetic);
+    let mut rest = text;
+    'scan: while let Some(c) = rest.chars().next() {
+        if c.is_alphanumeric() {
+            let end = rest
+                .find(|c: char| !c.is_alphanumeric())
+                .unwrap_or(rest.len());
+            let (word, tail) = rest.split_at(end);
+            let mut chars = word.chars();
+            out.extend(chars.next().into_iter().flat_map(char::to_uppercase));
+            out.push_str(chars.as_str());
+            rest = tail;
+            continue;
+        }
+        for (symbol, word) in SYMBOLS {
+            if let Some(tail) = rest.strip_prefix(symbol) {
+                // Collapse long runs such as `----------`.
+                let run = tail.chars().take_while(|t| symbol.starts_with(*t)).count();
+                if symbol.len() == 1 && run >= 3 {
+                    out.push_str(word);
+                    out.push('s');
+                    rest = tail.trim_start_matches(symbol.chars().next().unwrap_or(' '));
+                } else {
+                    out.push_str(word);
+                    rest = tail;
+                }
+                continue 'scan;
+            }
+        }
+        // In symbol-only phrases a space is significant (`{0}: {1}` vs `{0}:{1}`).
+        if c == ' ' && symbols_only {
+            out.push_str("Sp");
+        }
+        rest = &rest[c.len_utf8()..];
+    }
+    // Symbol-only phrases get a prefix so `*` and the word "Star" stay apart.
+    if symbols_only {
+        format!("Sym{out}")
+    } else if out.starts_with(|c: char| c.is_ascii_digit()) {
+        format!("N{out}")
+    } else {
+        out
+    }
+}
+
+fn strings(data: &Data) -> Result<TokenStream, String> {
+    let mut entries: Vec<_> = data
+        .strings
+        .iter()
+        .map(|s| (s.names.get("en-US").cloned().unwrap_or_default(), &s.names))
+        .collect();
+    entries.sort_by(|a, b| a.0.cmp(&b.0));
+    let mut seen = std::collections::BTreeSet::new();
+    let vars: Vec<_> = entries
+        .iter()
+        .map(|(text, names)| {
+            let mut name = phrase_name(text);
+            // Phrases that differ only by case: the lowercase one gets a marker.
+            if seen.contains(&name) && text.starts_with(char::is_lowercase) {
+                name = format!("Lower{name}");
+            }
+            if seen.insert(name.clone()) {
+                Ok(variant(text, &name, Some(names)))
+            } else {
+                Err(format!("phrase `{text}` and another both become `{name}`"))
+            }
+        })
+        .collect::<Result<_, String>>()?;
+    let def = enum_def_with(
+        "LocalizedString",
+        "A phrase accepted by the workshop `String` value.",
+        &vars,
+        Some("text"),
+        false,
+    );
+    Ok(quote! {
+        //! Localized phrases.
+
+        use crate::Lang;
+        use crate::lang::localized;
+
+        #def
+
+        impl LocalizedString {
+            /// The phrase with this English text, if the game has one.
+            pub fn from_en(text: &str) -> Option<Self> {
+                // `ALL` is sorted by English text.
+                Self::ALL
+                    .binary_search_by(|phrase| phrase.text(Lang::EnUs).cmp(text))
+                    .ok()
+                    .map(|i| Self::ALL[i])
             }
         }
     })

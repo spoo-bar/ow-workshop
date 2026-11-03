@@ -18,6 +18,7 @@ pub use generated::gamemodes::*;
 pub use generated::heroes::*;
 pub use generated::keywords::*;
 pub use generated::maps::*;
+pub use generated::strings::LocalizedString;
 pub use generated::textures::Texture;
 pub use generated::ty::*;
 pub use generated::values::ValueId;

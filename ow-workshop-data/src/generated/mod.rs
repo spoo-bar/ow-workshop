@@ -9,6 +9,7 @@ pub mod gamemodes;
 pub mod heroes;
 pub mod keywords;
 pub mod maps;
+pub mod strings;
 pub mod textures;
 pub mod ty;
 pub mod values;
