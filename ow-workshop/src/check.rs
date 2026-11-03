@@ -5,7 +5,8 @@ use std::collections::BTreeMap;
 use ow_workshop_data::ValueId;
 
 use crate::ir::{
-    Block, Diagnostics, Expr, ExprKind, LabelId, Location, Rule, Severity, SkipTarget, StmtKind,
+    Block, Diagnostics, Expr, ExprKind, LabelId, Location, Place, Rule, Severity, SkipTarget,
+    StmtKind,
 };
 
 /// Reports `do_while` loops that are not the first statement of the rule body.
@@ -172,4 +173,68 @@ fn walk(expr: &Expr, in_lambda: bool, diagnostics: &mut Diagnostics) {
     for child in expr.kind().children() {
         walk(child, in_lambda, diagnostics);
     }
+}
+
+/// Reports random values in the indices of two- and three-dimensional places.
+///
+/// Such assignments are rebuilt with slices, which evaluate each index more than once.
+pub(crate) fn check_multi_dim_indices(rules: &[Rule], diagnostics: &mut Diagnostics) {
+    for rule in rules {
+        multi_dim_block(&rule.body, diagnostics);
+    }
+}
+
+fn multi_dim_block(block: &Block, diagnostics: &mut Diagnostics) {
+    for stmt in &block.stmts {
+        let target = match &stmt.kind {
+            StmtKind::Set { target, .. } | StmtKind::Modify { target, .. } => Some(target),
+            _ => None,
+        };
+        if let Some(target) = target {
+            if index_depth(target) >= 2 && indices(target).into_iter().any(contains_random) {
+                diagnostics.push(
+                    Severity::Error,
+                    "random-in-multi-dim-index",
+                    "indices of multi-dimensional places are evaluated more than once and must not be random"
+                        .to_owned(),
+                    stmt.loc,
+                );
+            }
+        }
+        for child in stmt.blocks() {
+            multi_dim_block(child, diagnostics);
+        }
+    }
+}
+
+fn index_depth(place: &Place) -> usize {
+    match place {
+        Place::Index { base, .. } => 1 + index_depth(base),
+        _ => 0,
+    }
+}
+
+fn indices(place: &Place) -> Vec<&Expr> {
+    match place {
+        Place::Index { base, index } => {
+            let mut all = indices(base);
+            all.push(index);
+            all
+        }
+        _ => Vec::new(),
+    }
+}
+
+fn contains_random(expr: &Expr) -> bool {
+    let random = matches!(
+        expr.kind(),
+        ExprKind::Value {
+            id: ValueId::RandomRandint
+                | ValueId::RandomUniform
+                | ValueId::RandomChoice
+                | ValueId::RandomShuffle,
+            ..
+        }
+    );
+    random || expr.kind().children().into_iter().any(contains_random)
 }

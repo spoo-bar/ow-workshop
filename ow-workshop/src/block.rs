@@ -386,3 +386,114 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+mod multi_dim_tests {
+    use crate::builder::Builder;
+    use crate::check::check_multi_dim_indices;
+    use crate::event::OngoingGlobal;
+    use crate::ir::{self, Diagnostics, ExprKind, Place as IrPlace, Program, StmtKind};
+    use crate::prelude::*;
+
+    #[derive(GlobalVars)]
+    struct Globals {
+        grid: Global<Array<Array<Num>>>,
+        cube: Global<Array<Array<Array<Num>>>>,
+    }
+
+    fn globals() -> Globals {
+        Globals::declare(&mut VarRegistry::default())
+    }
+
+    fn depth(place: &IrPlace) -> usize {
+        match place {
+            IrPlace::Index { base, .. } => 1 + depth(base),
+            _ => 0,
+        }
+    }
+
+    fn only_target(b: Block) -> IrPlace {
+        match b.into_ir().stmts.remove(0).kind {
+            StmtKind::Set { target, .. } | StmtKind::Modify { target, .. } => target,
+            other => panic!("unexpected {other:?}"),
+        }
+    }
+
+    #[test]
+    fn two_and_three_dimensional_assignment() {
+        let g = globals();
+        let mut b = Block::new();
+        b.set(g.grid.at(1).at(2), 5);
+        assert_eq!(depth(&only_target(b)), 2);
+
+        let mut b = Block::new();
+        b.set(g.cube.at(1).at(2).at(3), 5);
+        assert_eq!(depth(&only_target(b)), 3);
+    }
+
+    #[test]
+    fn removing_from_a_nested_array() {
+        let g = globals();
+        let mut b = Block::new();
+        b.remove_index(g.grid.at(1), 0);
+        b.remove_index(g.cube.at(1).at(2), 0);
+        let stmts = b.into_ir().stmts;
+        let depths: Vec<_> = stmts
+            .iter()
+            .map(|s| match &s.kind {
+                StmtKind::Modify { target, op, .. } => {
+                    assert_eq!(*op, ir::ModifyOp::RemoveFromArrayByIndex);
+                    depth(target)
+                }
+                other => panic!("unexpected {other:?}"),
+            })
+            .collect();
+        assert_eq!(depths, [1, 2]);
+    }
+
+    #[test]
+    fn reading_a_nested_element() {
+        let g = globals();
+        let e = g.grid.at(1).at(2).get();
+        let ExprKind::Index { array, .. } = e.ir().kind() else {
+            panic!("not an index")
+        };
+        assert!(matches!(array.kind(), ExprKind::Index { .. }));
+    }
+
+    fn errors(build: impl FnOnce(&mut Block)) -> Vec<&'static str> {
+        let mut ws = Builder::new();
+        ws.rule("r", OngoingGlobal, |r, _| r.actions(build));
+        let (program, _): (Program, _) = ws.finish(Program::default());
+        let mut diags = Diagnostics::default();
+        check_multi_dim_indices(&program.rules, &mut diags);
+        assert!(diags.0.iter().all(|d| d.location.is_some()));
+        diags.0.iter().map(|d| d.code).collect()
+    }
+
+    #[test]
+    fn random_index_in_a_multi_dimensional_place_is_an_error() {
+        let g = globals();
+        assert_eq!(
+            errors(|b| b.set(g.grid.at(random::int(0, 3)).at(1), 5)),
+            ["random-in-multi-dim-index"]
+        );
+        assert_eq!(
+            errors(|b| b.add_to(g.grid.at(0).at(random::int(0, 3) + 1), 5)),
+            ["random-in-multi-dim-index"]
+        );
+    }
+
+    #[test]
+    fn random_index_in_a_one_dimensional_place_is_fine() {
+        let g = globals();
+        assert_eq!(
+            errors(|b| b.set(g.grid.at(random::int(0, 3)), [1])),
+            [] as [&str; 0]
+        );
+        assert_eq!(
+            errors(|b| b.set(g.grid.at(1).at(2), random::int(0, 3))),
+            [] as [&str; 0]
+        );
+    }
+}

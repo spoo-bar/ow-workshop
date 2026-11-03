@@ -3,6 +3,7 @@
 pub use crate::block::Block;
 pub use crate::builder::Builder;
 pub use crate::control::{ForRange, IfBuilder, RangeStep, range, rule_condition};
+pub use crate::dict::{Dict, dict};
 pub use crate::event::*;
 pub use crate::expr::{Expr, null, vect};
 pub use crate::generated::api::*;
@@ -17,7 +18,8 @@ pub use crate::switch::SwitchBuilder;
 pub use crate::translations::Translations;
 pub use crate::ty::*;
 pub use crate::vars::{
-    Global, GlobalVars, Indexed, Place, PlayerVar, PlayerVarRef, PlayerVars, VarRegistry,
+    Global, GlobalVars, Indexed, Indexed2, Indexed3, Place, PlayerVar, PlayerVarRef, PlayerVars,
+    VarRegistry,
 };
 pub use crate::workshop::{Workshop, WorkshopExt};
 pub use crate::{Diagnostic, Diagnostics, Lang, Settings, TeamFilter, Warning};

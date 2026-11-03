@@ -8,6 +8,7 @@ mod block;
 mod builder;
 mod check;
 mod control;
+mod dict;
 mod event;
 mod expr;
 mod generated;
@@ -32,6 +33,7 @@ mod workshop;
 pub use block::Block;
 pub use builder::Builder;
 pub use control::{ForRange, IfBuilder, IntoForRange, RangeStep, range, rule_condition};
+pub use dict::{Dict, dict};
 pub use event::{
     Ev, EventType, HasDamage, HasDamageOrHealing, HasEventPlayer, HasHealing, OngoingEachPlayer,
     OngoingGlobal, PlayerDealtDamage, PlayerDealtFinalBlow, PlayerDealtHealing,
@@ -54,8 +56,8 @@ pub use switch::SwitchBuilder;
 pub use translations::Translations;
 pub use ty::*;
 pub use vars::{
-    Global, GlobalHandle, GlobalVars, Indexed, Place, Plain, PlayerHandle, PlayerVar, PlayerVarRef,
-    PlayerVars, RawPlace, VarRegistry,
+    Global, GlobalHandle, GlobalVars, Indexed, Indexed2, Indexed3, Place, Plain, PlayerHandle,
+    PlayerVar, PlayerVarRef, PlayerVars, RawPlace, VarRegistry,
 };
 pub use warning::Warning;
 pub use workshop::{Workshop, WorkshopExt};

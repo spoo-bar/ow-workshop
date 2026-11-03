@@ -218,41 +218,72 @@ impl<S: Is<T>, T: ValueType> IntoExpr<T> for &PlayerVarRef<S> {
     }
 }
 
-/// An element of an array variable: `list.at(i)`.
-pub struct Indexed<T> {
-    base: ir::Place,
-    _type: PhantomData<fn() -> T>,
-}
-
-impl<T> Clone for Indexed<T> {
-    fn clone(&self) -> Self {
-        Self {
-            base: self.base.clone(),
-            _type: PhantomData,
+macro_rules! indexed {
+    ($(#[$doc:meta])* $name:ident) => {
+        $(#[$doc])*
+        pub struct $name<T> {
+            base: ir::Place,
+            _type: PhantomData<fn() -> T>,
         }
-    }
+
+        impl<T> Clone for $name<T> {
+            fn clone(&self) -> Self {
+                Self {
+                    base: self.base.clone(),
+                    _type: PhantomData,
+                }
+            }
+        }
+
+        impl<T> std::fmt::Debug for $name<T> {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_tuple(stringify!($name)).field(&self.base).finish()
+            }
+        }
+
+        impl<T: ValueType> $name<T> {
+            /// The element's current value (`Value In Array`).
+            #[track_caller]
+            #[must_use]
+            pub fn get(&self) -> Expr<T> {
+                Expr::from_ir(place_expr(&self.base))
+            }
+        }
+
+        impl<S: Is<T>, T: ValueType> IntoExpr<T> for $name<S> {
+            #[track_caller]
+            fn into_expr(self) -> Expr<T> {
+                Expr::from_ir(self.get().into_ir())
+            }
+        }
+
+        impl<T: ValueType> Place<T> for $name<T> {
+            fn into_place(self) -> RawPlace {
+                RawPlace(self.base)
+            }
+        }
+    };
 }
 
-impl<T> std::fmt::Debug for Indexed<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Indexed").field(&self.base).finish()
-    }
-}
+indexed!(
+    /// An element of an array variable: `list.at(i)`.
+    Indexed
+);
+indexed!(
+    /// An element of an element of an array variable: `grid.at(i).at(j)`.
+    Indexed2
+);
+indexed!(
+    /// A third-level element: `cube.at(i).at(j).at(k)`; the workshop's deepest supported place.
+    Indexed3
+);
 
-impl<T: ValueType> Indexed<T> {
-    /// The element's current value (`Value In Array`).
-    #[track_caller]
-    #[must_use]
-    pub fn get(&self) -> Expr<T> {
-        Expr::from_ir(place_expr(&self.base))
-    }
-}
-
-impl<S: Is<T>, T: ValueType> IntoExpr<T> for Indexed<S> {
-    #[track_caller]
-    fn into_expr(self) -> Expr<T> {
-        Expr::from_ir(self.get().into_ir())
-    }
+/// Wraps `base[index]` as a place of the given depth.
+fn index_place<P>(base: ir::Place, index: ir::Expr, make: impl FnOnce(ir::Place) -> P) -> P {
+    make(ir::Place::Index {
+        base: Box::new(base),
+        index,
+    })
 }
 
 /// Reads a place as an expression.
@@ -304,34 +335,18 @@ impl<T: ValueType> Place<T> for PlayerVarRef<T> {
 
 impl<T: ValueType> Plain<T> for PlayerVarRef<T> {}
 
-impl<T: ValueType> Place<T> for Indexed<T> {
-    fn into_place(self) -> RawPlace {
-        RawPlace(self.base)
-    }
-}
-
-/// Places that hold an array and can be indexed.
-trait ArrayPlace<E>: Sized {
-    fn index_place(self, index: ir::Expr) -> Indexed<E>;
-}
-
-impl<E> ArrayPlace<E> for ir::Place {
-    fn index_place(self, index: ir::Expr) -> Indexed<E> {
-        Indexed {
-            base: ir::Place::Index {
-                base: Box::new(self),
-                index,
-            },
-            _type: PhantomData,
-        }
-    }
-}
-
 impl<E: ValueType> Global<Array<E>> {
     /// The element at `index`.
     #[must_use]
     pub fn at(self, index: impl IntoExpr<Num>) -> Indexed<E> {
-        ir::Place::Global(self.id).index_place(index.into_expr().into_ir())
+        index_place(
+            ir::Place::Global(self.id),
+            index.into_expr().into_ir(),
+            |base| Indexed {
+                base,
+                _type: PhantomData,
+            },
+        )
     }
 }
 
@@ -343,6 +358,31 @@ impl<E: ValueType> PlayerVarRef<Array<E>> {
             player: self.player.clone(),
             var: self.var,
         };
-        place.index_place(index.into_expr().into_ir())
+        index_place(place, index.into_expr().into_ir(), |base| Indexed {
+            base,
+            _type: PhantomData,
+        })
+    }
+}
+
+impl<E: ValueType> Indexed<Array<E>> {
+    /// The element at `index` of this element (two-dimensional).
+    #[must_use]
+    pub fn at(self, index: impl IntoExpr<Num>) -> Indexed2<E> {
+        index_place(self.base, index.into_expr().into_ir(), |base| Indexed2 {
+            base,
+            _type: PhantomData,
+        })
+    }
+}
+
+impl<E: ValueType> Indexed2<Array<E>> {
+    /// The element at `index` of this element (three-dimensional).
+    #[must_use]
+    pub fn at(self, index: impl IntoExpr<Num>) -> Indexed3<E> {
+        index_place(self.base, index.into_expr().into_ir(), |base| Indexed3 {
+            base,
+            _type: PhantomData,
+        })
     }
 }
