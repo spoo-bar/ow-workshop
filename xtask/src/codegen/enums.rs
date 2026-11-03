@@ -406,7 +406,7 @@ fn constant_doc(enum_name: &str, data: &Data) -> String {
     // `AccelReeval` becomes "Acceleration Reevaluation".
     let mut title = String::new();
     let mut word = String::new();
-    let mut flush = |word: &mut String, title: &mut String| {
+    let flush = |word: &mut String, title: &mut String| {
         if word.is_empty() {
             return;
         }
@@ -452,7 +452,7 @@ fn constant_doc(enum_name: &str, data: &Data) -> String {
     let more = users.len().saturating_sub(2);
     let mut used = shown.join(", ");
     if more > 0 {
-        used.push_str(&format!(" and {more} more"));
+        used = format!("{used} and {more} more");
     }
     let mut doc = format!("{title} (`{enum_name}`): options for the `{arg}` argument of {used}.");
     if enum_name.ends_with("Reeval") {
