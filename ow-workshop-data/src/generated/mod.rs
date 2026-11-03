@@ -6,6 +6,7 @@ pub mod entities;
 pub mod extension;
 pub mod fonts;
 pub mod gamemodes;
+pub mod hero_settings;
 pub mod heroes;
 pub mod keywords;
 pub mod maps;

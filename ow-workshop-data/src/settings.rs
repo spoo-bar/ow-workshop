@@ -6,6 +6,7 @@ use crate::generated::setting_names::NAMES;
 use crate::generated::settings::HERO_SETS;
 use crate::{Hero, Lang, Names};
 
+pub use crate::generated::hero_settings::{HERO_GENERAL, hero_settings};
 pub use crate::generated::settings::{GAMEMODE_GENERAL, LOBBY, MAIN, gamemode_settings};
 
 /// One option of a [`Kind::Combo`] setting.
@@ -79,6 +80,20 @@ impl Setting {
             only: None,
             except: None,
         }
+    }
+
+    /// Restricts the setting to the heroes in set `set`.
+    #[must_use]
+    pub(crate) const fn only(mut self, set: u8) -> Self {
+        self.only = Some(set);
+        self
+    }
+
+    /// Excludes the heroes in set `set`.
+    #[must_use]
+    pub(crate) const fn except(mut self, set: u8) -> Self {
+        self.except = Some(set);
+        self
     }
 
     /// The setting's name in `lang`.

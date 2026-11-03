@@ -126,7 +126,7 @@ impl Tables {
 
 pub fn generate(data: &Data) -> Result<Vec<File>, String> {
     let mut tables = Tables::default();
-    let settings = settings(data, &mut tables)?;
+    let (settings, hero_settings) = settings(data, &mut tables)?;
     let names = tables.names.iter();
     let name_count = tables.names.len();
     Ok(vec![
@@ -140,10 +140,11 @@ pub fn generate(data: &Data) -> Result<Vec<File>, String> {
             },
         ),
         ("settings", settings),
+        ("hero_settings", hero_settings),
     ])
 }
 
-fn settings(data: &Data, t: &mut Tables) -> Result<TokenStream, String> {
+fn settings(data: &Data, t: &mut Tables) -> Result<(TokenStream, TokenStream), String> {
     let s: &CustomGameSettings = &data.settings;
     let main = t.section("main", &s.main.names, &s.main.values)?;
     let lobby = t.section("lobby", &s.lobby.names, &s.lobby.values)?;
@@ -163,16 +164,26 @@ fn settings(data: &Data, t: &mut Tables) -> Result<TokenStream, String> {
     }
     let general = general.ok_or("gamemodes settings have no `general` section")?;
 
-    // Hero sections are emitted separately; registering them here keeps the shared tables stable.
-    t.section("general", &s.heroes.teams["allTeams"], &s.heroes.general)?;
+    let hero_general = t.section("general", &s.heroes.teams["allTeams"], &s.heroes.general)?;
+    let mut hero_arms = Vec::new();
     for (key, settings) in &s.heroes.per_hero {
-        t.section(key, &data.heroes[key].names, settings)?;
+        let tokens = t.section(key, &data.heroes[key].names, settings)?;
+        let variant = format_ident!("{}", super::naming::pascal(key)?);
+        hero_arms.push(
+            quote! { Hero::#variant => { static SECTION: Section = #tokens; Some(&SECTION) } },
+        );
     }
     let mode_fallback = if mode_arms.len() < data.gamemodes.len() {
         quote!(_ => None,)
     } else {
         quote!()
     };
+    let hero_fallback = if hero_arms.len() < data.heroes.len() {
+        quote!(_ => None,)
+    } else {
+        quote!()
+    };
+
     let labels = labels(s)?;
     let hero_sets = t.hero_sets.iter().map(|set| {
         let heroes = set
@@ -213,7 +224,33 @@ fn settings(data: &Data, t: &mut Tables) -> Result<TokenStream, String> {
             }
         }
     };
-    Ok(settings)
+    // Import only the choice sets the hero rows use.
+    let hero_text = quote!(#hero_general #( #hero_arms )*).to_string();
+    let used: Vec<_> = (0..t.choice_sets.len())
+        .map(|i| format!("CHOICES_{i:02}"))
+        .filter(|name| hero_text.contains(name.as_str()))
+        .map(|name| format_ident!("{name}"))
+        .collect();
+    let choice_imports = quote!(use super::settings::{ #( #used ),* };);
+    let heroes = quote! {
+        //! Hero settings tables.
+
+        #choice_imports
+        use crate::Hero;
+        use crate::settings::{Kind, Section, Setting};
+
+        /// Settings shared by all heroes.
+        pub static HERO_GENERAL: Section = #hero_general;
+
+        /// The settings specific to a hero.
+        pub fn hero_settings(hero: Hero) -> Option<&'static Section> {
+            match hero {
+                #( #hero_arms )*
+                #hero_fallback
+            }
+        }
+    };
+    Ok((settings, heroes))
 }
 
 /// Titles and list labels that aren't settings.
