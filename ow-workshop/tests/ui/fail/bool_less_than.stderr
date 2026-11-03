@@ -1,0 +1,20 @@
+error[E0599]: the method `lt` exists for struct `ow_workshop::Expr<ow_workshop::Bool>`, but its trait bounds were not satisfied
+ --> tests/ui/fail/bool_less_than.rs:5:15
+  |
+5 |     let _ = a.lt(false);
+  |               ^^ method cannot be called on `ow_workshop::Expr<ow_workshop::Bool>` due to unsatisfied trait bounds
+  |
+ ::: src/ty.rs
+  |
+  |         pub enum $name {}
+  |         ----------------- doesn't satisfy `ow_workshop::Bool: Ordered`
+  |
+ ::: src/expr.rs
+  |
+  | pub struct Expr<T> {
+  | ------------------ doesn't satisfy `ow_workshop::Expr<ow_workshop::Bool>: Iterator`
+  |
+  = note: the following trait bounds were not satisfied:
+          `ow_workshop::Bool: Ordered`
+          `ow_workshop::Expr<ow_workshop::Bool>: Iterator`
+          which is required by `&mut ow_workshop::Expr<ow_workshop::Bool>: Iterator`

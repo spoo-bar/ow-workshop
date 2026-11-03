@@ -2,6 +2,7 @@
 
 pub use crate::builder::Builder;
 pub use crate::expr::{Expr, null, vect};
+pub use crate::ops::if_then_else;
 pub use crate::options::{CompileOptions, OptLevel};
 pub use crate::output::CompileOutput;
 pub use crate::translations::Translations;

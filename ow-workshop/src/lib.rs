@@ -3,6 +3,7 @@
 mod builder;
 mod expr;
 mod ir;
+mod ops;
 mod options;
 mod output;
 mod pipeline;
@@ -15,6 +16,7 @@ mod workshop;
 pub use builder::Builder;
 pub use expr::{Expr, null, vect};
 pub use ir::{Diagnostic, Diagnostics, Location, Settings, Severity, WarningSet};
+pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
 pub use options::{CompileOptions, OptLevel};
 pub use output::{Catalog, CompileOutput};
 pub use ow_workshop_data::Lang;
