@@ -146,29 +146,36 @@ pub(crate) fn map_children(kind: &ExprKind, g: &mut impl FnMut(&Expr) -> Expr) -
     }
 }
 
-/// Rewrites the expressions inside a place (owning player, indices) bottom-up.
-pub(crate) fn rewrite_place(place: &mut Place, f: &mut impl FnMut(Expr) -> Expr) {
+/// Rewrites `expr` top-down: `f` may replace a node (its children are then left alone);
+/// otherwise the children are rewritten.
+pub(crate) fn rewrite_expr_top(expr: &Expr, f: &mut impl FnMut(&Expr) -> Option<Expr>) -> Expr {
+    if let Some(replacement) = f(expr) {
+        return replacement;
+    }
+    let kind = map_children(expr.kind(), &mut |child| rewrite_expr_top(child, f));
+    Expr::new(kind, expr.loc())
+}
+
+/// Replaces the root expressions of a place (owning player, indices) by `g(root)`.
+pub(crate) fn map_place(place: &mut Place, g: &mut impl FnMut(&Expr) -> Expr) {
     match place {
         Place::Global(_) => {}
-        Place::Player { player, .. } => *player = rewrite_expr(player, f),
+        Place::Player { player, .. } => *player = g(player),
         Place::Index { base, index } => {
-            rewrite_place(base, f);
-            *index = rewrite_expr(index, f);
+            map_place(base, g);
+            *index = g(index);
         }
     }
 }
 
-fn rw(e: &mut Expr, f: &mut impl FnMut(Expr) -> Expr) {
-    *e = rewrite_expr(e, f);
-}
-
-/// Rewrites the expressions of `stmt` itself, not those of nested blocks.
-pub(crate) fn rewrite_stmt_exprs(stmt: &mut Stmt, f: &mut impl FnMut(Expr) -> Expr) {
+/// Replaces the root expressions of `stmt` itself, not those of nested blocks, by `g(root)`.
+pub(crate) fn map_stmt_roots(stmt: &mut Stmt, g: &mut impl FnMut(&Expr) -> Expr) {
+    let mut r = |e: &mut Expr| *e = g(e);
     match &mut stmt.kind {
-        StmtKind::Action { args, .. } => args.iter_mut().for_each(|e| rw(e, f)),
+        StmtKind::Action { args, .. } => args.iter_mut().for_each(&mut r),
         StmtKind::Set { target, value } | StmtKind::Modify { target, value, .. } => {
-            rewrite_place(target, f);
-            *value = rewrite_expr(value, f);
+            map_place(target, g);
+            *value = g(value);
         }
         StmtKind::Chase {
             target,
@@ -177,22 +184,22 @@ pub(crate) fn rewrite_stmt_exprs(stmt: &mut Stmt, f: &mut impl FnMut(Expr) -> Ex
             reeval,
             ..
         } => {
-            rewrite_place(target, f);
+            map_place(target, g);
             for e in [dest, rate_or_duration, reeval] {
-                *e = rewrite_expr(e, f);
+                *e = g(e);
             }
         }
-        StmtKind::StopChasing(place) => rewrite_place(place, f),
+        StmtKind::StopChasing(place) => map_place(place, g),
         StmtKind::If { cond, elifs, .. } => {
-            rw(cond, f);
+            *cond = g(cond);
             for (c, _) in elifs.iter_mut() {
-                rw(c, f);
+                *c = g(c);
             }
         }
         StmtKind::While { cond, .. }
         | StmtKind::DoWhile { cond, .. }
         | StmtKind::AbortIf(cond)
-        | StmtKind::LoopIf(cond) => rw(cond, f),
+        | StmtKind::LoopIf(cond) => *cond = g(cond),
         StmtKind::For {
             var,
             start,
@@ -200,34 +207,44 @@ pub(crate) fn rewrite_stmt_exprs(stmt: &mut Stmt, f: &mut impl FnMut(Expr) -> Ex
             step,
             ..
         } => {
-            rewrite_place(var, f);
+            map_place(var, g);
             for e in [start, stop, step] {
-                *e = rewrite_expr(e, f);
+                *e = g(e);
             }
         }
-        StmtKind::Skip(SkipTarget::Dynamic(e)) => rw(e, f),
+        StmtKind::Skip(SkipTarget::Dynamic(e)) => *e = g(e),
         StmtKind::SkipIf(cond, target) => {
-            rw(cond, f);
+            *cond = g(cond);
             if let SkipTarget::Dynamic(e) = target {
-                rw(e, f);
+                *e = g(e);
             }
         }
         StmtKind::Switch { value, cases, .. } => {
-            rw(value, f);
+            *value = g(value);
             for (c, _) in cases.iter_mut() {
-                rw(c, f);
+                *c = g(c);
             }
         }
         _ => {}
     }
 }
 
-/// Rewrites every expression in `block`, including those of nested blocks.
+/// Rewrites the expressions of `stmt` itself bottom-up, not those of nested blocks.
+pub(crate) fn rewrite_stmt_exprs(stmt: &mut Stmt, f: &mut impl FnMut(Expr) -> Expr) {
+    map_stmt_roots(stmt, &mut |e| rewrite_expr(e, f));
+}
+
+/// Rewrites every expression in `block`, including those of nested blocks, bottom-up.
 pub(crate) fn rewrite_block_exprs(block: &mut Block, f: &mut impl FnMut(Expr) -> Expr) {
+    map_block_roots(block, &mut |e| rewrite_expr(e, f));
+}
+
+/// Replaces every root expression in `block`, including those of nested blocks, by `g(root)`.
+pub(crate) fn map_block_roots(block: &mut Block, g: &mut impl FnMut(&Expr) -> Expr) {
     for stmt in &mut block.stmts {
-        rewrite_stmt_exprs(stmt, f);
+        map_stmt_roots(stmt, g);
         for child in blocks_mut(stmt) {
-            rewrite_block_exprs(child, f);
+            map_block_roots(child, g);
         }
     }
 }

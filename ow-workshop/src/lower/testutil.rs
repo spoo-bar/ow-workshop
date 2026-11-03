@@ -85,6 +85,35 @@ pub(crate) fn run(
     Ok(diags)
 }
 
+pub(crate) fn konst(enum_name: &'static str, key: &'static str) -> Expr {
+    expr(ExprKind::Const(crate::ir::ConstRef { enum_name, key }))
+}
+
+pub(crate) fn call(id: ow_workshop_data::ValueId, args: Vec<Expr>) -> Expr {
+    expr(ExprKind::Value { id, args })
+}
+
+pub(crate) fn null() -> Expr {
+    expr(ExprKind::Null)
+}
+
+/// An action call with the arguments in `given` (by name) and `Null` for the rest.
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn act(id: ActionId, given: Vec<(&str, Expr)>) -> StmtKind {
+    let args = id
+        .signature()
+        .args
+        .iter()
+        .map(|a| {
+            given
+                .iter()
+                .find(|(name, _)| *name == a.name)
+                .map_or_else(null, |(_, e)| e.clone())
+        })
+        .collect();
+    StmtKind::Action { id, args }
+}
+
 /// The kinds of a rule's top-level statements.
 pub(crate) fn kinds(program: &Program) -> Vec<&StmtKind> {
     program.rules[0]
@@ -117,6 +146,23 @@ pub(crate) fn show(e: &Expr) -> String {
         ExprKind::Compare { op, lhs, rhs } => format!("({} {op:?} {})", show(lhs), show(rhs)),
         ExprKind::ArrayIndex => "#".to_owned(),
         ExprKind::ArrayElem => "@".to_owned(),
+        ExprKind::Const(c) => format!("{}.{}", c.enum_name, c.key),
+        ExprKind::Str(crate::ir::StrExpr::Custom { tokens, args }) => {
+            let text: String = tokens
+                .iter()
+                .map(|t| match t {
+                    crate::ir::StrToken::Arg(n) => format!("{{{n}}}"),
+                    crate::ir::StrToken::Text(t) if t.chars().all(|c| c == '\u{2003}') => {
+                        format!("<{}em>", t.chars().count())
+                    }
+                    crate::ir::StrToken::Text(t) => t.clone(),
+                })
+                .collect();
+            format!("\"{text}\"({})", list(args))
+        }
+        ExprKind::And(a, b) => format!("({} && {})", show(a), show(b)),
+        ExprKind::Not(a) => format!("!{}", show(a)),
+        ExprKind::RuleCondition => "rule_condition".to_owned(),
         other => format!("{other:?}"),
     }
 }

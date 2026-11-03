@@ -10,6 +10,7 @@
 #![allow(clippy::unnecessary_wraps)]
 
 pub(crate) mod dicts;
+pub(crate) mod functions;
 pub(crate) mod generated;
 pub(crate) mod labels;
 pub(crate) mod loops;
@@ -153,7 +154,7 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("lower switch", switch::lower),
     ("lower loops", loops::lower),
     ("lower dictionaries", dicts::lower),
-    ("lower functions", noop),
+    ("lower functions", functions::lower),
     ("optimize", noop),
     ("resolve labels", labels::resolve_labels),
     ("flatten", noop),
