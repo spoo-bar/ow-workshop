@@ -215,6 +215,7 @@ name = "ow-workshop"
 version = "0.1.0"
 dependencies = [
  "insta",
+ "ow-workshop-data",
  "serde",
  "similar",
  "wasm-bindgen-test",

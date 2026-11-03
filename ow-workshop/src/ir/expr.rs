@@ -1,0 +1,193 @@
+//! Untyped expressions.
+
+use std::rc::Rc;
+
+use ow_workshop_data::{LocalizedString, ValueId};
+
+use super::{Location, VarId};
+
+/// A generated enum member, as (enum name, member key).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct ConstRef {
+    /// Name of the generated enum, e.g. `Team`.
+    pub(crate) enum_name: &'static str,
+    /// Data key of the member, e.g. `ALL`.
+    pub(crate) key: &'static str,
+}
+
+/// A comparison operator.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub(crate) enum CmpOp {
+    /// `==`
+    Eq,
+    /// `!=`
+    Ne,
+    /// `<`
+    Lt,
+    /// `<=`
+    Le,
+    /// `>`
+    Gt,
+    /// `>=`
+    Ge,
+}
+
+/// One piece of a custom string.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum StrToken {
+    /// Literal text.
+    Text(String),
+    /// Placeholder `{n}`, an index into the string's args.
+    Arg(u8),
+}
+
+/// A string-valued expression.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum StrExpr {
+    /// A custom string: tokens plus placeholder arguments.
+    Custom {
+        /// Text and placeholders, in order.
+        tokens: Vec<StrToken>,
+        /// Values substituted for the placeholders.
+        args: Vec<Expr>,
+    },
+    /// A built-in localized string.
+    Localized(LocalizedString),
+}
+
+/// A string that depends on the viewer's language; removed by lowering.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Translated {
+    /// Lookup key (the source-language text).
+    pub(crate) key: String,
+    /// Placeholder arguments.
+    pub(crate) args: Vec<Expr>,
+}
+
+/// The shape of an expression.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum ExprKind {
+    /// Number literal.
+    Num(f64),
+    /// Boolean literal.
+    Bool(bool),
+    /// `Null`.
+    Null,
+    /// A generated enum member.
+    Const(ConstRef),
+    /// A string.
+    Str(StrExpr),
+    /// `Vector(x, y, z)`.
+    Vector([Expr; 3]),
+    /// `Array(..)`.
+    Array(Vec<Expr>),
+    /// A call of a workshop value.
+    Value {
+        /// Which value.
+        id: ValueId,
+        /// Arguments in signature order.
+        args: Vec<Expr>,
+    },
+    /// A global variable.
+    GlobalVar(VarId),
+    /// A player variable of `player`.
+    PlayerVar {
+        /// The owning player.
+        player: Expr,
+        /// The variable.
+        var: VarId,
+    },
+    /// `Value In Array(array, index)`.
+    Index {
+        /// The array.
+        array: Expr,
+        /// The index.
+        index: Expr,
+    },
+    /// `Current Array Element`.
+    ArrayElem,
+    /// `Current Array Index`.
+    ArrayIndex,
+    /// A comparison.
+    Compare {
+        /// The operator.
+        op: CmpOp,
+        /// Left operand.
+        lhs: Expr,
+        /// Right operand.
+        rhs: Expr,
+    },
+    /// `And`.
+    And(Expr, Expr),
+    /// `Or`.
+    Or(Expr, Expr),
+    /// `Not`.
+    Not(Expr),
+    /// `If-Then-Else`.
+    IfThenElse {
+        /// Condition.
+        cond: Expr,
+        /// Value when true.
+        then: Expr,
+        /// Value when false.
+        else_: Expr,
+    },
+    /// Unary minus.
+    Neg(Expr),
+    /// `Add`.
+    Add(Expr, Expr),
+    /// `Subtract`.
+    Sub(Expr, Expr),
+    /// `Multiply`.
+    Mul(Expr, Expr),
+    /// `Divide`.
+    Div(Expr, Expr),
+    /// `Modulo`.
+    Mod(Expr, Expr),
+    /// `Raise To Power`.
+    Pow(Expr, Expr),
+    /// Key-value lookup; removed by lowering.
+    Dict {
+        /// Key-value pairs.
+        entries: Vec<(Expr, Expr)>,
+        /// Value for missing keys.
+        default: Option<Expr>,
+    },
+    /// A language-dependent string; removed by lowering.
+    Translated(Translated),
+    /// The enclosing rule's own condition; removed by lowering.
+    RuleCondition,
+}
+
+/// An expression node: cheap to clone, with its source location.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Expr {
+    kind: Rc<ExprKind>,
+    loc: Option<Location>,
+}
+
+impl Expr {
+    /// Creates an expression.
+    pub(crate) fn new(kind: ExprKind, loc: Option<Location>) -> Self {
+        Self {
+            kind: Rc::new(kind),
+            loc,
+        }
+    }
+
+    /// Creates an expression located at the caller.
+    #[track_caller]
+    pub(crate) fn here(kind: ExprKind) -> Self {
+        Self::new(kind, Some(Location::caller()))
+    }
+
+    /// The expression's shape.
+    pub(crate) fn kind(&self) -> &ExprKind {
+        &self.kind
+    }
+
+    /// Where the user wrote it, if known.
+    pub(crate) fn loc(&self) -> Option<Location> {
+        self.loc
+    }
+}

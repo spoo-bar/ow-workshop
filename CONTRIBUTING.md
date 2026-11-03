@@ -5,6 +5,7 @@
 - Statements are recorded on an explicit `&mut Block`, never through hidden state.
 - Optional arguments use an args struct with `Default`, not long positional lists.
 - No preprocessor: reuse is plain Rust (functions, extension traits, modules).
+- Every public builder method that creates IR is `#[track_caller]` so diagnostics point at the user's source line. Closures break the chain: capture `Location::caller()` at the outermost public call and pass it down.
 
 ## Rust style
 - Idiomatic and clippy-clean (workspace lints). No `unsafe`.
