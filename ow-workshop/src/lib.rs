@@ -50,6 +50,7 @@ mod expr;
 mod generated;
 mod ir;
 mod label;
+mod lower;
 mod math;
 mod ops;
 mod options;

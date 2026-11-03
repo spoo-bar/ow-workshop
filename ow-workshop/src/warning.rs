@@ -8,6 +8,32 @@ pub enum Warning {
     BreakOutsideLoop,
     /// `continue_()` outside a loop.
     ContinueOutsideLoop,
+    /// A subroutine reads event values the calling rule's event does not provide.
+    MismatchedSubroutineEvent,
+    /// `Start Rule(.., Restart Rule)` on a subroutine that waits, which eventually crashes the server.
+    StartRuleCrash,
+    /// A chased variable is also a `For` loop variable, so the loop never runs.
+    ChasedVarInFor,
+    /// A rule condition reads a variable that is chased, which breaks re-triggering in Overwatch 2.
+    Ow2RuleConditionChase,
+    /// `Chase … At Rate` towards `9999`, which a long game can exceed.
+    Chase9999,
+    /// `Closest Player To` also finds dead and unspawned players.
+    ClosestPlayer,
+    /// `Farthest Player From` also finds dead and unspawned players.
+    FarthestPlayer,
+    /// `Player Closest To Reticle` also finds dead and unspawned players.
+    PlayerClosestToReticle,
+    /// A text color that is hard to read on the default HUD.
+    DarkColor,
+    /// `Wait(9999)` ends before a long game does.
+    Wait9999,
+    /// A duration of `9999` ends before a long game does.
+    Duration9999,
+    /// `Wait Until` on a condition that is not a boolean.
+    WaitUntil,
+    /// `Apply Impulse` with the legacy `Cancel Contrary Motion`.
+    CancelContraryMotion,
 }
 
 impl Warning {
@@ -17,6 +43,19 @@ impl Warning {
         match self {
             Self::BreakOutsideLoop => "break-outside-loop",
             Self::ContinueOutsideLoop => "continue-outside-loop",
+            Self::MismatchedSubroutineEvent => "mismatched-subroutine-event",
+            Self::StartRuleCrash => "start-rule-crash",
+            Self::ChasedVarInFor => "chased-var-in-for",
+            Self::Ow2RuleConditionChase => "ow2-rule-condition-chase",
+            Self::Chase9999 => "chase-9999",
+            Self::ClosestPlayer => "closest-player",
+            Self::FarthestPlayer => "farthest-player",
+            Self::PlayerClosestToReticle => "player-closest-to-reticle",
+            Self::DarkColor => "dark-color",
+            Self::Wait9999 => "wait-9999",
+            Self::Duration9999 => "duration-9999",
+            Self::WaitUntil => "wait-until",
+            Self::CancelContraryMotion => "cancel-contrary-motion",
         }
     }
 }
