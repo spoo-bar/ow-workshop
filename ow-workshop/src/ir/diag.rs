@@ -4,7 +4,7 @@ use super::Location;
 
 /// How serious a diagnostic is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Severity {
+pub enum Severity {
     /// Compilation can continue.
     Warning,
     /// Compilation fails.
@@ -13,24 +13,24 @@ pub(crate) enum Severity {
 
 /// One problem found in the user's mod.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Diagnostic {
+pub struct Diagnostic {
     /// Warning or error.
-    pub(crate) severity: Severity,
+    pub severity: Severity,
     /// Stable kebab-case identifier, e.g. `duplicate-name`.
-    pub(crate) code: &'static str,
+    pub code: &'static str,
     /// Human-readable description.
-    pub(crate) message: String,
+    pub message: String,
     /// Where in the user's source, if known.
-    pub(crate) location: Option<Location>,
+    pub location: Option<Location>,
 }
 
 /// A list of diagnostics.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct Diagnostics(pub(crate) Vec<Diagnostic>);
+pub struct Diagnostics(pub Vec<Diagnostic>);
 
 impl Diagnostics {
     /// Records a diagnostic.
-    pub(crate) fn push(
+    pub fn push(
         &mut self,
         severity: Severity,
         code: &'static str,
@@ -46,7 +46,7 @@ impl Diagnostics {
     }
 
     /// Whether any diagnostic is an error.
-    pub(crate) fn has_errors(&self) -> bool {
+    pub fn has_errors(&self) -> bool {
         self.0.iter().any(|d| d.severity == Severity::Error)
     }
 }

@@ -2,13 +2,13 @@
 
 /// A position in the user's Rust source.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub(crate) struct Location {
+pub struct Location {
     /// Source file path.
-    pub(crate) file: &'static str,
+    pub file: &'static str,
     /// 1-based line.
-    pub(crate) line: u32,
+    pub line: u32,
     /// 1-based column.
-    pub(crate) column: u32,
+    pub column: u32,
 }
 
 impl Location {

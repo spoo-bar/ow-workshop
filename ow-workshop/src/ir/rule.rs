@@ -95,7 +95,7 @@ pub(crate) struct OptOverride {
 
 /// Names of warnings suppressed for a rule.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct WarningSet(pub(crate) BTreeSet<String>);
+pub struct WarningSet(pub BTreeSet<String>);
 
 /// One condition of a rule.
 #[derive(Clone, Debug, PartialEq)]

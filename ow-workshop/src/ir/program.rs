@@ -1,14 +1,12 @@
 //! The whole program.
 
 use super::{Diagnostics, Rule, RuleError, Severity, Subs, Vars};
+use crate::CompileOptions;
 
 /// Custom game settings; filled in by the settings epic.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct Settings;
-
-/// Compile options; filled in by the options epic.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct CompileOptions;
+#[non_exhaustive]
+pub struct Settings;
 
 /// Everything the passes transform.
 #[derive(Clone, Debug, Default, PartialEq)]
