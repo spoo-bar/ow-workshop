@@ -146,7 +146,7 @@ fn constants(data: &Data) -> Result<TokenStream, String> {
         let kept: Vec<_> = members.iter().filter(|(_, m)| !m.only_in_tooling).collect();
         let vars = build(kept.iter().map(|(k, m)| (k.as_str(), m.names.as_ref())))
             .map_err(|e| format!("{enum_name}: {e}"))?;
-        let doc = format!("Workshop constant `{enum_name}`.");
+        let doc = constant_doc(enum_name, data);
         let mut item = enum_def(enum_name, &doc, &vars);
 
         let ident = format_ident!("{enum_name}");
@@ -458,4 +458,79 @@ fn keywords(data: &Data) -> Result<TokenStream, String> {
 
         #def
     })
+}
+
+/// Words abbreviated in constant enum names.
+const ABBREVIATIONS: [(&str, &str); 7] = [
+    ("Accel", "Acceleration"),
+    ("Hud", "HUD"),
+    ("Los", "Line Of Sight"),
+    ("Op", "Operation"),
+    ("Reeval", "Reevaluation"),
+    ("Spec", "Spectator"),
+    ("Comms", "Communication"),
+];
+
+/// A readable one-line doc for a constant enum: its spelled-out name and where it is used.
+fn constant_doc(enum_name: &str, data: &Data) -> String {
+    use crate::data::model::Ty;
+
+    // `AccelReeval` becomes "Acceleration Reevaluation".
+    let mut title = String::new();
+    let mut word = String::new();
+    let flush = |word: &mut String, title: &mut String| {
+        if word.is_empty() {
+            return;
+        }
+        if !title.is_empty() {
+            title.push(' ');
+        }
+        let spelled = ABBREVIATIONS
+            .iter()
+            .find(|(a, _)| *a == word.as_str())
+            .map_or(word.as_str(), |(_, s)| *s);
+        title.push_str(spelled);
+        word.clear();
+    };
+    for c in enum_name.chars() {
+        if c.is_uppercase() {
+            flush(&mut word, &mut title);
+        }
+        word.push(c);
+    }
+    flush(&mut word, &mut title);
+
+    // The first argument that takes this enum, and the functions that use it.
+    let mut arg_name = None;
+    let mut users: Vec<&str> = Vec::new();
+    for function in data.actions.iter().chain(&data.values) {
+        for arg in &function.args {
+            if matches!(&arg.ty, Ty::Named(n) if n == enum_name) {
+                arg_name.get_or_insert(arg.name.as_str());
+                let name = function
+                    .names
+                    .get("en-US")
+                    .map_or(function.key.as_str(), String::as_str);
+                if !users.contains(&name) {
+                    users.push(name);
+                }
+            }
+        }
+    }
+    let Some(arg) = arg_name else {
+        return format!("{title} (`{enum_name}`).");
+    };
+    let shown: Vec<String> = users.iter().take(2).map(|u| format!("`{u}`")).collect();
+    let more = users.len().saturating_sub(2);
+    let mut used = shown.join(", ");
+    if more > 0 {
+        used = format!("{used} and {more} more");
+    }
+    let mut doc = format!("{title} (`{enum_name}`): options for the `{arg}` argument of {used}.");
+    if enum_name.ends_with("Reeval") {
+        doc.push_str(
+            " Reevaluation decides which of the action's arguments are re-read while it runs.",
+        );
+    }
+    doc
 }
