@@ -22,6 +22,7 @@ mod pipeline;
 pub mod prelude;
 mod raycast;
 mod rule;
+mod subroutine;
 mod support;
 mod switch;
 mod translations;
@@ -41,6 +42,7 @@ pub use event::{
     OngoingGlobal, PlayerDealtDamage, PlayerDealtFinalBlow, PlayerDealtHealing,
     PlayerDealtKnockback, PlayerDied, PlayerEarnedElimination, PlayerEvent, PlayerJoinedMatch,
     PlayerLeftMatch, PlayerReceivedHealing, PlayerReceivedKnockback, PlayerTookDamage, RawEvent,
+    SubroutineEvent,
 };
 pub use expr::{Expr, null, vect};
 pub use generated::api::*;
@@ -54,6 +56,7 @@ pub use ow_workshop_data::Lang;
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum};
 pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
+pub use subroutine::{Sub, SubroutineOptions};
 pub use switch::SwitchBuilder;
 pub use translations::Translations;
 pub use ty::*;

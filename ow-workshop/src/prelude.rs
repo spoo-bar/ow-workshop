@@ -14,6 +14,7 @@ pub use crate::options::{CompileOptions, OptLevel};
 pub use crate::output::CompileOutput;
 pub use crate::raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use crate::rule::{ConditionRef, Rule};
+pub use crate::subroutine::{Sub, SubroutineOptions};
 pub use crate::switch::SwitchBuilder;
 pub use crate::translations::Translations;
 pub use crate::ty::*;

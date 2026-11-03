@@ -13,11 +13,18 @@ pub struct Builder {
     rules: Vec<Rule>,
     diagnostics: Diagnostics,
     labels: Rc<Cell<u32>>,
+    pub(crate) subs: crate::ir::Subs,
+    pub(crate) sub_states: Vec<crate::subroutine::SubState>,
 }
 
 // Recording methods are used as the API grows.
 #[allow(dead_code)]
 impl Builder {
+    /// The label counter shared by the blocks of this builder.
+    pub(crate) fn labels(&self) -> Rc<Cell<u32>> {
+        Rc::clone(&self.labels)
+    }
+
     /// An empty builder.
     pub(crate) fn new() -> Self {
         Self::default()
@@ -49,10 +56,13 @@ impl Builder {
 
     /// Finishes recording, returning the program and the diagnostics found so far.
     pub(crate) fn finish(self, program: Program) -> (Program, Diagnostics) {
+        let mut diagnostics = self.diagnostics;
+        crate::subroutine::report_undefined(&self.subs, &self.sub_states, &mut diagnostics);
         let program = Program {
             rules: self.rules,
+            subroutines: self.subs,
             ..program
         };
-        (program, self.diagnostics)
+        (program, diagnostics)
     }
 }
