@@ -77,6 +77,22 @@ events! {
     PlayerReceivedKnockback => PlayerReceivedKnockback: [PlayerEvent, HasEventPlayer, HasDamage, HasHealing, HasDamageOrHealing];
 }
 
+/// The event of a subroutine body: it sees the caller's event values, which are checked at the
+/// call sites instead.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SubroutineEvent;
+impl sealed::Sealed for SubroutineEvent {}
+impl EventType for SubroutineEvent {
+    fn raw(self) -> RawEvent {
+        // The subroutine's id is only known to `Builder::define`, which sets the real event.
+        RawEvent(ir::Event::Subroutine(ir::SubId(u32::MAX)))
+    }
+}
+impl HasEventPlayer for SubroutineEvent {}
+impl HasDamage for SubroutineEvent {}
+impl HasHealing for SubroutineEvent {}
+impl HasDamageOrHealing for SubroutineEvent {}
+
 /// Proof that a rule has event `E`; its methods are the values that event provides.
 pub struct Ev<E> {
     _event: PhantomData<fn() -> E>,

@@ -1,0 +1,5 @@
+error: `#[ow(value = ..)]` needs `#[ow(ty = Type)]` on the enum
+ --> tests/ui/fail/enum_value_without_ty.rs:4:1
+  |
+4 | enum Bad {
+  | ^^^^

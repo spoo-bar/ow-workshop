@@ -244,3 +244,74 @@ impl Stmt {
         }
     }
 }
+
+impl Place {
+    /// The expressions inside the place (owning player, indices).
+    pub(crate) fn exprs(&self) -> Vec<&Expr> {
+        match self {
+            Self::Global(_) => Vec::new(),
+            Self::Player { player, .. } => vec![player],
+            Self::Index { base, index } => {
+                let mut exprs = base.exprs();
+                exprs.push(index);
+                exprs
+            }
+        }
+    }
+}
+
+impl Stmt {
+    /// The expressions of this statement itself, not of nested blocks.
+    pub(crate) fn exprs(&self) -> Vec<&Expr> {
+        match &self.kind {
+            StmtKind::Action { args, .. } => args.iter().collect(),
+            StmtKind::Set { target, value } | StmtKind::Modify { target, value, .. } => {
+                let mut exprs = target.exprs();
+                exprs.push(value);
+                exprs
+            }
+            StmtKind::Chase {
+                target,
+                dest,
+                rate_or_duration,
+                reeval,
+                ..
+            } => {
+                let mut exprs = target.exprs();
+                exprs.extend([dest, rate_or_duration, reeval]);
+                exprs
+            }
+            StmtKind::StopChasing(place) => place.exprs(),
+            StmtKind::If { cond, elifs, .. } => std::iter::once(cond)
+                .chain(elifs.iter().map(|(c, _)| c))
+                .collect(),
+            StmtKind::While { cond, .. }
+            | StmtKind::DoWhile { cond, .. }
+            | StmtKind::AbortIf(cond)
+            | StmtKind::LoopIf(cond) => vec![cond],
+            StmtKind::For {
+                var,
+                start,
+                stop,
+                step,
+                ..
+            } => {
+                let mut exprs = var.exprs();
+                exprs.extend([start, stop, step]);
+                exprs
+            }
+            StmtKind::Skip(SkipTarget::Dynamic(e)) => vec![e],
+            StmtKind::SkipIf(cond, target) => {
+                let mut exprs = vec![cond];
+                if let SkipTarget::Dynamic(e) = target {
+                    exprs.push(e);
+                }
+                exprs
+            }
+            StmtKind::Switch { value, cases, .. } => std::iter::once(value)
+                .chain(cases.iter().map(|(c, _)| c))
+                .collect(),
+            _ => Vec::new(),
+        }
+    }
+}

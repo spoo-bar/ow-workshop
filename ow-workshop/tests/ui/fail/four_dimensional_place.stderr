@@ -1,0 +1,9 @@
+error[E0599]: no method named `at` found for struct `Indexed3<T>` in the current scope
+  --> tests/ui/fail/four_dimensional_place.rs:11:39
+   |
+11 |     let _ = g.hyper.at(0).at(0).at(0).at(0);
+   |             ------- ----- -----       ^^ method not found in `Indexed3<ow_workshop::Array<ow_workshop::Num>>`
+   |             |       |     |
+   |             |       |     method `at` is available on `Indexed2<ow_workshop::Array<ow_workshop::Array<ow_workshop::Num>>>`
+   |             |       method `at` is available on `Indexed<ow_workshop::Array<ow_workshop::Array<ow_workshop::Array<ow_workshop::Num>>>>`
+   |             method `at` is available on `ow_workshop::Global<ow_workshop::Array<ow_workshop::Array<ow_workshop::Array<ow_workshop::Array<ow_workshop::Num>>>>>`

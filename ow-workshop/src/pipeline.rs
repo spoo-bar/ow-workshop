@@ -16,6 +16,8 @@ pub(crate) fn run(
         diagnostics.0.extend(found.0);
     }
     crate::check::check_labels(&program.rules, &mut diagnostics);
+    crate::check::check_nested_lambdas(&program.rules, &mut diagnostics);
+    crate::check::check_multi_dim_indices(&program.rules, &mut diagnostics);
     if diagnostics.has_errors() {
         return Err(diagnostics);
     }
