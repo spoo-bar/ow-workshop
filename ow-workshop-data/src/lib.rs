@@ -1,5 +1,8 @@
 //! Static game data tables for `ow-workshop`.
 
+// The tables are long `match`es, one arm per entry.
+#![allow(clippy::too_many_lines)]
+
 // Formatted by the generator (prettyplease), not rustfmt.
 #[rustfmt::skip]
 pub mod generated;
