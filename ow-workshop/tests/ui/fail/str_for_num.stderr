@@ -1,0 +1,31 @@
+error[E0277]: the trait bound `ow_workshop::Str: Is<ow_workshop::Num>` is not satisfied
+ --> tests/ui/fail/str_for_num.rs:7:15
+  |
+7 |     takes_num(s);
+  |     --------- ^ the trait `Is<ow_workshop::Num>` is not implemented for `ow_workshop::Str`
+  |     |
+  |     required by a bound introduced by this call
+  |
+help: `ow_workshop::Str` implements trait `Is<S>`
+ --> src/ty.rs
+  |
+  |           impl Is<$t> for $t {}
+  |           ^^^^^^^^^^^^^^^^^^ `Is<ow_workshop::Str>`
+  |           impl Is<Any> for $t {}
+  |           ^^^^^^^^^^^^^^^^^^^ `Is<ow_workshop::Any>`
+...
+  | / plain_types!(
+  | |     Num,
+  | |     Int,
+  | |     Bool,
+... |
+  | |     AssistId,
+  | | );
+  | |_- in this macro invocation
+  = note: required for `ow_workshop::Expr<ow_workshop::Str>` to implement `ow_workshop::IntoExpr<ow_workshop::Num>`
+note: required by a bound in `takes_num`
+ --> tests/ui/fail/str_for_num.rs:3:22
+  |
+3 | fn takes_num(_: impl IntoExpr<Num>) {}
+  |                      ^^^^^^^^^^^^^ required by this bound in `takes_num`
+  = note: this error originates in the macro `plain_types` (in Nightly builds, run with -Z macro-backtrace for more info)
