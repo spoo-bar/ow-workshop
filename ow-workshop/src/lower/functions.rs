@@ -4,6 +4,7 @@
 use ow_workshop_data::signature::Signature;
 use ow_workshop_data::{ActionId, ValueId};
 
+use super::checks;
 use super::labels::has_dynamic_skip;
 use super::visit::{
     fold_block, map_block_roots, rewrite_block_exprs, rewrite_expr, rewrite_expr_top, walk_block,
@@ -345,6 +346,7 @@ fn lower_actions(block: &mut Block) {
 
 /// Validates, warns and rewrites the function-specific constructs.
 pub(crate) fn lower(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diagnostics> {
+    checks::check(program, ctx)?;
     let bugged = bugged_maps(program);
     for rule in &mut program.rules {
         let optimize = RuleCtx::new(rule, ctx.options).opt != OptLevel::Off;
