@@ -2,6 +2,7 @@
 
 mod enums;
 mod naming;
+mod settings;
 mod signatures;
 mod tables;
 
@@ -18,6 +19,7 @@ pub fn run(data_dir: &Path, out_dir: &Path) -> Result<(), String> {
     let mut files = enums::generate(&data)?;
     files.extend(signatures::generate(&data)?);
     files.extend(tables::generate(&data)?);
+    files.extend(settings::generate(&data)?);
     files.sort_by_key(|(name, _)| *name);
     files.push(("mod", module_list(files.iter().map(|(name, _)| *name))));
 

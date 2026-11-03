@@ -28,7 +28,7 @@ fn doc_name(text: &str) -> String {
 }
 
 /// Joins translations in `LANGS` order; untranslated or English-equal slots stay empty.
-fn pack(names: Option<&Names>) -> String {
+pub fn pack(names: Option<&Names>) -> String {
     let Some(names) = names else {
         return String::new();
     };
@@ -265,6 +265,18 @@ fn extension(data: &Data) -> Result<TokenStream, String> {
     )
     .map_err(|e| format!("extensions: {e}"))?;
     let def = enum_def("Extension", "A workshop extension.", &vars);
+    let extensions: Vec<_> = data.settings.extensions.values.values().collect();
+    // Extensions with the same cost share an arm.
+    let arms = grouped(
+        vars.iter()
+            .zip(&extensions)
+            .map(|(v, e)| (&v.name, e.points)),
+    )
+    .into_iter()
+    .map(|(names, points)| {
+        let points = Literal::u32_unsuffixed(points);
+        quote!( #( Self::#names )|* => #points, )
+    });
     Ok(quote! {
         //! Workshop extensions.
 
@@ -272,6 +284,15 @@ fn extension(data: &Data) -> Result<TokenStream, String> {
         use crate::lang::localized;
 
         #def
+
+        impl Extension {
+            /// The extension's cost in workshop points.
+            pub fn points(self) -> u32 {
+                match self {
+                    #( #arms )*
+                }
+            }
+        }
     })
 }
 

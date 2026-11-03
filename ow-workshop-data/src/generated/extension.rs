@@ -78,3 +78,20 @@ impl Extension {
         localized(NAMES[self as usize], lang)
     }
 }
+impl Extension {
+    /// The extension's cost in workshop points.
+    pub fn points(self) -> u32 {
+        match self {
+            Self::BeamSounds | Self::PlayMoreEffects => 1,
+            Self::BeamEffects
+            | Self::BuffAndDebuffSounds
+            | Self::BuffStatusEffects
+            | Self::DebuffStatusEffects
+            | Self::ExplosionSounds
+            | Self::SpawnMoreDummyBots => 2,
+            Self::EnergyExplosionEffects
+            | Self::KineticExplosionEffects
+            | Self::Projectiles => 4,
+        }
+    }
+}
