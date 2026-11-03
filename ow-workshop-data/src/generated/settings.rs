@@ -804,7 +804,7 @@ pub fn gamemode_settings(mode: Gamemode) -> Option<&'static Section> {
             );
             Some(&SECTION)
         }
-        Gamemode::Ctf => {
+        Gamemode::CaptureTheFlag => {
             static SECTION: Section = Section::new(
                 "ctf",
                 116,
@@ -1014,7 +1014,7 @@ pub fn gamemode_settings(mode: Gamemode) -> Option<&'static Section> {
             );
             Some(&SECTION)
         }
-        Gamemode::Ffa => {
+        Gamemode::Deathmatch => {
             static SECTION: Section = Section::new(
                 "ffa",
                 156,
@@ -1654,7 +1654,7 @@ pub fn gamemode_settings(mode: Gamemode) -> Option<&'static Section> {
             );
             Some(&SECTION)
         }
-        Gamemode::Tdm => {
+        Gamemode::TeamDeathmatch => {
             static SECTION: Section = Section::new(
                 "tdm",
                 206,
