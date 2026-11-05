@@ -41,7 +41,7 @@ fn opposite(a: &Expr, b: &Expr) -> bool {
 }
 
 /// The comparison that holds exactly when `op` does not.
-fn inverse(op: CmpOp) -> CmpOp {
+pub(super) fn inverse(op: CmpOp) -> CmpOp {
     match op {
         CmpOp::Eq => CmpOp::Ne,
         CmpOp::Ne => CmpOp::Eq,

@@ -6,6 +6,7 @@
 #![allow(dead_code, unused_imports, clippy::unnecessary_wraps)]
 
 mod actions;
+mod aggressive;
 mod arith;
 mod arrays;
 mod build;
@@ -32,7 +33,7 @@ use crate::ir::{
     Block, Diagnostics, Expr, LabelId, Location, Program, Rule, Stmt, SubId, WarningSet,
 };
 use crate::lower::Ctx;
-use crate::lower::visit::{blocks_mut, rewrite_expr, rewrite_stmt_exprs};
+use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};
 use crate::warning::Warning;
 
 /// Which sweep over the program is running.
@@ -40,6 +41,8 @@ use crate::warning::Warning;
 pub(crate) enum Phase {
     /// The rewrites proper.
     Rewrite,
+    /// Whole-program size rewrites that trade readability for elements.
+    Aggressive,
     /// Last touches that would undo folding if they ran earlier, e.g. direction constants.
     Finish,
 }
@@ -92,18 +95,28 @@ const FINISH_RULES: &[ExprRule] = &[vectors::rule];
 /// A rewrite of one statement whose expressions are already optimized.
 pub(crate) type StmtRule = fn(Stmt, &mut Env<'_, '_>) -> Vec<Stmt>;
 
-/// The statement rules, applied in order to every statement of an enabled block.
+/// The statement rules of the [`Phase::Rewrite`] sweep.
 const STMT_RULES: &[StmtRule] = &[actions::rule, control::rule, size::stmt_rule];
+
+/// The statement rules of the [`Phase::Aggressive`] sweep.
+const AGGRESSIVE_STMT_RULES: &[StmtRule] = &[aggressive::skip_if];
 
 /// Most rewrites of one node before giving up; guards against rules that undo each other.
 const MAX_ROUNDS: usize = 16;
 
 /// Optimizes `expr` bottom-up with every expression rule.
 pub(crate) fn optimize_expr(expr: &Expr, env: &mut Env<'_, '_>) -> Expr {
+    if env.phase == Phase::Aggressive {
+        return if env.scope.aggressive_size() {
+            aggressive::arrays(expr)
+        } else {
+            expr.clone()
+        };
+    }
     rewrite_expr(expr, &mut |mut node| {
         for _ in 0..MAX_ROUNDS {
             let optimizing = match (env.scope.enabled(), env.phase) {
-                (false, _) => &[],
+                (false, _) | (true, Phase::Aggressive) => &[],
                 (true, Phase::Rewrite) => EXPR_RULES,
                 (true, Phase::Finish) => FINISH_RULES,
             };
@@ -122,15 +135,20 @@ fn optimize_block(block: &mut Block, env: &mut Env<'_, '_>) {
     let outer = env.scope;
     let stmts = std::mem::take(&mut block.stmts);
     for mut stmt in stmts {
-        rewrite_stmt_exprs(&mut stmt, &mut |e| optimize_expr(&e, env));
+        map_stmt_roots(&mut stmt, &mut |e| optimize_expr(e, env));
         for child in blocks_mut(&mut stmt) {
             env.scope = outer.enter(child);
             optimize_block(child, env);
         }
         env.scope = outer;
         let mut out = vec![stmt];
-        if outer.enabled() && env.phase == Phase::Rewrite {
-            for rule in STMT_RULES {
+        let stmt_rules = match env.phase {
+            Phase::Rewrite => STMT_RULES,
+            Phase::Aggressive => AGGRESSIVE_STMT_RULES,
+            Phase::Finish => &[],
+        };
+        if outer.enabled() {
+            for rule in stmt_rules {
                 out = out.into_iter().flat_map(|s| rule(s, env)).collect();
             }
         }
@@ -168,12 +186,19 @@ fn optimize_rule(rule: &mut Rule, ctx: &mut Ctx<'_>, called: &HashSet<SubId>) ->
     if !control::does_something(rule, called) {
         return false;
     }
-    env.phase = Phase::Finish;
-    for cond in &mut rule.conditions {
-        cond.expr = optimize_expr(&cond.expr, &mut env);
+    for phase in [Phase::Aggressive, Phase::Finish] {
+        env.phase = phase;
+        sweep(rule, &mut env);
     }
-    optimize_block(&mut rule.body, &mut env);
     true
+}
+
+/// Runs the current phase over the rule's conditions and body.
+fn sweep(rule: &mut Rule, env: &mut Env<'_, '_>) {
+    for cond in &mut rule.conditions {
+        cond.expr = optimize_expr(&cond.expr, env);
+    }
+    optimize_block(&mut rule.body, env);
 }
 
 /// The optimize pass.
