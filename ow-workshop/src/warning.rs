@@ -34,6 +34,8 @@ pub enum Warning {
     WaitUntil,
     /// `Apply Impulse` with the legacy `Cancel Contrary Motion`.
     CancelContraryMotion,
+    /// An operation on operand types the game coerces in surprising ways, e.g. a number ÷ a vector.
+    TypeCheck,
 }
 
 impl Warning {
@@ -56,6 +58,7 @@ impl Warning {
             Self::Duration9999 => "duration-9999",
             Self::WaitUntil => "wait-until",
             Self::CancelContraryMotion => "cancel-contrary-motion",
+            Self::TypeCheck => "type-check",
         }
     }
 }
