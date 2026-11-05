@@ -15,8 +15,10 @@ mod helpers;
 mod logic;
 mod math;
 mod scope;
+mod size;
 mod strings;
 mod ty;
+mod vectors;
 
 pub(crate) use helpers::{
     always_equal, contains_lambda_vars, contains_random, definitely_falsy, definitely_truthy,
@@ -33,8 +35,19 @@ use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, rewrite_expr, rewrite_stmt_exprs};
 use crate::warning::Warning;
 
+/// Which sweep over the program is running.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Phase {
+    /// The rewrites proper.
+    Rewrite,
+    /// Last touches that would undo folding if they ran earlier, e.g. direction constants.
+    Finish,
+}
+
 /// What a rewrite rule can see: the settings in effect and the rule being optimized.
 pub(crate) struct Env<'a, 'b> {
+    /// The sweep in progress.
+    pub(crate) phase: Phase,
     /// Optimizer settings for the block being walked.
     pub(crate) scope: Scope,
     /// The shared pass context, for warnings.
@@ -70,13 +83,17 @@ const EXPR_RULES: &[ExprRule] = &[
     logic::rule,
     arrays::rule,
     strings::rule,
+    size::rule,
 ];
+
+/// The rules of the [`Phase::Finish`] sweep.
+const FINISH_RULES: &[ExprRule] = &[vectors::rule];
 
 /// A rewrite of one statement whose expressions are already optimized.
 pub(crate) type StmtRule = fn(Stmt, &mut Env<'_, '_>) -> Vec<Stmt>;
 
 /// The statement rules, applied in order to every statement of an enabled block.
-const STMT_RULES: &[StmtRule] = &[actions::rule, control::rule];
+const STMT_RULES: &[StmtRule] = &[actions::rule, control::rule, size::stmt_rule];
 
 /// Most rewrites of one node before giving up; guards against rules that undo each other.
 const MAX_ROUNDS: usize = 16;
@@ -85,7 +102,11 @@ const MAX_ROUNDS: usize = 16;
 pub(crate) fn optimize_expr(expr: &Expr, env: &mut Env<'_, '_>) -> Expr {
     rewrite_expr(expr, &mut |mut node| {
         for _ in 0..MAX_ROUNDS {
-            let optimizing = if env.scope.enabled() { EXPR_RULES } else { &[] };
+            let optimizing = match (env.scope.enabled(), env.phase) {
+                (false, _) => &[],
+                (true, Phase::Rewrite) => EXPR_RULES,
+                (true, Phase::Finish) => FINISH_RULES,
+            };
             let found = REQUIRED_RULES
                 .iter()
                 .chain(optimizing)
@@ -108,14 +129,14 @@ fn optimize_block(block: &mut Block, env: &mut Env<'_, '_>) {
         }
         env.scope = outer;
         let mut out = vec![stmt];
-        if outer.enabled() {
+        if outer.enabled() && env.phase == Phase::Rewrite {
             for rule in STMT_RULES {
                 out = out.into_iter().flat_map(|s| rule(s, env)).collect();
             }
         }
         block.stmts.extend(out);
     }
-    if outer.enabled() && !env.dynamic_skips {
+    if outer.enabled() && env.phase == Phase::Rewrite && !env.dynamic_skips {
         control::trim_unreachable(block, &env.targeted);
     }
 }
@@ -125,6 +146,7 @@ fn optimize_rule(rule: &mut Rule, ctx: &mut Ctx<'_>, called: &HashSet<SubId>) ->
     let scope = Scope::new(ctx.options).enter(&rule.body);
     let (targeted, has_skips) = control::skips(rule);
     let mut env = Env {
+        phase: Phase::Rewrite,
         scope,
         ctx,
         suppressed: rule.suppressed.clone(),
@@ -143,7 +165,15 @@ fn optimize_rule(rule: &mut Rule, ctx: &mut Ctx<'_>, called: &HashSet<SubId>) ->
         return false;
     };
     rule.conditions = conditions;
-    control::does_something(rule, called)
+    if !control::does_something(rule, called) {
+        return false;
+    }
+    env.phase = Phase::Finish;
+    for cond in &mut rule.conditions {
+        cond.expr = optimize_expr(&cond.expr, &mut env);
+    }
+    optimize_block(&mut rule.body, &mut env);
+    true
 }
 
 /// The optimize pass.

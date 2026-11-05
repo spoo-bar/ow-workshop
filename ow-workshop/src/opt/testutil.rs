@@ -150,6 +150,7 @@ pub(crate) fn run_with(e: &Expr, options: &CompileOptions) -> (String, Vec<&'sta
     let program = Program::default();
     let mut ctx = Ctx::new(options, Lang::EnUs, &mut diags, &program);
     let mut env = Env {
+        phase: super::Phase::Rewrite,
         scope: Scope::new(options),
         ctx: &mut ctx,
         suppressed: WarningSet::default(),
