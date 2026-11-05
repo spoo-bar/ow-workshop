@@ -5,13 +5,16 @@
 // The rewrite rules that use most of this land in the following changes.
 #![allow(dead_code, unused_imports, clippy::unnecessary_wraps)]
 
+mod actions;
 mod arith;
+mod arrays;
 mod build;
 mod conditions;
 mod helpers;
 mod logic;
 mod math;
 mod scope;
+mod strings;
 mod ty;
 
 pub(crate) use helpers::{
@@ -20,7 +23,7 @@ pub(crate) use helpers::{
 };
 pub(crate) use scope::Scope;
 
-use crate::ir::{Block, Diagnostics, Expr, Location, Program, Rule, WarningSet};
+use crate::ir::{Block, Diagnostics, Expr, Location, Program, Rule, Stmt, WarningSet};
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, rewrite_expr, rewrite_stmt_exprs};
 use crate::warning::Warning;
@@ -33,6 +36,9 @@ pub(crate) struct Env<'a, 'b> {
     pub(crate) ctx: &'a mut Ctx<'b>,
     /// Warnings the rule being optimized suppresses.
     pub(crate) suppressed: WarningSet,
+    /// Whether the rule has a skip whose distance is only known at runtime: statements of such
+    /// a rule must not be removed or merged.
+    pub(crate) dynamic_skips: bool,
 }
 
 impl Env<'_, '_> {
@@ -49,7 +55,19 @@ pub(crate) type ExprRule = fn(&Expr, &mut Env<'_, '_>) -> Option<Expr>;
 const REQUIRED_RULES: &[ExprRule] = &[arith::negative_literal];
 
 /// The optimizing rules, tried in order on every node.
-const EXPR_RULES: &[ExprRule] = &[arith::rule, math::rule, logic::rule];
+const EXPR_RULES: &[ExprRule] = &[
+    arith::rule,
+    math::rule,
+    logic::rule,
+    arrays::rule,
+    strings::rule,
+];
+
+/// A rewrite of one statement whose expressions are already optimized.
+pub(crate) type StmtRule = fn(Stmt, &mut Env<'_, '_>) -> Vec<Stmt>;
+
+/// The statement rules, applied in order to every statement of an enabled block.
+const STMT_RULES: &[StmtRule] = &[actions::rule];
 
 /// Most rewrites of one node before giving up; guards against rules that undo each other.
 const MAX_ROUNDS: usize = 16;
@@ -71,14 +89,22 @@ pub(crate) fn optimize_expr(expr: &Expr, env: &mut Env<'_, '_>) -> Expr {
 }
 
 fn optimize_block(block: &mut Block, env: &mut Env<'_, '_>) {
-    for stmt in &mut block.stmts {
-        rewrite_stmt_exprs(stmt, &mut |e| optimize_expr(&e, env));
-        let outer = env.scope;
-        for child in blocks_mut(stmt) {
+    let outer = env.scope;
+    let stmts = std::mem::take(&mut block.stmts);
+    for mut stmt in stmts {
+        rewrite_stmt_exprs(&mut stmt, &mut |e| optimize_expr(&e, env));
+        for child in blocks_mut(&mut stmt) {
             env.scope = outer.enter(child);
             optimize_block(child, env);
         }
         env.scope = outer;
+        let mut out = vec![stmt];
+        if outer.enabled() {
+            for rule in STMT_RULES {
+                out = out.into_iter().flat_map(|s| rule(s, env)).collect();
+            }
+        }
+        block.stmts.extend(out);
     }
 }
 
@@ -89,6 +115,7 @@ fn optimize_rule(rule: &mut Rule, ctx: &mut Ctx<'_>) -> bool {
         scope,
         ctx,
         suppressed: rule.suppressed.clone(),
+        dynamic_skips: crate::lower::labels::has_dynamic_skip(rule),
     };
     for cond in &mut rule.conditions {
         cond.expr = optimize_expr(&cond.expr, &mut env);

@@ -36,6 +36,8 @@ pub enum Warning {
     CancelContraryMotion,
     /// An operation on operand types the game coerces in surprising ways, e.g. a number ÷ a vector.
     TypeCheck,
+    /// `Value In Array` on a number, which is always 0.
+    ArrayIndexNumber,
 }
 
 impl Warning {
@@ -59,6 +61,7 @@ impl Warning {
             Self::WaitUntil => "wait-until",
             Self::CancelContraryMotion => "cancel-contrary-motion",
             Self::TypeCheck => "type-check",
+            Self::ArrayIndexNumber => "array-index-number",
         }
     }
 }

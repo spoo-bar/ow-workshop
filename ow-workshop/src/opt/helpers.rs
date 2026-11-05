@@ -34,7 +34,7 @@ fn value_id(expr: &Expr) -> Option<ValueId> {
 }
 
 /// The elements of an array expression, if it is one.
-fn array_items(expr: &Expr) -> Option<&[Expr]> {
+pub(super) fn array_items(expr: &Expr) -> Option<&[Expr]> {
     match expr.kind() {
         ExprKind::Array(items) => Some(items),
         ExprKind::Value {
