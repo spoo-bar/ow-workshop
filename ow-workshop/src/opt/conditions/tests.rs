@@ -47,7 +47,10 @@ fn a_falsy_condition_stops_the_rule() {
 }
 
 fn rule_with(conditions: Vec<Cond>, delimiter: bool) -> crate::ir::Program {
-    let mut p = program(vec![action()]);
+    let mut p = program(vec![crate::lower::testutil::act(
+        ow_workshop_data::ActionId::Kill,
+        vec![],
+    )]);
     p.rules[0].conditions = conditions;
     p.rules[0].delimiter = delimiter;
     p

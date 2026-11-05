@@ -154,6 +154,8 @@ pub(crate) fn run_with(e: &Expr, options: &CompileOptions) -> (String, Vec<&'sta
         ctx: &mut ctx,
         suppressed: WarningSet::default(),
         dynamic_skips: false,
+        targeted: std::collections::HashSet::default(),
+        has_skips: false,
     };
     let out = sh(&optimize_expr(e, &mut env));
     (out, diags.0.iter().map(|d| d.code).collect())

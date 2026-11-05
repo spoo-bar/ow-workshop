@@ -10,6 +10,7 @@ mod arith;
 mod arrays;
 mod build;
 mod conditions;
+mod control;
 mod helpers;
 mod logic;
 mod math;
@@ -23,7 +24,11 @@ pub(crate) use helpers::{
 };
 pub(crate) use scope::Scope;
 
-use crate::ir::{Block, Diagnostics, Expr, Location, Program, Rule, Stmt, WarningSet};
+use std::collections::HashSet;
+
+use crate::ir::{
+    Block, Diagnostics, Expr, LabelId, Location, Program, Rule, Stmt, SubId, WarningSet,
+};
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, rewrite_expr, rewrite_stmt_exprs};
 use crate::warning::Warning;
@@ -39,6 +44,10 @@ pub(crate) struct Env<'a, 'b> {
     /// Whether the rule has a skip whose distance is only known at runtime: statements of such
     /// a rule must not be removed or merged.
     pub(crate) dynamic_skips: bool,
+    /// Labels some skip of the rule jumps to.
+    pub(crate) targeted: HashSet<LabelId>,
+    /// Whether the rule has any skip at all.
+    pub(crate) has_skips: bool,
 }
 
 impl Env<'_, '_> {
@@ -67,7 +76,7 @@ const EXPR_RULES: &[ExprRule] = &[
 pub(crate) type StmtRule = fn(Stmt, &mut Env<'_, '_>) -> Vec<Stmt>;
 
 /// The statement rules, applied in order to every statement of an enabled block.
-const STMT_RULES: &[StmtRule] = &[actions::rule];
+const STMT_RULES: &[StmtRule] = &[actions::rule, control::rule];
 
 /// Most rewrites of one node before giving up; guards against rules that undo each other.
 const MAX_ROUNDS: usize = 16;
@@ -106,36 +115,43 @@ fn optimize_block(block: &mut Block, env: &mut Env<'_, '_>) {
         }
         block.stmts.extend(out);
     }
+    if outer.enabled() && !env.dynamic_skips {
+        control::trim_unreachable(block, &env.targeted);
+    }
 }
 
-/// Optimizes `rule` in place; `false` when it can never run and should be removed.
-fn optimize_rule(rule: &mut Rule, ctx: &mut Ctx<'_>) -> bool {
+/// Optimizes `rule` in place; `false` when it can never run or does nothing and should go.
+fn optimize_rule(rule: &mut Rule, ctx: &mut Ctx<'_>, called: &HashSet<SubId>) -> bool {
     let scope = Scope::new(ctx.options).enter(&rule.body);
+    let (targeted, has_skips) = control::skips(rule);
     let mut env = Env {
         scope,
         ctx,
         suppressed: rule.suppressed.clone(),
         dynamic_skips: crate::lower::labels::has_dynamic_skip(rule),
+        targeted,
+        has_skips,
     };
     for cond in &mut rule.conditions {
         cond.expr = optimize_expr(&cond.expr, &mut env);
     }
     optimize_block(&mut rule.body, &mut env);
-    if !scope.enabled() {
+    if !scope.enabled() || rule.delimiter {
         return true;
     }
-    match conditions::simplify(&rule.conditions) {
-        Some(conditions) => {
-            rule.conditions = conditions;
-            true
-        }
-        None => rule.delimiter,
-    }
+    let Some(conditions) = conditions::simplify(&rule.conditions) else {
+        return false;
+    };
+    rule.conditions = conditions;
+    control::does_something(rule, called)
 }
 
 /// The optimize pass.
 pub(crate) fn run(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diagnostics> {
-    program.rules.retain_mut(|rule| optimize_rule(rule, ctx));
+    let called = control::called_subroutines(&program.rules);
+    program
+        .rules
+        .retain_mut(|rule| optimize_rule(rule, ctx, &called));
     Ok(())
 }
 

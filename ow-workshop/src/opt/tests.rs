@@ -79,7 +79,10 @@ fn a_block_can_turn_the_optimizer_on() {
 
 #[test]
 fn the_pass_leaves_programs_alone_without_rules() {
-    let mut p = program(vec![action()]);
+    let mut p = program(vec![crate::lower::testutil::act(
+        ow_workshop_data::ActionId::Kill,
+        vec![],
+    )]);
     let before = p.clone();
     run_pass(&mut p);
     assert_eq!(p, before);
