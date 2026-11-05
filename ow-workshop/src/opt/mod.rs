@@ -7,7 +7,9 @@
 
 mod arith;
 mod build;
+mod conditions;
 mod helpers;
+mod logic;
 mod math;
 mod scope;
 mod ty;
@@ -47,7 +49,7 @@ pub(crate) type ExprRule = fn(&Expr, &mut Env<'_, '_>) -> Option<Expr>;
 const REQUIRED_RULES: &[ExprRule] = &[arith::negative_literal];
 
 /// The optimizing rules, tried in order on every node.
-const EXPR_RULES: &[ExprRule] = &[arith::rule, math::rule];
+const EXPR_RULES: &[ExprRule] = &[arith::rule, math::rule, logic::rule];
 
 /// Most rewrites of one node before giving up; guards against rules that undo each other.
 const MAX_ROUNDS: usize = 16;
@@ -80,7 +82,8 @@ fn optimize_block(block: &mut Block, env: &mut Env<'_, '_>) {
     }
 }
 
-fn optimize_rule(rule: &mut Rule, ctx: &mut Ctx<'_>) {
+/// Optimizes `rule` in place; `false` when it can never run and should be removed.
+fn optimize_rule(rule: &mut Rule, ctx: &mut Ctx<'_>) -> bool {
     let scope = Scope::new(ctx.options).enter(&rule.body);
     let mut env = Env {
         scope,
@@ -91,13 +94,21 @@ fn optimize_rule(rule: &mut Rule, ctx: &mut Ctx<'_>) {
         cond.expr = optimize_expr(&cond.expr, &mut env);
     }
     optimize_block(&mut rule.body, &mut env);
+    if !scope.enabled() {
+        return true;
+    }
+    match conditions::simplify(&rule.conditions) {
+        Some(conditions) => {
+            rule.conditions = conditions;
+            true
+        }
+        None => rule.delimiter,
+    }
 }
 
 /// The optimize pass.
 pub(crate) fn run(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diagnostics> {
-    for rule in &mut program.rules {
-        optimize_rule(rule, ctx);
-    }
+    program.rules.retain_mut(|rule| optimize_rule(rule, ctx));
     Ok(())
 }
 
