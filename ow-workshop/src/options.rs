@@ -23,6 +23,11 @@ pub enum OptLevel {
 pub struct CompileOptions {
     /// Optimizer level.
     pub optimize: OptLevel,
+    /// Skip rewrites that change behaviour under workshop type coercion (`A * 0` may be a
+    /// vector, `A + 0` may not be a number).
+    pub strict: bool,
+    /// Whole-program size rewrites that may hurt readability; needs [`OptLevel::Size`].
+    pub aggressive_size: bool,
     /// Leave out the `variables {}` block.
     pub exclude_variables_block: bool,
     /// Print the element count in a summary comment.
@@ -45,6 +50,8 @@ impl Default for CompileOptions {
     fn default() -> Self {
         Self {
             optimize: OptLevel::default(),
+            strict: false,
+            aggressive_size: false,
             exclude_variables_block: false,
             debug_element_count: false,
             disable_inspector: false,
@@ -60,6 +67,8 @@ impl Default for CompileOptions {
 impl PartialEq for CompileOptions {
     fn eq(&self, other: &Self) -> bool {
         self.optimize == other.optimize
+            && self.strict == other.strict
+            && self.aggressive_size == other.aggressive_size
             && self.exclude_variables_block == other.exclude_variables_block
             && self.debug_element_count == other.debug_element_count
             && self.disable_inspector == other.disable_inspector

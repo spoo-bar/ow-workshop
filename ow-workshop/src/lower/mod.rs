@@ -157,7 +157,7 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("lower loops", loops::lower),
     ("lower dictionaries", dicts::lower),
     ("lower functions", functions::lower),
-    ("optimize", noop),
+    ("optimize", crate::opt::run),
     ("resolve labels", labels::resolve_labels),
     ("flatten", noop),
 ];

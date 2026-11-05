@@ -53,6 +53,7 @@ mod label;
 mod lower;
 mod math;
 mod ops;
+mod opt;
 mod options;
 mod output;
 mod pipeline;
