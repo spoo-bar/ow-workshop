@@ -8,6 +8,7 @@ use ow_workshop_data::{ActionId, ValueId as V};
 use super::Env;
 use super::build::{call_args, is_num, is_zero_vec, num_of, value};
 use super::helpers::definitely_falsy;
+use super::replacements;
 use crate::ir::Expr;
 use crate::ir::{ExprKind, ModifyOp, Place, Stmt, StmtKind, StrExpr, StrToken};
 
@@ -23,17 +24,8 @@ fn is_null(e: &Expr) -> bool {
     matches!(e.kind(), ExprKind::Null) || call_args(e, V::Null).is_some()
 }
 
-fn is_empty_string(e: &Expr) -> bool {
-    matches!(
-        e.kind(),
-        ExprKind::Str(StrExpr::Custom { tokens, args })
-            if args.is_empty()
-                && tokens.iter().all(|t| matches!(t, StrToken::Text(s) if s.is_empty()))
-    )
-}
-
 /// The argument replaced by a cheaper equal one, if the signature allows it: the first match wins.
-fn replacement(arg: &Expr, flags: ReplaceFlags) -> Option<Expr> {
+fn replacement(arg: &Expr, flags: ReplaceFlags, env: &Env<'_, '_>) -> Option<Expr> {
     if is_num(arg, 0.0) {
         if flags.zero_by_false() {
             return Some(boolean(false, arg));
@@ -44,6 +36,10 @@ fn replacement(arg: &Expr, flags: ReplaceFlags) -> Option<Expr> {
     }
     if is_num(arg, 1.0) && flags.one_by_true() {
         return Some(boolean(true, arg));
+    }
+    // Signature flags win over the replacements the mod's author opted into.
+    if let Some(found) = replacements::literal(arg, env) {
+        return Some(found);
     }
     if is_zero_vec(arg) {
         if flags.null_vector_by_null() {
@@ -57,9 +53,11 @@ fn replacement(arg: &Expr, flags: ReplaceFlags) -> Option<Expr> {
             arg.loc(),
         ));
     }
-    if is_empty_string(arg) {
+    if replacements::is_empty_string(arg) {
         return Some(if flags.empty_string_by_empty_array() {
             Expr::new(ExprKind::Array(Vec::new()), arg.loc())
+        } else if let Some(found) = replacements::empty_string(arg, env) {
+            found
         } else {
             // The workshop cannot write an empty string: take the first character of nothing.
             value(
@@ -76,13 +74,17 @@ fn replacement(arg: &Expr, flags: ReplaceFlags) -> Option<Expr> {
 }
 
 /// Replaces arguments in place; `flags(i)` gives the flags of argument `i`.
-fn replace_all(args: &[Expr], flags: impl Fn(usize) -> ReplaceFlags) -> Option<Vec<Expr>> {
+fn replace_all(
+    args: &[Expr],
+    env: &Env<'_, '_>,
+    flags: impl Fn(usize) -> ReplaceFlags,
+) -> Option<Vec<Expr>> {
     let mut changed = false;
     let out = args
         .iter()
         .enumerate()
         .map(|(i, arg)| {
-            replacement(arg, flags(i)).map_or_else(
+            replacement(arg, flags(i), env).map_or_else(
                 || arg.clone(),
                 |new| {
                     changed = true;
@@ -130,9 +132,11 @@ fn operator_id(kind: &ExprKind) -> Option<V> {
 /// The components of a vector literal with `0` and `1` replaced by `False` and `True`.
 ///
 /// Runs in the finish sweep, after direction constants had their chance.
-pub(super) fn vector_parts(parts: &[Expr; 3]) -> Option<[Expr; 3]> {
+pub(super) fn vector_parts(parts: &[Expr; 3], env: &Env<'_, '_>) -> Option<[Expr; 3]> {
     let sig = V::Vect.signature().args;
-    replace_all(parts, |i| flags_of(sig, i))?.try_into().ok()
+    replace_all(parts, env, |i| flags_of(sig, i))?
+        .try_into()
+        .ok()
 }
 
 /// Replaces literals in the arguments of a node.
@@ -144,19 +148,19 @@ pub(super) fn rule(e: &Expr, env: &mut Env<'_, '_>) -> Option<Expr> {
     match e.kind() {
         ExprKind::Value { id, args } if !is_workshop_setting(*id) => {
             let sig = id.signature().args;
-            let args = replace_all(args, |i| flags_of(sig, i))?;
+            let args = replace_all(args, env, |i| flags_of(sig, i))?;
             Some(value(*id, args, loc))
         }
         ExprKind::Array(items) => {
             let sig = V::Array.signature().args;
             Some(Expr::new(
-                ExprKind::Array(replace_all(items, |i| flags_of(sig, i))?),
+                ExprKind::Array(replace_all(items, env, |i| flags_of(sig, i))?),
                 loc,
             ))
         }
         ExprKind::Str(StrExpr::Custom { tokens, args }) => {
             let sig = V::CustomString.signature().args;
-            let args = replace_all(args, |i| flags_of(sig, i + 1))?;
+            let args = replace_all(args, env, |i| flags_of(sig, i + 1))?;
             Some(Expr::new(
                 ExprKind::Str(StrExpr::Custom {
                     tokens: tokens.clone(),
@@ -166,7 +170,15 @@ pub(super) fn rule(e: &Expr, env: &mut Env<'_, '_>) -> Option<Expr> {
             ))
         }
         ExprKind::Compare { op, lhs, rhs } => {
-            let side = |x: &Expr| if is_num(x, 0.0) { null(x) } else { x.clone() };
+            let side = |x: &Expr| {
+                if is_num(x, 0.0) {
+                    null(x)
+                } else {
+                    replacements::one(x, env)
+                        .or_else(|| replacements::team_one(x, env))
+                        .unwrap_or_else(|| x.clone())
+                }
+            };
             let (new_lhs, new_rhs) = (side(lhs), side(rhs));
             (new_lhs != *lhs || new_rhs != *rhs).then(|| {
                 Expr::new(
@@ -182,7 +194,7 @@ pub(super) fn rule(e: &Expr, env: &mut Env<'_, '_>) -> Option<Expr> {
         kind => {
             let sig = operator_id(kind)?.signature().args;
             let children: Vec<Expr> = kind.children().into_iter().cloned().collect();
-            let replaced = replace_all(&children, |i| flags_of(sig, i))?;
+            let replaced = replace_all(&children, env, |i| flags_of(sig, i))?;
             let mut it = replaced.into_iter();
             let mut next = || it.next();
             Some(Expr::new(rebuild(kind, &mut next)?, loc))
@@ -237,7 +249,7 @@ fn ignored_colors(id: ActionId) -> &'static [(usize, usize)] {
     }
 }
 
-fn action(id: ActionId, args: &mut Vec<Expr>) {
+fn action(id: ActionId, args: &mut Vec<Expr>, env: &Env<'_, '_>) {
     if id == ActionId::Wait {
         // Waits shorter than a frame are cast to 0.016 anyway.
         if args.first().and_then(num_of).is_some_and(|d| d <= 0.016) {
@@ -245,7 +257,7 @@ fn action(id: ActionId, args: &mut Vec<Expr>) {
         }
     }
     let sig = id.signature().args;
-    if let Some(new) = replace_all(args, |i| flags_of(sig, i)) {
+    if let Some(new) = replace_all(args, env, |i| flags_of(sig, i)) {
         *args = new;
     }
     let colors: &[(usize, usize)] = if id == ActionId::HudText {
@@ -280,11 +292,11 @@ pub(super) fn stmt_rule(mut stmt: Stmt, env: &mut Env<'_, '_>) -> Vec<Stmt> {
         return vec![stmt];
     }
     match &mut stmt.kind {
-        StmtKind::Action { id, args } => action(*id, args),
+        StmtKind::Action { id, args } => action(*id, args, env),
         StmtKind::Set { target, value } => {
             if is_num(value, 0.0) {
                 *value = null(value);
-            } else if let Some(new) = replacement(value, ReplaceFlags::NONE) {
+            } else if let Some(new) = replacement(value, ReplaceFlags::NONE, env) {
                 *value = new;
             }
             if let Place::Index { index, .. } = target {

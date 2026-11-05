@@ -52,7 +52,7 @@ pub(super) fn rule(e: &Expr, env: &mut Env<'_, '_>) -> Option<Expr> {
         )),
         _ if env.scope.size() => {
             let parts: &[Expr; 3] = parts;
-            super::size::vector_parts(parts).map(|p| Expr::new(ExprKind::Vector(p), loc))
+            super::size::vector_parts(parts, env).map(|p| Expr::new(ExprKind::Vector(p), loc))
         }
         _ => None,
     }

@@ -15,6 +15,7 @@ mod control;
 mod helpers;
 mod logic;
 mod math;
+mod replacements;
 mod scope;
 mod size;
 mod strings;
@@ -25,12 +26,13 @@ pub(crate) use helpers::{
     always_equal, contains_lambda_vars, contains_random, definitely_falsy, definitely_truthy,
     fold_guard, is_literal,
 };
+pub(crate) use replacements::declare_variables;
 pub(crate) use scope::Scope;
 
 use std::collections::HashSet;
 
 use crate::ir::{
-    Block, Diagnostics, Expr, LabelId, Location, Program, Rule, Stmt, SubId, WarningSet,
+    Block, Diagnostics, Expr, LabelId, Location, Program, Rule, Stmt, SubId, VarId, WarningSet,
 };
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};
@@ -64,6 +66,8 @@ pub(crate) struct Env<'a, 'b> {
     pub(crate) targeted: HashSet<LabelId>,
     /// Whether the rule has any skip at all.
     pub(crate) has_skips: bool,
+    /// The global that holds the empty string, when declared.
+    pub(crate) empty_string: Option<VarId>,
 }
 
 impl Env<'_, '_> {
@@ -160,7 +164,12 @@ fn optimize_block(block: &mut Block, env: &mut Env<'_, '_>) {
 }
 
 /// Optimizes `rule` in place; `false` when it can never run or does nothing and should go.
-fn optimize_rule(rule: &mut Rule, ctx: &mut Ctx<'_>, called: &HashSet<SubId>) -> bool {
+fn optimize_rule(
+    rule: &mut Rule,
+    ctx: &mut Ctx<'_>,
+    called: &HashSet<SubId>,
+    empty_string: Option<VarId>,
+) -> bool {
     let scope = Scope::new(ctx.options).enter(&rule.body);
     let (targeted, has_skips) = control::skips(rule);
     let mut env = Env {
@@ -171,6 +180,7 @@ fn optimize_rule(rule: &mut Rule, ctx: &mut Ctx<'_>, called: &HashSet<SubId>) ->
         dynamic_skips: crate::lower::labels::has_dynamic_skip(rule),
         targeted,
         has_skips,
+        empty_string,
     };
     for cond in &mut rule.conditions {
         cond.expr = optimize_expr(&cond.expr, &mut env);
@@ -204,9 +214,10 @@ fn sweep(rule: &mut Rule, env: &mut Env<'_, '_>) {
 /// The optimize pass.
 pub(crate) fn run(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diagnostics> {
     let called = control::called_subroutines(&program.rules);
+    let empty_string = replacements::empty_string_var(program);
     program
         .rules
-        .retain_mut(|rule| optimize_rule(rule, ctx, &called));
+        .retain_mut(|rule| optimize_rule(rule, ctx, &called, empty_string));
     Ok(())
 }
 

@@ -150,6 +150,7 @@ pub(crate) fn noop(_: &mut Program, _: &mut Ctx<'_>) -> Result<(), Diagnostics> 
 
 /// The passes run before emitting, in order.
 pub(crate) const PIPELINE: &[(&str, Pass)] = &[
+    ("optimizer variables", crate::opt::declare_variables),
     ("generated rules", generated::add_rules),
     ("variable usage", varflags::collect),
     ("subroutine checks", subs::check),
