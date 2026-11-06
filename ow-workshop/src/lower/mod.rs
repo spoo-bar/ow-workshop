@@ -130,7 +130,7 @@ impl RuleCtx {
 }
 
 /// The level after applying a block's override to `outer`.
-fn effective_opt(outer: OptLevel, over: Option<crate::ir::OptOverride>) -> OptLevel {
+pub(crate) fn effective_opt(outer: OptLevel, over: Option<crate::ir::OptOverride>) -> OptLevel {
     match over {
         None => outer,
         Some(o) if !o.enabled => OptLevel::Off,

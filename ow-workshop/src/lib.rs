@@ -47,6 +47,7 @@ mod control;
 mod dict;
 mod event;
 mod expr;
+mod flatten;
 mod generated;
 mod ir;
 mod label;
