@@ -44,9 +44,12 @@ mod builder;
 mod check;
 mod cli;
 mod control;
+mod count;
 mod dict;
+mod emit;
 mod event;
 mod expr;
+mod flatten;
 mod generated;
 mod ir;
 mod label;
@@ -71,6 +74,7 @@ mod warning;
 mod workshop;
 #[cfg(test)]
 mod workshop_enum;
+mod wrap;
 
 pub use block::Block;
 pub use builder::Builder;

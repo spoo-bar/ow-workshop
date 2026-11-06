@@ -130,7 +130,7 @@ impl RuleCtx {
 }
 
 /// The level after applying a block's override to `outer`.
-fn effective_opt(outer: OptLevel, over: Option<crate::ir::OptOverride>) -> OptLevel {
+pub(crate) fn effective_opt(outer: OptLevel, over: Option<crate::ir::OptOverride>) -> OptLevel {
     match over {
         None => outer,
         Some(o) if !o.enabled => OptLevel::Off,
@@ -160,7 +160,8 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("lower functions", functions::lower),
     ("optimize", crate::opt::run),
     ("resolve labels", labels::resolve_labels),
-    ("flatten", noop),
+    // Flattening runs inside counting and printing, which need the structured form.
+    ("literal limits and boolean slots", crate::wrap::run),
 ];
 
 /// Runs `passes` in order, stopping at the first error.
