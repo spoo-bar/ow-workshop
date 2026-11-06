@@ -1,5 +1,3 @@
-use proptest::prelude::*;
-
 use super::*;
 use crate::ir::{StmtKind, VarId};
 use crate::lower::testutil::*;
@@ -158,38 +156,45 @@ fn nested_templates_inside_arguments_are_split_too() {
     assert_eq!(expand(&out), "y".repeat(200));
 }
 
-fn pool_arg() -> impl Strategy<Value = u32> {
-    1u32..=5
-}
+#[cfg(not(target_arch = "wasm32"))]
+mod random {
+    use proptest::prelude::*;
 
-fn piece() -> impl Strategy<Value = Result<String, u32>> {
-    prop_oneof![
-        3 => "[a-c é{}\u{3000}]{0,200}".prop_map(Ok),
-        2 => pool_arg().prop_map(Err),
-    ]
-}
+    use super::*;
 
-proptest! {
-    #[test]
-    fn random_templates_split_validly_and_losslessly(pieces in prop::collection::vec(piece(), 0..30)) {
-        let mut tokens = Vec::new();
-        let mut args = Vec::new();
-        let mut original = String::new();
-        for p in &pieces {
-            match p {
-                Ok(s) => {
-                    original.push_str(s);
-                    tokens.push(StrToken::Text(s.clone()));
-                }
-                Err(k) => {
-                    original.push_str(&["<", &k.to_string(), ">"].concat());
-                    tokens.push(StrToken::Arg(args.len()));
-                    args.push(var(*k));
+    fn pool_arg() -> impl Strategy<Value = u32> {
+        1u32..=5
+    }
+
+    fn piece() -> impl Strategy<Value = Result<String, u32>> {
+        prop_oneof![
+            3 => "[a-c é{}\u{3000}]{0,200}".prop_map(Ok),
+            2 => pool_arg().prop_map(Err),
+        ]
+    }
+
+    proptest! {
+        #[test]
+        fn random_templates_split_validly_and_losslessly(pieces in prop::collection::vec(piece(), 0..30)) {
+            let mut tokens = Vec::new();
+            let mut args = Vec::new();
+            let mut original = String::new();
+            for p in &pieces {
+                match p {
+                    Ok(s) => {
+                        original.push_str(s);
+                        tokens.push(StrToken::Text(s.clone()));
+                    }
+                    Err(k) => {
+                        original.push_str(&["<", &k.to_string(), ">"].concat());
+                        tokens.push(StrToken::Arg(args.len()));
+                        args.push(var(*k));
+                    }
                 }
             }
+            let out = split_one(template(tokens, args));
+            assert_valid(&out);
+            prop_assert_eq!(expand(&out), original);
         }
-        let out = split_one(template(tokens, args));
-        assert_valid(&out);
-        prop_assert_eq!(expand(&out), original);
     }
 }
