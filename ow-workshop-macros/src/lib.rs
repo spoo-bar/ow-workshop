@@ -1,5 +1,6 @@
 //! Derive macros for `ow-workshop`.
 
+mod fmt;
 mod vars;
 mod workshop_enum;
 
@@ -28,4 +29,14 @@ pub fn derive_player_vars(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(WorkshopEnum, attributes(ow))]
 pub fn derive_workshop_enum(input: TokenStream) -> TokenStream {
     workshop_enum::expand(input.into()).into()
+}
+
+/// A `format!`-like workshop string: `ws_fmt!("Score: {} / {}", a, b)`.
+///
+/// Supports `{}`, `{0}` (not together), `{name}` (an argument `name = expr` or an identifier in
+/// scope) and `{{` / `}}`. The result is an `Expr<Str>` of any length; the compiler splits it into
+/// nested custom strings.
+#[proc_macro]
+pub fn ws_fmt(input: TokenStream) -> TokenStream {
+    fmt::expand(input.into()).into()
 }

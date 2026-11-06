@@ -38,7 +38,7 @@ pub(crate) enum StrToken {
     /// Literal text.
     Text(String),
     /// Placeholder `{n}`, an index into the string's args.
-    Arg(u8),
+    Arg(usize),
 }
 
 /// A string-valued expression.

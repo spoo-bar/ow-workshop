@@ -22,8 +22,20 @@ fn entities(data: &Data) -> Result<TokenStream, String> {
         names.push(name);
         chars.push(char::from_u32(*code).ok_or(format!("entity `{name}`: bad code point"))?);
     }
+    let consts: Vec<_> = names
+        .iter()
+        .map(|n| format_ident!("{}", n.to_uppercase()))
+        .collect();
+    let docs: Vec<_> = names.iter().map(|n| format!("The `{n}` entity.")).collect();
     Ok(quote! {
         //! Named characters usable in workshop strings.
+
+        /// Named character constants, e.g. `chars::BLACK_SQUARE`.
+        pub mod chars {
+            #( #[doc = #docs] pub const #consts: char = #chars; )*
+            /// `U+00AD`, invisible; breaks words the game censors.
+            pub const SOFT_HYPHEN: char = '\u{AD}';
+        }
 
         /// The character of a string entity such as `black_square`.
         pub fn entity(name: &str) -> Option<char> {
