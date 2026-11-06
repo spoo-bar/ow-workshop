@@ -38,6 +38,8 @@ pub enum Warning {
     TypeCheck,
     /// `Value In Array` on a number, which is always 0.
     ArrayIndexNumber,
+    /// An array in a string, of which only the first element shows.
+    ArrayInString,
 }
 
 impl Warning {
@@ -62,6 +64,7 @@ impl Warning {
             Self::CancelContraryMotion => "cancel-contrary-motion",
             Self::TypeCheck => "type-check",
             Self::ArrayIndexNumber => "array-index-number",
+            Self::ArrayInString => "array-in-string",
         }
     }
 }
