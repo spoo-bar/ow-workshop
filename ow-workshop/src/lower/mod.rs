@@ -160,7 +160,8 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("lower functions", functions::lower),
     ("optimize", crate::opt::run),
     ("resolve labels", labels::resolve_labels),
-    ("flatten", noop),
+    // Flattening runs inside counting and printing, which need the structured form.
+    ("literal limits and boolean slots", crate::wrap::run),
 ];
 
 /// Runs `passes` in order, stopping at the first error.

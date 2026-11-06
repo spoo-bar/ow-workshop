@@ -10,7 +10,7 @@ use super::{Cx, indent, keyword, write_censored_string, write_string};
 use crate::count::{Counts, RuleCount};
 use crate::flatten::{FlatKind, FlatStmt, OptState, flatten_rule};
 use crate::ir::{Event, Expr, ExprKind, PlayerFilter, Rule};
-use ow_workshop_data::Ty;
+use ow_workshop_data::{Ty, ValueId};
 
 /// Writes every rule, each followed by a blank line. With `counts`, annotates the element
 /// counts of rules, conditions and actions.
@@ -137,6 +137,11 @@ fn is_boolean(expr: &Expr) -> bool {
         | ExprKind::And(..)
         | ExprKind::Or(..)
         | ExprKind::Not(_) => true,
+        // `First Of(x)` wraps a boolean the game would reject; the form stays `x == True`.
+        ExprKind::Value {
+            id: ValueId::FirstOf,
+            args,
+        } => args.first().is_some_and(is_boolean),
         ExprKind::Value { id, .. } => id.signature().ret == Ty::Bool,
         _ => false,
     }

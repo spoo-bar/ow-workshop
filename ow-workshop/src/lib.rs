@@ -74,6 +74,7 @@ mod warning;
 mod workshop;
 #[cfg(test)]
 mod workshop_enum;
+mod wrap;
 
 pub use block::Block;
 pub use builder::Builder;
