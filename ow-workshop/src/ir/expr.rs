@@ -166,6 +166,13 @@ pub(crate) enum ExprKind {
     },
     /// A language-dependent string; removed by lowering.
     Translated(Translated),
+    /// A call of a localized (built-in phrase) string; removed by lowering.
+    LocalizedCall {
+        /// The phrase, or the English text that matched none.
+        phrase: Result<LocalizedString, String>,
+        /// Up to three placeholder arguments.
+        args: Vec<Expr>,
+    },
     /// A modifier applied to a string template; removed by lowering.
     StrModify {
         /// The modifier.
@@ -250,6 +257,7 @@ impl ExprKind {
                 .chain(default)
                 .collect(),
             Self::Translated(t) => t.args.iter().collect(),
+            Self::LocalizedCall { args, .. } => args.iter().collect(),
         }
     }
 }
