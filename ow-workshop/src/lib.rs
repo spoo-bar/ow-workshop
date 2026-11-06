@@ -53,6 +53,7 @@ mod label;
 mod lower;
 mod math;
 mod ops;
+mod opt;
 mod options;
 mod output;
 mod pipeline;
@@ -90,7 +91,7 @@ pub use ir::{Diagnostic, Diagnostics, Location, Settings, Severity, TeamFilter, 
 pub use label::Label;
 pub use math::{ceil, floor, round};
 pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
-pub use options::{CompileOptions, OptLevel};
+pub use options::{CompileOptions, EmptyString, OptLevel, Replacements};
 pub use output::{Catalog, CompileOutput};
 pub use ow_workshop_data::Lang;
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum};

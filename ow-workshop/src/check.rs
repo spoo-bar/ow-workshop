@@ -140,7 +140,7 @@ fn walk_block(block: &Block, diagnostics: &mut Diagnostics) {
     }
 }
 
-fn is_lambda(id: ValueId) -> bool {
+pub(crate) fn is_lambda(id: ValueId) -> bool {
     matches!(
         id,
         ValueId::FilteredArray

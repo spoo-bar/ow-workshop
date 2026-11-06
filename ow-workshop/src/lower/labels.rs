@@ -60,7 +60,7 @@ fn collect_placeholders(expr: &Expr, labels: &mut Vec<LabelId>) {
     }
 }
 
-fn skip_labels(kind: &StmtKind) -> Option<Vec<LabelId>> {
+pub(crate) fn skip_labels(kind: &StmtKind) -> Option<Vec<LabelId>> {
     let (StmtKind::Skip(target) | StmtKind::SkipIf(_, target)) = kind else {
         return None;
     };
