@@ -7,11 +7,15 @@
 #![allow(dead_code, unused_imports)]
 
 mod censor;
+mod constant;
 mod expr;
 mod keyword;
 mod number;
 mod rule;
+mod stmt;
 mod string;
+#[cfg(test)]
+mod testutil;
 
 use core::fmt::{self, Write};
 

@@ -22,7 +22,7 @@ pub(crate) fn write_censored_string(out: &mut impl Write, text: &str) -> fmt::Re
 }
 
 /// Escapes `\`, `"`, LF and CR; nothing else.
-fn write_escaped(out: &mut impl Write, text: &str) -> fmt::Result {
+pub(super) fn write_escaped(out: &mut impl Write, text: &str) -> fmt::Result {
     for c in text.chars() {
         match c {
             '\\' => out.write_str("\\\\")?,

@@ -4,10 +4,11 @@ use core::fmt::{self, Write};
 
 use ow_workshop_data::{ActionId, Keyword, Lang};
 
-use super::expr::{truth, write_expr, write_stmt};
+use super::expr::{operator, truth, write_expr};
+use super::stmt::{write_for, write_stmt};
 use super::{Cx, indent, keyword, write_censored_string, write_string};
 use crate::flatten::{FlatKind, FlatStmt, OptState, flatten_rule};
-use crate::ir::{CmpOp, Event, Expr, ExprKind, PlayerFilter, Rule};
+use crate::ir::{Event, Expr, ExprKind, PlayerFilter, Rule};
 use ow_workshop_data::Ty;
 
 /// Writes every rule, each followed by a blank line.
@@ -113,17 +114,6 @@ fn is_boolean(expr: &Expr) -> bool {
     }
 }
 
-fn operator(op: CmpOp) -> &'static str {
-    match op {
-        CmpOp::Eq => "==",
-        CmpOp::Ne => "!=",
-        CmpOp::Lt => "<",
-        CmpOp::Le => "<=",
-        CmpOp::Gt => ">",
-        CmpOp::Ge => ">=",
-    }
-}
-
 /// Writes a condition in the `lhs op rhs` form the game requires.
 fn write_condition(out: &mut impl Write, cx: Cx<'_>, expr: &Expr) -> fmt::Result {
     match expr.kind() {
@@ -212,7 +202,12 @@ fn write_line(
             word(cx, Keyword::Disabled),
             name(ActionId::Return)
         )?,
-        FlatKind::For { .. } => return Err(fmt::Error),
+        FlatKind::For {
+            var,
+            start,
+            stop,
+            step,
+        } => write_for(out, cx, var, [start, stop, step])?,
     }
     out.write_str(";\n")
 }
