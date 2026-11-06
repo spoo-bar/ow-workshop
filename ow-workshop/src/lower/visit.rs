@@ -73,6 +73,7 @@ pub(crate) fn map_children(kind: &ExprKind, g: &mut impl FnMut(&Expr) -> Expr) -
         | K::ArrayElem
         | K::ArrayIndex
         | K::RuleCondition
+        | K::HolyGrail
         | K::LabelDistance(_) => kind.clone(),
         K::Vector([x, y, z]) => K::Vector([g(x), g(y), g(z)]),
         K::Array(items) => K::Array(items.iter().map(&mut *g).collect()),

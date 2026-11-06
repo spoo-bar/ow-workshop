@@ -166,6 +166,8 @@ pub(crate) enum ExprKind {
     },
     /// A language-dependent string; removed by lowering.
     Translated(Translated),
+    /// The raw `<` character kept in `__holygrail__`; replaced by that global when lowering.
+    HolyGrail,
     /// A call of a localized (built-in phrase) string; removed by lowering.
     LocalizedCall {
         /// The phrase, or the English text that matched none.
@@ -232,6 +234,7 @@ impl ExprKind {
             | Self::ArrayElem
             | Self::ArrayIndex
             | Self::RuleCondition
+            | Self::HolyGrail
             | Self::LabelDistance(_) => Vec::new(),
             Self::Vector(parts) => parts.iter().collect(),
             Self::Array(items) => items.iter().collect(),

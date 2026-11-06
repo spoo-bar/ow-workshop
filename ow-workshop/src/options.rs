@@ -73,7 +73,7 @@ pub struct CompileOptions {
     pub player_init_rule_name: String,
     /// Warnings to suppress everywhere.
     pub suppress: WarningSet,
-    /// Emit tags around generated rules.
+    /// Enable `<fg…>` / `<tx…>` text tags (always on when a `Texture` is used).
     pub tags: bool,
     /// Builds the final rule name from its name and group prefix.
     pub rule_name_template: fn(&RuleMeta) -> String,

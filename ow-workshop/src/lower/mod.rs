@@ -22,6 +22,7 @@ pub(crate) mod split;
 pub(crate) mod strings;
 pub(crate) mod subs;
 pub(crate) mod switch;
+pub(crate) mod tags;
 pub(crate) mod varflags;
 pub(crate) mod visit;
 
@@ -165,6 +166,7 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("string modifiers", modifiers::apply),
     ("localized strings", localized::lower),
     ("normalize strings", strings::normalize),
+    ("text tags", tags::lower),
     ("optimize", crate::opt::run),
     ("split strings", split::run),
     ("resolve labels", labels::resolve_labels),

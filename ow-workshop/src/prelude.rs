@@ -25,6 +25,8 @@ pub use crate::vars::{
     VarRegistry,
 };
 pub use crate::workshop::{Workshop, WorkshopExt};
-pub use crate::{Diagnostic, Diagnostics, Lang, LocalizedString, Settings, TeamFilter, Warning};
+pub use crate::{
+    Diagnostic, Diagnostics, Lang, LocalizedString, Settings, TeamFilter, Texture, Warning,
+};
 pub use ow_workshop_data::chars;
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
