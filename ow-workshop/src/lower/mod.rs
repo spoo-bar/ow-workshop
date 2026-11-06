@@ -16,6 +16,7 @@ pub(crate) mod functions;
 pub(crate) mod generated;
 pub(crate) mod labels;
 pub(crate) mod loops;
+pub(crate) mod split;
 pub(crate) mod strings;
 pub(crate) mod subs;
 pub(crate) mod switch;
@@ -161,6 +162,7 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("lower functions", functions::lower),
     ("normalize strings", strings::normalize),
     ("optimize", crate::opt::run),
+    ("split strings", split::run),
     ("resolve labels", labels::resolve_labels),
     // Flattening runs inside counting and printing, which need the structured form.
     ("literal limits and boolean slots", crate::wrap::run),

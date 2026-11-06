@@ -23,5 +23,9 @@ similar = "2"
 trybuild = "1"
 wasm-bindgen-test = "0.3"
 
+# Not on wasm: its random-number and process dependencies do not build there.
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+proptest = "1"
+
 [lints]
 workspace = true

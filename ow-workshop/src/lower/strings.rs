@@ -56,6 +56,24 @@ fn normalize_node(expr: Expr, env: &mut Env<'_, '_>) -> Expr {
     Expr::new(ExprKind::Str(StrExpr::Custom { tokens, args }), expr.loc())
 }
 
+/// Gives every placeholder of a template its own argument, in order.
+pub(crate) fn unnumber(tokens: &[StrToken], args: &[Expr]) -> (Vec<StrToken>, Vec<Expr>) {
+    let mut out = Vec::new();
+    let mut out_args = Vec::new();
+    for token in tokens {
+        match token {
+            StrToken::Text(text) => push_text(&mut out, text),
+            StrToken::Arg(i) => {
+                if let Some(arg) = args.get(*i) {
+                    out.push(StrToken::Arg(out_args.len()));
+                    out_args.push(arg.clone());
+                }
+            }
+        }
+    }
+    (out, out_args)
+}
+
 /// The normalized form of one template whose arguments are already normalized.
 fn normalize_template(
     tokens: &[StrToken],
