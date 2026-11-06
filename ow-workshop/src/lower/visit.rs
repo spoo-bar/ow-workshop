@@ -128,6 +128,10 @@ pub(crate) fn map_children(kind: &ExprKind, g: &mut impl FnMut(&Expr) -> Expr) -
             let (a, b) = pair(g, a, b);
             K::Pow(a, b)
         }
+        K::LocalizedCall { phrase, args } => K::LocalizedCall {
+            phrase: phrase.clone(),
+            args: args.iter().map(&mut *g).collect(),
+        },
         K::StrModify { modifier, inner } => K::StrModify {
             modifier: *modifier,
             inner: g(inner),

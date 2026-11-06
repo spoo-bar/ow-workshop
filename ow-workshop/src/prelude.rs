@@ -8,6 +8,7 @@ pub use crate::event::*;
 pub use crate::expr::{Expr, null, vect};
 pub use crate::generated::api::*;
 pub use crate::label::Label;
+pub use crate::localized::{localized, localized_en};
 pub use crate::math::{ceil, floor, round};
 pub use crate::ops::if_then_else;
 pub use crate::options::{CompileOptions, OptLevel};
@@ -24,6 +25,6 @@ pub use crate::vars::{
     VarRegistry,
 };
 pub use crate::workshop::{Workshop, WorkshopExt};
-pub use crate::{Diagnostic, Diagnostics, Lang, Settings, TeamFilter, Warning};
+pub use crate::{Diagnostic, Diagnostics, Lang, LocalizedString, Settings, TeamFilter, Warning};
 pub use ow_workshop_data::chars;
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};

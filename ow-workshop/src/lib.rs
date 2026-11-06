@@ -54,6 +54,7 @@ mod fmt;
 mod generated;
 mod ir;
 mod label;
+mod localized;
 mod lower;
 mod math;
 mod ops;
@@ -94,12 +95,13 @@ pub use expr::{Expr, null, vect};
 pub use generated::api::*;
 pub use ir::{Diagnostic, Diagnostics, Location, Settings, Severity, TeamFilter, WarningSet};
 pub use label::Label;
+pub use localized::{localized, localized_en};
 pub use math::{ceil, floor, round};
 pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
 pub use options::{CompileOptions, EmptyString, OptLevel, Replacements};
 pub use output::{Catalog, CompileOutput};
-pub use ow_workshop_data::Lang;
 pub use ow_workshop_data::chars;
+pub use ow_workshop_data::{Lang, LocalizedString};
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
 
 /// Support items for macro expansions; not public API.

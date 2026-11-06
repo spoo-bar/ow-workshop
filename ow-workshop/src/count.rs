@@ -233,6 +233,18 @@ fn value(expr: &Expr) -> usize {
         K::Array(items) if items.is_empty() => 1,
         // `Array` and `Evaluate Once` take one more than the general rule.
         K::Array(items) => 2 + items.iter().map(value).sum::<usize>(),
+        // `String("phrase", a, b, c)`: the phrase and unused slots count like the bare phrase.
+        K::Value {
+            id: ValueId::LocalizedString,
+            args,
+        } if matches!(
+            args.first().map(Expr::kind),
+            Some(K::Str(StrExpr::Localized(_)))
+        ) =>
+        {
+            let rest = &args[1..];
+            3 + rest.iter().map(value).sum::<usize>() + STRING_SLOTS.saturating_sub(rest.len())
+        }
         K::Value { id, args } => {
             let extra = usize::from(*id == ValueId::EvalOnce);
             (1 + extra + args.iter().map(value).sum::<usize>())
@@ -259,6 +271,7 @@ fn value(expr: &Expr) -> usize {
         K::Dict { .. }
         | K::Translated(_)
         | K::StrModify { .. }
+        | K::LocalizedCall { .. }
         | K::RuleCondition
         | K::LabelDistance(_) => 0,
     }
