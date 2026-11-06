@@ -16,6 +16,7 @@ mod stmt;
 mod string;
 #[cfg(test)]
 mod testutil;
+mod variables;
 
 use core::fmt::{self, Write};
 
@@ -45,4 +46,20 @@ fn indent(out: &mut impl Write, depth: usize) -> fmt::Result {
         out.write_str("    ")?;
     }
     Ok(())
+}
+
+/// Prints the whole program: the variables and subroutines blocks, then the rules.
+pub(crate) fn emit(program: &Program, lang: Lang) -> Result<String, fmt::Error> {
+    let cx = Cx {
+        lang,
+        program,
+        options: &program.options,
+    };
+    let mut out = String::new();
+    if !program.options.exclude_variables_block {
+        variables::write_variables(&mut out, cx)?;
+        variables::write_subroutines(&mut out, cx)?;
+    }
+    write_rules(&mut out, cx)?;
+    Ok(out)
 }

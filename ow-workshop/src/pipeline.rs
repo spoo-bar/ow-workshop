@@ -1,6 +1,6 @@
 //! The compile passes: generated rules → checks → lower → optimize → labels → flatten → count → emit.
 
-use crate::ir::{Diagnostics, Program};
+use crate::ir::{Diagnostics, Program, Severity};
 use crate::lower::{self, Ctx};
 use crate::output::CompileOutput;
 use crate::translations::Translations;
@@ -29,8 +29,29 @@ pub(crate) fn run(
         diagnostics.0.extend(found.0);
         return Err(diagnostics);
     }
+    for allocation in [
+        program.globals.allocate(),
+        program.players.allocate(),
+        program.subroutines.allocate(),
+    ] {
+        match allocation {
+            Ok(allocated) => diagnostics.0.extend(allocated.warnings.0),
+            Err(found) => {
+                diagnostics.0.extend(found.0);
+                return Err(diagnostics);
+            }
+        }
+    }
     let element_count = count(&program);
-    let code = emit(&program, lang);
+    let Ok(code) = crate::emit::emit(&program, lang) else {
+        diagnostics.push(
+            Severity::Error,
+            "emit-failed",
+            "the program still contains a node that lowering should have removed".to_owned(),
+            None,
+        );
+        return Err(diagnostics);
+    };
     Ok(CompileOutput {
         code,
         warnings: diagnostics.0,
@@ -39,12 +60,8 @@ pub(crate) fn run(
     })
 }
 
-// The passes below are replaced by the emitter epic.
+// Replaced by the counting pass.
 
 fn count(_program: &Program) -> usize {
     0
-}
-
-fn emit(_program: &Program, _lang: Lang) -> String {
-    String::new()
 }
