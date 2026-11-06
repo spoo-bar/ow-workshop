@@ -45,6 +45,7 @@ mod check;
 mod cli;
 mod control;
 mod dict;
+mod emit;
 mod event;
 mod expr;
 mod flatten;
