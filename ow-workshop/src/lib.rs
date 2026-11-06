@@ -41,6 +41,7 @@ extern crate self as ow_workshop;
 mod array;
 mod block;
 mod builder;
+mod cased;
 mod check;
 mod cli;
 mod control;
@@ -74,6 +75,7 @@ mod translations;
 mod ty;
 mod vars;
 mod warning;
+mod width;
 mod workshop;
 #[cfg(test)]
 mod workshop_enum;
@@ -81,6 +83,7 @@ mod wrap;
 
 pub use block::Block;
 pub use builder::Builder;
+pub use cased::{CasedTextArgs, CasedTextError};
 #[doc(hidden)]
 pub use cli::lang_from_args;
 pub use control::{ForRange, IfBuilder, IntoForRange, RangeStep, range, rule_condition};
@@ -122,4 +125,5 @@ pub use vars::{
     PlayerVar, PlayerVarRef, PlayerVars, RawPlace, VarRegistry,
 };
 pub use warning::Warning;
+pub use width::{TextWidthError, spaces_for, spaces_for_str, visual_len};
 pub use workshop::{Workshop, WorkshopExt};
