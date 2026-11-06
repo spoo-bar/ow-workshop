@@ -14,6 +14,7 @@ mod number;
 mod rule;
 mod stmt;
 mod string;
+mod summary;
 #[cfg(test)]
 mod testutil;
 mod variables;
@@ -22,6 +23,7 @@ use core::fmt::{self, Write};
 
 use ow_workshop_data::Lang;
 
+use crate::count::Counts;
 use crate::ir::Program;
 use crate::options::CompileOptions;
 
@@ -48,18 +50,26 @@ fn indent(out: &mut impl Write, depth: usize) -> fmt::Result {
     Ok(())
 }
 
-/// Prints the whole program: the variables and subroutines blocks, then the rules.
-pub(crate) fn emit(program: &Program, lang: Lang) -> Result<String, fmt::Error> {
+/// Prints the whole program: the element-count summary (with `counts`), the variables and
+/// subroutines blocks, then the rules.
+pub(crate) fn emit(
+    program: &Program,
+    lang: Lang,
+    counts: Option<&Counts>,
+) -> Result<String, fmt::Error> {
     let cx = Cx {
         lang,
         program,
         options: &program.options,
     };
     let mut out = String::new();
+    if let Some(counts) = counts {
+        summary::write_summary(&mut out, cx, counts)?;
+    }
     if !program.options.exclude_variables_block {
         variables::write_variables(&mut out, cx)?;
         variables::write_subroutines(&mut out, cx)?;
     }
-    write_rules(&mut out, cx)?;
+    write_rules(&mut out, cx, counts)?;
     Ok(out)
 }

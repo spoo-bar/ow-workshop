@@ -20,6 +20,7 @@ fn print(program: &Program, lang: Lang) -> String {
             program,
             options: &options,
         },
+        None,
     )
     .unwrap();
     out

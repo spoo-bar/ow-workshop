@@ -7,17 +7,33 @@ use ow_workshop_data::{ActionId, Keyword, Lang};
 use super::expr::{operator, truth, write_expr};
 use super::stmt::{write_for, write_stmt};
 use super::{Cx, indent, keyword, write_censored_string, write_string};
+use crate::count::{Counts, RuleCount};
 use crate::flatten::{FlatKind, FlatStmt, OptState, flatten_rule};
 use crate::ir::{Event, Expr, ExprKind, PlayerFilter, Rule};
 use ow_workshop_data::Ty;
 
-/// Writes every rule, each followed by a blank line.
-pub(crate) fn write_rules(out: &mut impl Write, cx: Cx<'_>) -> fmt::Result {
+/// Writes every rule, each followed by a blank line. With `counts`, annotates the element
+/// counts of rules, conditions and actions.
+pub(crate) fn write_rules(
+    out: &mut impl Write,
+    cx: Cx<'_>,
+    counts: Option<&Counts>,
+) -> fmt::Result {
     let mut printed = OptState::DEFAULT;
-    for rule in &cx.program.rules {
-        write_rule(out, cx, rule, &mut printed)?;
+    for (i, rule) in cx.program.rules.iter().enumerate() {
+        let count = counts.and_then(|c| c.rules.get(i));
+        write_rule(out, cx, rule, count, &mut printed)?;
     }
     Ok(())
+}
+
+/// ` // N element(s)`
+fn write_count_suffix(out: &mut impl Write, count: Option<usize>) -> fmt::Result {
+    match count {
+        Some(1) => out.write_str(" // 1 element"),
+        Some(n) => write!(out, " // {n} elements"),
+        None => Ok(()),
+    }
 }
 
 /// Writes one rule. `printed` is the optimizer state the output last announced.
@@ -25,11 +41,20 @@ fn write_rule(
     out: &mut impl Write,
     cx: Cx<'_>,
     rule: &Rule,
+    count: Option<&RuleCount>,
     printed: &mut OptState,
 ) -> fmt::Result {
     let lines = flatten_rule(rule, cx.options);
     let state = OptState::from_options(cx.options).enter(rule.body.opt);
     write_markers(out, printed, state, 0)?;
+    if let Some(count) = count {
+        let unit = if count.total == 1 {
+            "element"
+        } else {
+            "elements"
+        };
+        writeln!(out, "//{} {unit}", count.total)?;
+    }
 
     if rule.disabled {
         write!(out, "{} ", word(cx, Keyword::Disabled))?;
@@ -42,7 +67,7 @@ fn write_rule(
     if !rule.conditions.is_empty() {
         indent(out, 1)?;
         writeln!(out, "{} {{", word(cx, Keyword::Conditions))?;
-        for cond in &rule.conditions {
+        for (i, cond) in rule.conditions.iter().enumerate() {
             if let Some(comment) = &cond.comment {
                 indent(out, 2)?;
                 write_string(out, comment)?;
@@ -50,7 +75,9 @@ fn write_rule(
             }
             indent(out, 2)?;
             write_condition(out, cx, &cond.expr)?;
-            out.write_str(";\n")?;
+            out.write_char(';')?;
+            write_count_suffix(out, count.map(|c| c.conditions[i]))?;
+            out.write_char('\n')?;
         }
         indent(out, 1)?;
         out.write_str("}\n")?;
@@ -58,8 +85,9 @@ fn write_rule(
     if !lines.is_empty() {
         indent(out, 1)?;
         writeln!(out, "{} {{", word(cx, Keyword::Actions))?;
-        for line in &lines {
-            write_line(out, cx, line, printed)?;
+        for (i, line) in lines.iter().enumerate() {
+            let line_count = count.map(|c| c.lines[i]);
+            write_line(out, cx, line, line_count, printed)?;
         }
         indent(out, 1)?;
         out.write_str("}\n")?;
@@ -173,6 +201,7 @@ fn write_line(
     out: &mut impl Write,
     cx: Cx<'_>,
     line: &FlatStmt<'_>,
+    count: Option<usize>,
     printed: &mut OptState,
 ) -> fmt::Result {
     let depth = line.depth + 2;
@@ -209,7 +238,9 @@ fn write_line(
             step,
         } => write_for(out, cx, var, [start, stop, step])?,
     }
-    out.write_str(";\n")
+    out.write_char(';')?;
+    write_count_suffix(out, count)?;
+    out.write_char('\n')
 }
 
 fn write_header(out: &mut impl Write, cx: Cx<'_>, name: &str, cond: &Expr) -> fmt::Result {

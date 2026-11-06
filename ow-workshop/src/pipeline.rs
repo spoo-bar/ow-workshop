@@ -42,8 +42,23 @@ pub(crate) fn run(
             }
         }
     }
-    let element_count = count(&program);
-    let Ok(code) = crate::emit::emit(&program, lang) else {
+    let counts = crate::count::count(&program, lang);
+    if counts.over_limit() {
+        diagnostics.push(
+            Severity::Error,
+            "element-limit",
+            format!(
+                "the mod uses {} elements; the game allows {}",
+                counts.total,
+                crate::count::ELEMENT_LIMIT
+            ),
+            None,
+        );
+        return Err(diagnostics);
+    }
+    let element_count = counts.total;
+    let debug = program.options.debug_element_count.then_some(&counts);
+    let Ok(code) = crate::emit::emit(&program, lang, debug) else {
         diagnostics.push(
             Severity::Error,
             "emit-failed",
@@ -58,10 +73,4 @@ pub(crate) fn run(
         element_count,
         catalog: None,
     })
-}
-
-// Replaced by the counting pass.
-
-fn count(_program: &Program) -> usize {
-    0
 }

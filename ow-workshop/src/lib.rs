@@ -44,6 +44,7 @@ mod builder;
 mod check;
 mod cli;
 mod control;
+mod count;
 mod dict;
 mod emit;
 mod event;

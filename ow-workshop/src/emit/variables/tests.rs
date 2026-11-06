@@ -116,13 +116,13 @@ fn excluded_variables_block_leaves_only_the_rules() {
     program
         .rules
         .push(Rule::new("r", Event::OngoingGlobal, block(vec![])));
-    let full = emit(&program, Lang::EnUs).unwrap();
+    let full = emit(&program, Lang::EnUs, None).unwrap();
     assert!(full.starts_with("variables {"));
     assert!(full.contains("subroutines {"));
     assert!(full.ends_with("}\n\n"));
 
     program.options.exclude_variables_block = true;
-    let rules_only = emit(&program, Lang::EnUs).unwrap();
+    let rules_only = emit(&program, Lang::EnUs, None).unwrap();
     assert!(rules_only.starts_with("rule ("), "{rules_only}");
 }
 
@@ -136,7 +136,7 @@ fn output_order_is_variables_subroutines_rules() {
     program
         .rules
         .push(Rule::new("r", Event::OngoingGlobal, block(vec![])));
-    let text = emit(&program, Lang::EnUs).unwrap();
+    let text = emit(&program, Lang::EnUs, None).unwrap();
     let at = |needle: &str| text.find(needle).unwrap();
     assert!(at("variables {") < at("subroutines {"));
     assert!(at("subroutines {") < at("rule ("));
