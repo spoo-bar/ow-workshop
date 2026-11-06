@@ -13,7 +13,9 @@ mod stmt;
 mod vars;
 
 pub use diag::{Diagnostic, Diagnostics, Severity};
-pub(crate) use expr::{CmpOp, ConstRef, Expr, ExprKind, StrExpr, StrToken, Translated};
+pub(crate) use expr::{
+    CmpOp, ConstRef, Expr, ExprKind, StrExpr, StrModifier, StrToken, Translated,
+};
 pub(crate) use ids::{LabelId, SubId, VarId};
 pub use loc::Location;
 pub(crate) use program::Program;

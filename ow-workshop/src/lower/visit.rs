@@ -128,6 +128,10 @@ pub(crate) fn map_children(kind: &ExprKind, g: &mut impl FnMut(&Expr) -> Expr) -
             let (a, b) = pair(g, a, b);
             K::Pow(a, b)
         }
+        K::StrModify { modifier, inner } => K::StrModify {
+            modifier: *modifier,
+            inner: g(inner),
+        },
         K::Not(a) => K::Not(g(a)),
         K::Neg(a) => K::Neg(g(a)),
         K::IfThenElse { cond, then, else_ } => K::IfThenElse {

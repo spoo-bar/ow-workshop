@@ -40,6 +40,8 @@ pub enum Warning {
     ArrayIndexNumber,
     /// An array in a string, of which only the first element shows.
     ArrayInString,
+    /// `.fullwidth()` text with characters that have no fullwidth form.
+    NotTotalFullwidth,
 }
 
 impl Warning {
@@ -65,6 +67,7 @@ impl Warning {
             Self::TypeCheck => "type-check",
             Self::ArrayIndexNumber => "array-index-number",
             Self::ArrayInString => "array-in-string",
+            Self::NotTotalFullwidth => "not-total-fullwidth",
         }
     }
 }

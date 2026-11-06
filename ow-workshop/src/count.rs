@@ -256,7 +256,11 @@ fn value(expr: &Expr) -> usize {
         K::Neg(a) => 3 + value(a),
         K::IfThenElse { cond, then, else_ } => 1 + all(&[cond, then, else_]),
         // Removed before counting.
-        K::Dict { .. } | K::Translated(_) | K::RuleCondition | K::LabelDistance(_) => 0,
+        K::Dict { .. }
+        | K::Translated(_)
+        | K::StrModify { .. }
+        | K::RuleCondition
+        | K::LabelDistance(_) => 0,
     }
 }
 

@@ -55,6 +55,17 @@ pub(crate) enum StrExpr {
     Localized(LocalizedString),
 }
 
+/// A rewrite of the text of a string template.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum StrModifier {
+    /// Fullwidth lookalikes.
+    Fullwidth,
+    /// The large Blizzard Global font.
+    Big,
+    /// Lowercase letters that the game does not uppercase.
+    CaseSensitive,
+}
+
 /// A string that depends on the viewer's language; removed by lowering.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Translated {
@@ -155,6 +166,13 @@ pub(crate) enum ExprKind {
     },
     /// A language-dependent string; removed by lowering.
     Translated(Translated),
+    /// A modifier applied to a string template; removed by lowering.
+    StrModify {
+        /// The modifier.
+        modifier: StrModifier,
+        /// The string it applies to.
+        inner: Expr,
+    },
     /// The enclosing rule's own condition; removed by lowering.
     RuleCondition,
     /// Distance from the enclosing `Skip` to a label; resolved to a number with the labels.
@@ -224,7 +242,7 @@ impl ExprKind {
             | Self::Div(a, b)
             | Self::Mod(a, b)
             | Self::Pow(a, b) => vec![a, b],
-            Self::Not(a) | Self::Neg(a) => vec![a],
+            Self::Not(a) | Self::Neg(a) | Self::StrModify { inner: a, .. } => vec![a],
             Self::IfThenElse { cond, then, else_ } => vec![cond, then, else_],
             Self::Dict { entries, default } => entries
                 .iter()
