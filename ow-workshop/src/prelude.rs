@@ -2,6 +2,7 @@
 
 pub use crate::block::Block;
 pub use crate::builder::Builder;
+pub use crate::cased::{CasedTextArgs, CasedTextError};
 pub use crate::control::{ForRange, IfBuilder, RangeStep, range, rule_condition};
 pub use crate::dict::{Dict, dict};
 pub use crate::event::*;
@@ -24,6 +25,7 @@ pub use crate::vars::{
     Global, GlobalVars, Indexed, Indexed2, Indexed3, Place, PlayerVar, PlayerVarRef, PlayerVars,
     VarRegistry,
 };
+pub use crate::width::{TextWidthError, spaces_for, spaces_for_str, visual_len};
 pub use crate::workshop::{Workshop, WorkshopExt};
 pub use crate::{
     Diagnostic, Diagnostics, Lang, LocalizedString, Settings, TeamFilter, Texture, Warning,
