@@ -50,6 +50,7 @@ mod emit;
 mod event;
 mod expr;
 mod flatten;
+mod fmt;
 mod generated;
 mod ir;
 mod label;
@@ -98,7 +99,14 @@ pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
 pub use options::{CompileOptions, EmptyString, OptLevel, Replacements};
 pub use output::{Catalog, CompileOutput};
 pub use ow_workshop_data::Lang;
-pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum};
+pub use ow_workshop_data::chars;
+pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
+
+/// Support items for macro expansions; not public API.
+#[doc(hidden)]
+pub mod __private {
+    pub use crate::fmt::{Piece, template};
+}
 pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
 pub use rule_name::{RuleMeta, default_rule_name};

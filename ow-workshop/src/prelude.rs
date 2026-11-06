@@ -25,4 +25,5 @@ pub use crate::vars::{
 };
 pub use crate::workshop::{Workshop, WorkshopExt};
 pub use crate::{Diagnostic, Diagnostics, Lang, Settings, TeamFilter, Warning};
-pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum};
+pub use ow_workshop_data::chars;
+pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};

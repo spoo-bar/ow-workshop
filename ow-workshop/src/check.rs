@@ -6,7 +6,7 @@ use ow_workshop_data::ValueId;
 
 use crate::ir::{
     Block, Diagnostics, Expr, ExprKind, LabelId, Location, Place, Rule, Severity, SkipTarget,
-    StmtKind,
+    StmtKind, StrExpr, StrToken,
 };
 
 /// Reports `do_while` loops that are not the first statement of the rule body.
@@ -237,4 +237,46 @@ fn contains_random(expr: &Expr) -> bool {
         }
     );
     random || expr.kind().children().into_iter().any(contains_random)
+}
+
+/// Reports literal text that the workshop would read as a placeholder, e.g. `ws_fmt!("{{0}}")`.
+pub(crate) fn check_placeholder_lookalikes(rules: &[Rule], diagnostics: &mut Diagnostics) {
+    let mut visit = |expr: &Expr| lookalikes(expr, diagnostics);
+    for rule in rules {
+        for cond in &rule.conditions {
+            visit(&cond.expr);
+        }
+        crate::lower::visit::walk_block(&rule.body, &mut |stmt| {
+            stmt.exprs().into_iter().for_each(&mut visit);
+        });
+    }
+}
+
+fn lookalikes(expr: &Expr, diagnostics: &mut Diagnostics) {
+    if let ExprKind::Str(StrExpr::Custom { tokens, .. }) = expr.kind() {
+        for token in tokens {
+            if let StrToken::Text(text) = token {
+                if has_placeholder_lookalike(text) {
+                    diagnostics.push(
+                        Severity::Warning,
+                        "placeholder-lookalike",
+                        format!("the text {text:?} contains `{{digits}}`, which the game reads as a placeholder"),
+                        expr.loc(),
+                    );
+                }
+            }
+        }
+    }
+    for child in expr.kind().children() {
+        lookalikes(child, diagnostics);
+    }
+}
+
+/// Whether `text` contains `{` + digits + `}`.
+pub(crate) fn has_placeholder_lookalike(text: &str) -> bool {
+    text.match_indices('{').any(|(i, _)| {
+        let rest = &text[i + 1..];
+        let digits = rest.bytes().take_while(u8::is_ascii_digit).count();
+        digits > 0 && rest[digits..].starts_with('}')
+    })
 }

@@ -12,7 +12,7 @@ pub mod signature;
 
 pub use generated::actions::ActionId;
 pub use generated::constants::*;
-pub use generated::entities::entity;
+pub use generated::entities::{chars, entity};
 pub use generated::extension::*;
 pub use generated::fonts::{DEFAULT_WIDTH, Glyph, SPACES, char_width, lowercase_metrics};
 pub use generated::gamemodes::*;

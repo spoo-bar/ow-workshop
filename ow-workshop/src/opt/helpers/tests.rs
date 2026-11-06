@@ -8,7 +8,7 @@ fn custom(text: &str, args: Vec<Expr>) -> Expr {
     let mut tokens = vec![];
     for (i, part) in text.split("{}").enumerate() {
         if i > 0 {
-            tokens.push(StrToken::Arg(u8::try_from(i - 1).unwrap()));
+            tokens.push(StrToken::Arg(i - 1));
         }
         tokens.push(StrToken::Text(part.to_owned()));
     }
