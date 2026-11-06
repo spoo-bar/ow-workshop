@@ -4,7 +4,7 @@
 //! and works on WASM.
 
 // Used by the printers added in the following changes.
-#![allow(dead_code)]
+#![allow(dead_code, unused_imports)]
 
 mod number;
 

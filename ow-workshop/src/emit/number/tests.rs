@@ -25,7 +25,7 @@ fn formats_like_javascript() {
 
 #[test]
 fn truncates_the_fraction_without_rounding() {
-    assert_eq!(fmt(0.123_456_789_012_345_678_9), "0.123456789012345");
+    assert_eq!(fmt(0.123_456_789_012_345_68), "0.123456789012345");
     assert_eq!(fmt(0.999_999_999_999_999_9), "0.999999999999999");
 }
 
