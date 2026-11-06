@@ -16,6 +16,7 @@ pub(crate) mod functions;
 pub(crate) mod generated;
 pub(crate) mod labels;
 pub(crate) mod loops;
+pub(crate) mod modifiers;
 pub(crate) mod split;
 pub(crate) mod strings;
 pub(crate) mod subs;
@@ -160,6 +161,7 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("lower loops", loops::lower),
     ("lower dictionaries", dicts::lower),
     ("lower functions", functions::lower),
+    ("string modifiers", modifiers::apply),
     ("normalize strings", strings::normalize),
     ("optimize", crate::opt::run),
     ("split strings", split::run),

@@ -75,9 +75,11 @@ pub(super) fn write_expr(out: &mut impl Write, cx: Cx<'_>, expr: &Expr) -> fmt::
             out.write_char(')')
         }
         // Removed by lowering and label resolution.
-        K::Dict { .. } | K::Translated(_) | K::RuleCondition | K::LabelDistance(_) => {
-            Err(fmt::Error)
-        }
+        K::Dict { .. }
+        | K::Translated(_)
+        | K::StrModify { .. }
+        | K::RuleCondition
+        | K::LabelDistance(_) => Err(fmt::Error),
     }
 }
 
