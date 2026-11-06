@@ -5,6 +5,7 @@
 use crate::ir::{Diagnostics, Expr, ExprKind, Program, Severity, StrExpr, StrModifier, StrToken};
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};
+use crate::tags::segments;
 use crate::warning::Warning;
 
 /// Latin letters (both cases) and their Greek lookalikes in the large font.
@@ -173,9 +174,10 @@ pub(crate) fn case_sensitive(text: &str) -> String {
 /// The pass: applies every modifier to its template.
 pub(crate) fn apply(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diagnostics> {
     let mut errors = Diagnostics::default();
+    let tags = crate::tags::enabled(program, ctx.options);
     for rule in &mut program.rules {
         let suppressed = rule.suppressed.clone();
-        let mut apply = |e: Expr| apply_node(e, ctx, &suppressed, &mut errors);
+        let mut apply = |e: Expr| apply_node(e, tags, ctx, &suppressed, &mut errors);
         for cond in &mut rule.conditions {
             cond.expr = rewrite_expr(&cond.expr, &mut apply);
         }
@@ -198,6 +200,7 @@ fn rewrite_block(block: &mut crate::ir::Block, apply: &mut impl FnMut(Expr) -> E
 
 fn apply_node(
     expr: Expr,
+    tags: bool,
     ctx: &mut Ctx<'_>,
     suppressed: &crate::ir::WarningSet,
     errors: &mut Diagnostics,
@@ -214,15 +217,15 @@ fn apply_node(
         );
         return inner.clone();
     };
-    let mut tokens = tokens.clone();
+    let mut parts = segments(tokens, tags);
     match modifier {
         StrModifier::Fullwidth => {
             let mut total = true;
-            for token in &mut tokens {
-                if let StrToken::Text(text) = token {
-                    let (mapped, ok) = fullwidth(text);
+            for (is_tag, part) in parts.iter_mut().flatten() {
+                if !*is_tag {
+                    let (mapped, ok) = fullwidth(part);
                     total &= ok;
-                    *text = mapped;
+                    *part = mapped;
                 }
             }
             if !total {
@@ -235,10 +238,11 @@ fn apply_node(
             }
         }
         StrModifier::Big => {
-            let done = tokens.iter_mut().any(|token| match token {
-                StrToken::Text(text) => big_letter(text).map(|t| *text = t).is_some(),
-                StrToken::Arg(_) => false,
-            });
+            let done = parts
+                .iter_mut()
+                .flatten()
+                .filter(|(is_tag, _)| !is_tag)
+                .any(|(_, part)| big_letter(part).map(|t| *part = t).is_some());
             if !done {
                 errors.push(
                     Severity::Error,
@@ -252,13 +256,21 @@ fn apply_node(
             }
         }
         StrModifier::CaseSensitive => {
-            for token in &mut tokens {
-                if let StrToken::Text(text) = token {
-                    *text = case_sensitive(text);
+            for (is_tag, part) in parts.iter_mut().flatten() {
+                if !*is_tag {
+                    *part = case_sensitive(part);
                 }
             }
         }
     }
+    let tokens: Vec<StrToken> = tokens
+        .iter()
+        .zip(parts)
+        .map(|(token, parts)| match token {
+            StrToken::Text(_) => StrToken::Text(parts.into_iter().map(|(_, p)| p).collect()),
+            StrToken::Arg(i) => StrToken::Arg(*i),
+        })
+        .collect();
     Expr::new(
         ExprKind::Str(StrExpr::Custom {
             tokens,

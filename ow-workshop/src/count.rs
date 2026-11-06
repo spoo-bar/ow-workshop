@@ -272,6 +272,7 @@ fn value(expr: &Expr) -> usize {
         | K::Translated(_)
         | K::StrModify { .. }
         | K::LocalizedCall { .. }
+        | K::HolyGrail
         | K::RuleCondition
         | K::LabelDistance(_) => 0,
     }

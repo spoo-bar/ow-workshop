@@ -86,3 +86,18 @@ fn modifiers_on_non_templates_are_errors() {
         Err(vec!["string-modifier-target"])
     );
 }
+
+#[test]
+fn modifiers_skip_tag_text_when_tags_are_enabled() {
+    let mut p = program(vec![StmtKind::Action {
+        id: ow_workshop_data::ActionId::Wait,
+        args: vec![ws_fmt!("a<fgFF0000FF>b</fg>").fullwidth().into_ir()],
+    }]);
+    let mut options = options(crate::options::OptLevel::Off);
+    options.tags = true;
+    run(apply, &mut p, &options).expect("ok");
+    let StmtKind::Action { args, .. } = &p.rules[0].body.stmts[0].kind else {
+        panic!("not an action");
+    };
+    assert_eq!(show(&args[0]), "\"ａ<fgFF0000FF>ｂ</fg>\"()");
+}

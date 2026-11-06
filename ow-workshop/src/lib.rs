@@ -69,6 +69,7 @@ mod rule_name;
 mod subroutine;
 mod support;
 mod switch;
+mod tags;
 mod translations;
 mod ty;
 mod vars;
@@ -101,7 +102,7 @@ pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
 pub use options::{CompileOptions, EmptyString, OptLevel, Replacements};
 pub use output::{Catalog, CompileOutput};
 pub use ow_workshop_data::chars;
-pub use ow_workshop_data::{Lang, LocalizedString};
+pub use ow_workshop_data::{Lang, LocalizedString, Texture};
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
 
 /// Support items for macro expansions; not public API.

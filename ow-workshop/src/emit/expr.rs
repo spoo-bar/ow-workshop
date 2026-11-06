@@ -89,6 +89,7 @@ pub(super) fn write_expr(out: &mut impl Write, cx: Cx<'_>, expr: &Expr) -> fmt::
         | K::Translated(_)
         | K::StrModify { .. }
         | K::LocalizedCall { .. }
+        | K::HolyGrail
         | K::RuleCondition
         | K::LabelDistance(_) => Err(fmt::Error),
     }

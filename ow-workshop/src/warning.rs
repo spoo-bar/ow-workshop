@@ -42,6 +42,10 @@ pub enum Warning {
     ArrayInString,
     /// `.fullwidth()` text with characters that have no fullwidth form.
     NotTotalFullwidth,
+    /// A text tag (`<fg…>`, `<tx…>`) while tags are disabled.
+    Tags,
+    /// A `<tx…>` tag whose texture id is not 14 hex digits after `C`.
+    MalformattedTx,
 }
 
 impl Warning {
@@ -68,6 +72,8 @@ impl Warning {
             Self::ArrayIndexNumber => "array-index-number",
             Self::ArrayInString => "array-in-string",
             Self::NotTotalFullwidth => "not-total-fullwidth",
+            Self::Tags => "tags",
+            Self::MalformattedTx => "malformatted-tx",
         }
     }
 }
