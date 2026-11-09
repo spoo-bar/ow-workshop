@@ -86,12 +86,30 @@ fn extensions_settings_match_the_reference() {
 
 #[test]
 fn the_block_comes_before_the_rules_and_ends_with_a_blank_line() {
-    let code = Mod(Settings::default().with_extension(Extension::Projectiles))
-        .compile(Lang::EnUs)
-        .expect("compiles")
-        .code;
+    let settings =
+        Settings::default().with_mode(ModeKey::Mode(Gamemode::Skirmish), ModeSettings::default());
+    let code = Mod(settings).compile(Lang::EnUs).expect("compiles").code;
     assert!(
-        code.starts_with("settings\n{\n\textensions\n\t{\n\t\tProjectiles\n\t}\n}\n\nvariables {"),
+        code.starts_with(
+            "settings\n{\n\tmodes\n\t{\n\t\tSkirmish\n\t\t{\n\t\t}\n\t}\n}\n\nvariables {"
+        ),
         "{code}"
     );
+}
+
+#[test]
+fn invalid_settings_fail_the_compile() {
+    let settings = Settings::default().with_extension(Extension::Projectiles);
+    let err = Mod(settings).compile(Lang::EnUs).expect_err("no modes");
+    assert!(err.0.iter().any(|d| d.code == "settings-no-modes"), "{err}");
+}
+
+#[test]
+fn extension_points_are_a_warning() {
+    let settings = Settings::default()
+        .with_mode(ModeKey::Mode(Gamemode::Skirmish), ModeSettings::default())
+        .with_extension(Extension::Projectiles);
+    let out = Mod(settings).compile(Lang::EnUs).expect("compiles");
+    let codes: Vec<_> = out.warnings.iter().map(|w| w.code).collect();
+    assert_eq!(codes, ["extension-points"]);
 }

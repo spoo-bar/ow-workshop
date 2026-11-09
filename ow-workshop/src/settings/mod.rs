@@ -5,11 +5,14 @@
 
 use ow_workshop_data::{Extension, Gamemode, Hero, Map};
 
+pub(crate) mod schema;
+mod validate;
 mod values;
 
 #[cfg(feature = "serde")]
 mod json;
 
+pub(crate) use validate::validate;
 pub use values::{SettingValue, Values};
 
 /// Custom game settings: the `settings {}` block.

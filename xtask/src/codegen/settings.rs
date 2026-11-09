@@ -98,6 +98,19 @@ impl Tables {
             }
         };
         let mut row = quote!(Setting::new(#key, #name, #kind));
+        if s.min.is_some() || s.max.is_some() {
+            let bound = |n: Option<f64>| {
+                n.map_or_else(
+                    || quote!(None),
+                    |n| {
+                        let n = Literal::f64_suffixed(n);
+                        quote!(Some(#n))
+                    },
+                )
+            };
+            let (min, max) = (bound(s.min), bound(s.max));
+            row = quote!(#row.range(#min, #max));
+        }
         if let Some(heroes) = &s.include {
             let set = Literal::u8_unsuffixed(self.hero_set(heroes)?);
             row = quote!(#row.only(#set));

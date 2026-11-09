@@ -60,12 +60,16 @@ pub enum Kind {
 }
 
 /// A custom game setting.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Setting {
     /// The setting's camelCase key.
     pub key: &'static str,
     /// How the value is written.
     pub kind: Kind,
+    /// Smallest allowed number, for number settings.
+    pub min: Option<f64>,
+    /// Largest allowed number, for number settings.
+    pub max: Option<f64>,
     name: u16,
     only: Option<u8>,
     except: Option<u8>,
@@ -76,10 +80,22 @@ impl Setting {
         Self {
             key,
             kind,
+            min: None,
+            max: None,
             name,
             only: None,
             except: None,
         }
+    }
+
+    /// Limits the allowed numbers. The schema gives no limits yet; the generator emits this
+    /// when it does.
+    #[must_use]
+    #[allow(dead_code)]
+    pub(crate) const fn range(mut self, min: Option<f64>, max: Option<f64>) -> Self {
+        self.min = min;
+        self.max = max;
+        self
     }
 
     /// Restricts the setting to the heroes in set `set`.
@@ -109,7 +125,7 @@ impl Setting {
 }
 
 /// A named group of settings.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Section {
     /// The section's key.
     pub key: &'static str,
@@ -135,5 +151,18 @@ impl Section {
     /// The setting with this key.
     pub fn get(&self, key: &str) -> Option<&'static Setting> {
         self.settings.iter().find(|s| s.key == key)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn range_sets_the_limits() {
+        let setting = Setting::new("x", 0, Kind::Int).range(Some(1.0), None);
+        assert_eq!((setting.min, setting.max), (Some(1.0), None));
+        let unlimited = Setting::new("x", 0, Kind::Int);
+        assert_eq!((unlimited.min, unlimited.max), (None, None));
     }
 }

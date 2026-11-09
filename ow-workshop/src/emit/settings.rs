@@ -6,19 +6,15 @@
 
 use core::fmt::{self, Write};
 
-use ow_workshop_data::settings::{
-    GAMEMODE_GENERAL, HERO_GENERAL, Kind, LOBBY, MAIN, Section, gamemode_settings, hero_settings,
-};
+use ow_workshop_data::settings::{GAMEMODE_GENERAL, HERO_GENERAL, Kind, LOBBY, MAIN, Section};
 use ow_workshop_data::{Extension, Keyword, Label, Lang};
 
 use super::{Cx, write_censored_string, write_number};
+use crate::settings::schema::{find, hero_sections, mode_sections};
 use crate::settings::{
     HeroSelection, HeroSettings, HeroTeam, MapRef, MapSelection, ModeKey, ModeSettings,
     SettingValue, Settings, Values, WorkshopValue,
 };
-
-/// Setting keys that Overwatch spelled differently in older versions.
-const RENAMED_KEYS: [(&str, &str); 1] = [("ability1KB%", "ability1Kb%")];
 
 /// Writes the block and the blank line after it, or nothing when no settings are set.
 pub(super) fn write_settings(out: &mut impl Write, cx: Cx<'_>) -> fmt::Result {
@@ -117,9 +113,9 @@ impl<O: Write> Writer<'_, O> {
     }
 
     fn mode(&mut self, key: ModeKey, mode: &ModeSettings) -> fmt::Result {
-        let (name, section) = match key {
-            ModeKey::General => (GAMEMODE_GENERAL.name(self.lang), None),
-            ModeKey::Mode(m) => (m.name(self.lang), gamemode_settings(m)),
+        let name = match key {
+            ModeKey::General => GAMEMODE_GENERAL.name(self.lang),
+            ModeKey::Mode(m) => m.name(self.lang),
         };
         if !mode.enabled {
             return self.line(&format!("{} {name}", Keyword::Disabled.name(self.lang)));
@@ -136,8 +132,7 @@ impl<O: Write> Writer<'_, O> {
             }
             self.close()?;
         }
-        let sections: Vec<&Section> = section.into_iter().chain([&GAMEMODE_GENERAL]).collect();
-        self.values(&sections, &mode.values)?;
+        self.values(&mode_sections(key), &mode.values)?;
         self.close()
     }
 
@@ -180,11 +175,7 @@ impl<O: Write> Writer<'_, O> {
         self.values(&[&HERO_GENERAL], &team.general)?;
         for (hero, values) in &team.per_hero {
             self.open(hero.name(self.lang))?;
-            let sections: Vec<&Section> = hero_settings(*hero)
-                .into_iter()
-                .chain([&HERO_GENERAL])
-                .collect();
-            self.values(&sections, values)?;
+            self.values(&hero_sections(*hero), values)?;
             self.close()?;
         }
         if let Some(selection) = &team.selection {
@@ -272,15 +263,6 @@ impl<O: Write> Writer<'_, O> {
             (SettingValue::Str(s) | SettingValue::Choice(s), _) => self.out.write_str(s),
         }
     }
-}
-
-/// The setting with this key in the first section that has it.
-fn find(sections: &[&Section], key: &str) -> Option<&'static ow_workshop_data::settings::Setting> {
-    let key = RENAMED_KEYS
-        .iter()
-        .find(|(old, _)| *old == key)
-        .map_or(key, |(_, new)| new);
-    sections.iter().find_map(|section| section.get(key))
 }
 
 /// The localized name of a setting, or `key` itself when the schema lacks it.

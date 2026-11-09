@@ -87,6 +87,12 @@ impl Values {
         self.0.iter().find(|(k, _)| k == key).map(|(_, v)| v)
     }
 
+    /// Removes `key`, returning its value.
+    pub fn remove(&mut self, key: &str) -> Option<SettingValue> {
+        let index = self.0.iter().position(|(k, _)| k == key)?;
+        Some(self.0.remove(index).1)
+    }
+
     /// The entries, in order.
     pub fn iter(&self) -> impl Iterator<Item = (&str, &SettingValue)> {
         self.0.iter().map(|(k, v)| (k.as_str(), v))

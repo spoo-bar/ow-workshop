@@ -46,6 +46,8 @@ pub enum Warning {
     Tags,
     /// A `<tx…>` tag whose texture id is not 14 hex digits after `C`.
     MalformattedTx,
+    /// The extensions cost more points than the settings leave.
+    ExtensionPoints,
 }
 
 impl Warning {
@@ -74,6 +76,7 @@ impl Warning {
             Self::NotTotalFullwidth => "not-total-fullwidth",
             Self::Tags => "tags",
             Self::MalformattedTx => "malformatted-tx",
+            Self::ExtensionPoints => "extension-points",
         }
     }
 }

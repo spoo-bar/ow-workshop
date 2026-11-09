@@ -6,13 +6,12 @@
 
 use core::fmt;
 
-use ow_workshop_data::settings::{
-    GAMEMODE_GENERAL, HERO_GENERAL, Kind, LOBBY, Section, gamemode_settings, hero_settings,
-};
+use ow_workshop_data::settings::{HERO_GENERAL, Kind, LOBBY, Section};
 use ow_workshop_data::{Extension, Gamemode, Hero, Map};
 use serde::Deserialize;
 use serde::de::{self, Deserializer, MapAccess, Visitor};
 
+use super::schema::{hero_sections, mode_sections};
 use super::{
     HeroSelection, HeroSettings, HeroTeam, Lobby, Main, MapRef, MapSelection, ModeKey,
     ModeSettings, SettingValue, Settings, Values, WorkshopValue,
@@ -185,17 +184,17 @@ fn heroes_list(key: &str, entry: &Entry) -> Res<Vec<Hero>> {
 }
 
 fn mode(key: &str, entries: &[(String, Entry)]) -> Res<(ModeKey, ModeSettings)> {
-    let (mode_key, section) = if key == "general" {
-        (ModeKey::General, None)
+    let mode_key = if key == "general" {
+        ModeKey::General
     } else {
         let mode = Gamemode::ALL
             .iter()
             .copied()
             .find(|m| m.key() == key)
             .ok_or_else(|| format!("unknown game mode `{key}`"))?;
-        (ModeKey::Mode(mode), gamemode_settings(mode))
+        ModeKey::Mode(mode)
     };
-    let sections: Vec<&Section> = section.into_iter().chain([&GAMEMODE_GENERAL]).collect();
+    let sections = mode_sections(mode_key);
     let mut settings = ModeSettings::default();
     let mut rest = Vec::new();
     for (name, entry) in entries {
@@ -247,11 +246,9 @@ fn team(key: &str, entries: &[(String, Entry)]) -> Res<(HeroTeam, HeroSettings)>
             }
             (_, Entry::Object(Ordered(inner))) => {
                 let h = hero(name)?;
-                let sections: Vec<&Section> = hero_settings(h)
-                    .into_iter()
-                    .chain([&HERO_GENERAL])
-                    .collect();
-                settings.per_hero.push((h, values(&sections, inner)?));
+                settings
+                    .per_hero
+                    .push((h, values(&hero_sections(h), inner)?));
             }
             _ => settings
                 .general
