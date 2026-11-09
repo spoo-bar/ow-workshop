@@ -29,6 +29,10 @@ impl Workshop for HelloWorld {
             });
         });
     }
+
+    fn settings(&self) -> Settings {
+        Settings::default().with_mode(ModeKey::General, ModeSettings::default())
+    }
 }
 
 ow_workshop::main!(HelloWorld);
