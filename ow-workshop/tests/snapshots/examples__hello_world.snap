@@ -1,0 +1,27 @@
+---
+source: ow-workshop/tests/examples.rs
+expression: "code(&hello_world::HelloWorld)"
+---
+rule ("Header") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Disable Inspector Recording;
+        Create HUD Text(All Players(All Teams), Custom String("Hello, Workshop!"), Null, Null, Left, 0, Color(White), Null, Null, Visible To Sort Order String and Color, Default Visibility);
+    }
+}
+
+rule ("Welcome") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Has Spawned(Event Player) == True;
+    }
+    actions {
+        Small Message(Event Player, Custom String("Welcome, {0}!", Event Player));
+    }
+}
