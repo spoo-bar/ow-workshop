@@ -1,12 +1,14 @@
 //! Translation settings: the languages of a mod and how the viewer's language is detected.
 
 mod detect;
+mod rule;
 
 use ow_workshop_data::Lang;
 
 use crate::catalog::Catalog;
 
 pub(crate) use detect::{Detection, HELPER, LANGUAGE_INDEX, SEPARATOR, choose, declare};
+pub(crate) use rule::generate as language_rule;
 
 /// A translation target; the plain `Es`, `Zh` and the regional codes pick a game language.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -141,6 +143,12 @@ impl std::str::FromStr for TranslationLang {
 }
 
 /// How the viewer's language is found when it is stored in a player variable.
+///
+/// Each player's client is made to face a direction that encodes its language, which the server
+/// reads back once the player spawns. Mods that change a player's facing on spawn must wait
+/// until the player variable `__languageIndex__` is no longer `1.1` (`0.1` for
+/// [`NoTlErr`](Self::NoTlErr)); until then the language is not known. Spectators do not take
+/// part: show them text with [`tr_spectator`](crate::tr_spectator).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum PlayerVarMode {

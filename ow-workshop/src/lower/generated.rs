@@ -133,8 +133,8 @@ fn tags_rule(program: &Program, _: &Ctx<'_>) -> Option<Rule> {
 }
 
 /// Translations epic: the language-detection rule, when player-variable translations are used.
-fn translation_rule(_: &Program, _: &Ctx<'_>) -> Option<Rule> {
-    None
+fn translation_rule(program: &Program, _: &Ctx<'_>) -> Option<Rule> {
+    crate::translations::language_rule(program)
 }
 
 /// The `(variable, initial value)` pairs in declaration order.
