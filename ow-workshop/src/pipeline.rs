@@ -10,7 +10,7 @@ use ow_workshop_data::Lang;
 pub(crate) fn run(
     program: Program,
     mut diagnostics: Diagnostics,
-    _translations: Option<Translations>,
+    translations: Option<Translations>,
     lang: Lang,
 ) -> Result<CompileOutput, Diagnostics> {
     if let Err(found) = program.validate() {
@@ -24,6 +24,7 @@ pub(crate) fn run(
         return Err(diagnostics);
     }
     let mut program = program;
+    program.translations = translations;
     let options = program.options.clone();
     let mut ctx = Ctx::new(&options, lang, &mut diagnostics, &program);
     if let Err(found) = lower::run_passes(lower::PIPELINE, &mut program, &mut ctx) {

@@ -19,7 +19,7 @@ pub use crate::rule::{ConditionRef, Rule};
 pub use crate::rule_name::{RuleMeta, default_rule_name};
 pub use crate::subroutine::{Sub, SubroutineOptions};
 pub use crate::switch::SwitchBuilder;
-pub use crate::translations::Translations;
+pub use crate::translations::{PlayerVarMode, TranslationLang, Translations};
 pub use crate::ty::*;
 pub use crate::vars::{
     Global, GlobalVars, Indexed, Indexed2, Indexed3, Place, PlayerVar, PlayerVarRef, PlayerVars,

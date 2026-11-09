@@ -118,7 +118,7 @@ pub use rule::{ConditionRef, Rule};
 pub use rule_name::{RuleMeta, default_rule_name};
 pub use subroutine::{Sub, SubroutineOptions};
 pub use switch::SwitchBuilder;
-pub use translations::Translations;
+pub use translations::{PlayerVarMode, TranslationLang, Translations};
 pub use ty::*;
 pub use vars::{
     Global, GlobalHandle, GlobalVars, Indexed, Indexed2, Indexed3, Place, Plain, PlayerHandle,
