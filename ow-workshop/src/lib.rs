@@ -65,6 +65,7 @@ mod opt;
 mod options;
 mod output;
 mod pipeline;
+mod players;
 pub mod prelude;
 mod raycast;
 mod rule;
@@ -116,6 +117,12 @@ pub use output::CompileOutput;
 pub use ow_workshop_data::chars;
 pub use ow_workshop_data::{Lang, LocalizedString, Texture};
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
+pub use players::{
+    PlayerHelperError, PlayerHelpers, RealPlayersArgs, RealRadiusArgs, real_closest_player,
+    real_closest_player_with, real_closest_players, real_closest_players_with,
+    real_farthest_player, real_farthest_player_with, real_farthest_players,
+    real_farthest_players_with, real_players_in_radius, real_players_in_radius_with,
+};
 
 /// Support items for macro expansions; not public API.
 #[doc(hidden)]

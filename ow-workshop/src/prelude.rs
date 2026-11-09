@@ -15,6 +15,12 @@ pub use crate::math::{self, ceil, floor, round};
 pub use crate::ops::if_then_else;
 pub use crate::options::{CompileOptions, OptLevel};
 pub use crate::output::CompileOutput;
+pub use crate::players::{
+    PlayerHelperError, PlayerHelpers, RealPlayersArgs, RealRadiusArgs, real_closest_player,
+    real_closest_player_with, real_closest_players, real_closest_players_with,
+    real_farthest_player, real_farthest_player_with, real_farthest_players,
+    real_farthest_players_with, real_players_in_radius, real_players_in_radius_with,
+};
 pub use crate::raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use crate::rule::{ConditionRef, Rule};
 pub use crate::rule_name::{RuleMeta, default_rule_name};
