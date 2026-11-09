@@ -1,4 +1,13 @@
-//! Rounding, which the workshop exposes as one value with a mode argument.
+//! Rounding, constants and helpers such as `sign`, `lerp`, `ln` and `hsl`.
+
+mod consts;
+mod directions;
+mod funcs;
+mod hsl;
+
+pub use consts::*;
+pub use funcs::{lerp, line_intersects_sphere, ln, log, sign};
+pub use hsl::{HslArgs, HslError, hsl, hsl_with};
 
 use ow_workshop_data::{Rounding, ValueId};
 

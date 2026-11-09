@@ -3,6 +3,7 @@
 pub use crate::block::Block;
 pub use crate::builder::Builder;
 pub use crate::cased::{CasedTextArgs, CasedTextError};
+pub use crate::colors;
 pub use crate::control::{ForRange, IfBuilder, RangeStep, range, rule_condition};
 pub use crate::dict::{Dict, dict};
 pub use crate::event::*;
@@ -10,7 +11,7 @@ pub use crate::expr::{Expr, null, vect};
 pub use crate::generated::api::*;
 pub use crate::label::Label;
 pub use crate::localized::{localized, localized_en};
-pub use crate::math::{ceil, floor, round};
+pub use crate::math::{self, ceil, floor, round};
 pub use crate::ops::if_then_else;
 pub use crate::options::{CompileOptions, OptLevel};
 pub use crate::output::CompileOutput;
