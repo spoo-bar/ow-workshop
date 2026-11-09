@@ -50,7 +50,7 @@ impl<W: Workshop> WorkshopExt for W {
         let players = W::Players::declare(&mut player_reg);
 
         let options = self.options();
-        let mut ws = Builder::with_template(options.rule_name_template);
+        let mut ws = Builder::with_template(options.rule_name_template).with_tags(options.tags);
         self.build(&mut ws, &globals, &players);
 
         let program = Program {

@@ -39,14 +39,20 @@
 extern crate self as ow_workshop;
 
 mod array;
+mod array_helpers;
+mod array_to_string;
 mod block;
 mod builder;
 mod cased;
 mod catalog;
 mod check;
 mod cli;
+pub mod colors;
+mod columns;
+mod compress;
 mod control;
 mod count;
+mod debug;
 mod dict;
 mod emit;
 mod event;
@@ -54,16 +60,18 @@ mod expr;
 mod flatten;
 mod fmt;
 mod generated;
+mod hud;
 mod ir;
 mod label;
 mod localized;
 mod lower;
-mod math;
+pub mod math;
 mod ops;
 mod opt;
 mod options;
 mod output;
 mod pipeline;
+mod players;
 pub mod prelude;
 mod raycast;
 mod rule;
@@ -74,6 +82,7 @@ mod support;
 mod suppress;
 mod switch;
 mod tags;
+mod text;
 mod translate;
 mod translations;
 mod ty;
@@ -86,13 +95,19 @@ mod workshop_enum;
 pub mod workshop_setting;
 mod wrap;
 
+pub use array_to_string::array_to_string;
 pub use block::Block;
 pub use builder::Builder;
 pub use cased::{CasedTextArgs, CasedTextError};
 pub use catalog::{Catalog, Entry};
 #[doc(hidden)]
 pub use cli::lang_from_args;
+pub use columns::{ColumnPlace, Columns, Table};
+pub use compress::{
+    CompressError, Compressible, compress, compressed, decompress_numbers, decompress_vectors,
+};
 pub use control::{ForRange, IfBuilder, IntoForRange, RangeStep, range, rule_condition};
+pub use debug::DebugValue;
 pub use dict::{Dict, dict};
 pub use event::{
     Ev, EventType, HasDamage, HasDamageOrHealing, HasEventPlayer, HasHealing, OngoingEachPlayer,
@@ -103,6 +118,7 @@ pub use event::{
 };
 pub use expr::{Expr, null, vect};
 pub use generated::api::*;
+pub use hud::HudArgs;
 pub use ir::{
     Diagnostic, Diagnostics, ErrorKind, Kind, Location, Severity, TeamFilter, WarningSet,
 };
@@ -115,6 +131,12 @@ pub use output::CompileOutput;
 pub use ow_workshop_data::chars;
 pub use ow_workshop_data::{Lang, LocalizedString, Texture};
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
+pub use players::{
+    PlayerHelperError, PlayerHelpers, RealPlayersArgs, RealRadiusArgs, real_closest_player,
+    real_closest_player_with, real_closest_players, real_closest_players_with,
+    real_farthest_player, real_farthest_player_with, real_farthest_players,
+    real_farthest_players_with, real_players_in_radius, real_players_in_radius_with,
+};
 
 /// Support items for macro expansions; not public API.
 #[doc(hidden)]
@@ -131,6 +153,7 @@ pub use settings::{
 };
 pub use subroutine::{Sub, SubroutineOptions};
 pub use switch::SwitchBuilder;
+pub use text::{button_to_string, time_to_string};
 pub use translate::{tr, tr_raw, tr_spectator};
 pub use translations::{ParseTranslationLangError, PlayerVarMode, TranslationLang, Translations};
 pub use ty::*;

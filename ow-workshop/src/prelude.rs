@@ -1,19 +1,33 @@
 //! The items a mod needs: `use ow_workshop::prelude::*;`.
 
+pub use crate::array_to_string::array_to_string;
 pub use crate::block::Block;
 pub use crate::builder::Builder;
 pub use crate::cased::{CasedTextArgs, CasedTextError};
+pub use crate::colors;
+pub use crate::columns::Columns;
+pub use crate::compress::{
+    CompressError, compress, compressed, decompress_numbers, decompress_vectors,
+};
 pub use crate::control::{ForRange, IfBuilder, RangeStep, range, rule_condition};
+pub use crate::debug;
 pub use crate::dict::{Dict, dict};
 pub use crate::event::*;
 pub use crate::expr::{Expr, null, vect};
 pub use crate::generated::api::*;
+pub use crate::hud::HudArgs;
 pub use crate::label::Label;
 pub use crate::localized::{localized, localized_en};
-pub use crate::math::{ceil, floor, round};
+pub use crate::math::{self, ceil, floor, round};
 pub use crate::ops::if_then_else;
 pub use crate::options::{CompileOptions, OptLevel};
 pub use crate::output::CompileOutput;
+pub use crate::players::{
+    PlayerHelperError, PlayerHelpers, RealPlayersArgs, RealRadiusArgs, real_closest_player,
+    real_closest_player_with, real_closest_players, real_closest_players_with,
+    real_farthest_player, real_farthest_player_with, real_farthest_players,
+    real_farthest_players_with, real_players_in_radius, real_players_in_radius_with,
+};
 pub use crate::raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use crate::rule::{ConditionRef, Rule};
 pub use crate::rule_name::{RuleMeta, default_rule_name};
@@ -23,6 +37,7 @@ pub use crate::settings::{
 };
 pub use crate::subroutine::{Sub, SubroutineOptions};
 pub use crate::switch::SwitchBuilder;
+pub use crate::text::{button_to_string, time_to_string};
 pub use crate::translate::{tr, tr_raw, tr_spectator};
 pub use crate::translations::{PlayerVarMode, TranslationLang, Translations};
 pub use crate::ty::*;

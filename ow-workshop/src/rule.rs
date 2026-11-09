@@ -29,6 +29,8 @@ pub struct Rule<E> {
     slot: Option<u8>,
     hero: Option<Hero>,
     labels: Rc<Cell<u32>>,
+    /// Whether the mod enables text tags.
+    pub(crate) tags: bool,
     _event: PhantomData<fn() -> E>,
 }
 
@@ -60,6 +62,7 @@ impl<E: EventType> Rule<E> {
             slot: None,
             hero: None,
             labels,
+            tags: false,
             _event: PhantomData,
         }
     }
@@ -80,6 +83,7 @@ impl<E: EventType> Rule<E> {
     /// Records actions; repeated calls append.
     pub fn actions(&mut self, build: impl FnOnce(&mut Block)) {
         let mut block = Block::with_labels(Rc::clone(&self.labels));
+        block.tags = self.tags;
         build(&mut block);
         self.body.stmts.extend(block.into_ir().stmts);
     }

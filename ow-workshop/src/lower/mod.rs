@@ -11,6 +11,7 @@
 
 pub(crate) mod checks;
 pub(crate) mod client_args;
+pub(crate) mod compression;
 pub(crate) mod dicts;
 pub(crate) mod functions;
 pub(crate) mod generated;
@@ -153,12 +154,14 @@ pub(crate) fn noop(_: &mut Program, _: &mut Ctx<'_>) -> Result<(), Diagnostics> 
 /// The passes run before emitting, in order.
 pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("optimizer variables", crate::opt::declare_variables),
+    ("compression variables", compression::declare_variables),
     ("generated rules", generated::add_rules),
     ("variable usage", varflags::collect),
     ("subroutine checks", subs::check),
     ("lower switch", switch::lower),
     ("lower loops", loops::lower),
     ("lower dictionaries", dicts::lower),
+    ("lower compression", compression::lower),
     ("lower functions", functions::lower),
     ("string modifiers", modifiers::apply),
     ("translated strings", translate::lower),

@@ -18,6 +18,8 @@ pub struct Block {
     labels: Rc<Cell<u32>>,
     /// Warnings suppressed for the statements recorded from here on.
     pub(crate) suppressed: WarningSet,
+    /// Whether the mod enables text tags (`CompileOptions::tags`), which helpers may use.
+    pub(crate) tags: bool,
 }
 
 // Constructed by the rule builder.
@@ -34,6 +36,7 @@ impl Block {
             ir: ir::Block::default(),
             labels,
             suppressed: WarningSet::default(),
+            tags: false,
         }
     }
 
@@ -41,6 +44,7 @@ impl Block {
     pub(crate) fn record(&self, body: impl FnOnce(&mut Block)) -> ir::Block {
         let mut block = Self::with_labels(Rc::clone(&self.labels));
         block.suppressed = self.suppressed;
+        block.tags = self.tags;
         body(&mut block);
         block.into_ir()
     }

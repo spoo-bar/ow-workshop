@@ -67,6 +67,9 @@ pub struct CompileOptions {
     pub debug_element_count: bool,
     /// Disable the workshop inspector in the emitted settings.
     pub disable_inspector: bool,
+    /// Keep the compression alphabet in the internal global `__compressionAlphabet__`, set once
+    /// by the global init rule, instead of repeating it in every decoding expression.
+    pub compression_alphabet_variable: bool,
     /// Name of the rule that initializes global variables.
     pub global_init_rule_name: String,
     /// Name of the rule that initializes player variables.
@@ -89,6 +92,7 @@ impl Default for CompileOptions {
             exclude_variables_block: false,
             debug_element_count: false,
             disable_inspector: false,
+            compression_alphabet_variable: false,
             global_init_rule_name: "Initialize global variables".to_owned(),
             player_init_rule_name: "Initialize player variables".to_owned(),
             suppress: WarningSet::default(),
@@ -107,6 +111,7 @@ impl PartialEq for CompileOptions {
             && self.exclude_variables_block == other.exclude_variables_block
             && self.debug_element_count == other.debug_element_count
             && self.disable_inspector == other.disable_inspector
+            && self.compression_alphabet_variable == other.compression_alphabet_variable
             && self.global_init_rule_name == other.global_init_rule_name
             && self.player_init_rule_name == other.player_init_rule_name
             && self.suppress == other.suppress

@@ -127,6 +127,7 @@ impl Builder {
         let rule_name = self.resolve_name(&state.rule_name, false, loc);
 
         let mut block = Block::with_labels(self.labels());
+        block.tags = self.tags;
         body(&mut block, Ev::new());
         let body = block.into_ir();
         check_do_while(&body, &rule_name, self.diagnostics_mut());
