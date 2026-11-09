@@ -304,3 +304,100 @@ fn leading_and_trailing_whitespace_is_kept_around_translations() {
         message(&out.code)
     );
 }
+
+fn detection_rule(mode: PlayerVarMode, optimize: OptLevel) -> String {
+    struct Detecting(PlayerVarMode, OptLevel);
+    impl Workshop for Detecting {
+        type Globals = ();
+        type Players = ();
+
+        fn build(&self, ws: &mut Builder, (): &(), (): &()) {
+            ws.rule("Show", OngoingGlobal, |r, _| {
+                r.actions(|b| b.big_message(t!("Hello")));
+            });
+        }
+
+        fn options(&self) -> CompileOptions {
+            let mut options = CompileOptions::default();
+            options.optimize = self.1;
+            options
+        }
+
+        fn translations(&self) -> Option<Translations> {
+            Some(Translations::new([En, Fr]).with_player_var(self.0))
+        }
+    }
+    let code = Detecting(mode, optimize)
+        .compile(Lang::EnUs)
+        .expect("compiles")
+        .code;
+    let start = code
+        .find("rule (\"Translation setup - detect player language\")")
+        .expect("the rule");
+    let rest = &code[start..];
+    rest[..rest.find("\n}\n").expect("end") + 3].to_owned()
+}
+
+fn expected_rule(start: &str, last: &str) -> String {
+    format!(
+        r#"rule ("Translation setup - detect player language") {{
+    event {{
+        Ongoing - Each Player;
+        All;
+        All;
+    }}
+    conditions {{
+        Has Spawned(Event Player) == True;
+        Is Dummy Bot(Event Player) == False;
+        (Event Player).__languageIndex__ == {start};
+    }}
+    actions {{
+        Modify Player Variable(Event Player, __languageIndex__, Append To Array, Facing Direction Of(Event Player));
+        Start Facing(Event Player, Direction From Angles(Multiply(10, Index Of Array Value(String Split(Custom String("{SEP}0White0Blanc"), First Of(Null)), String Split(Color(White), Empty Array))), 5), 999999999999, To World, Direction and Turn Rate);
+        Wait Until(And(Not(Modulo(Round To Integer(Multiply(Horizontal Facing Angle Of(Event Player), 100), To Nearest), 1000)), Compare(Absolute Value(Subtract(Vertical Facing Angle Of(Event Player), 5)), <, 0.01)), 15);
+        Set Player Variable At Index(Event Player, __languageIndex__, 0, Max(1, Multiply(Compare(Absolute Value(Subtract(Vertical Facing Angle Of(Event Player), 5)), <, 0.01), Round To Integer(Divide(Horizontal Facing Angle Of(Event Player), 10), To Nearest))));
+        Stop Facing(Event Player);
+        Set Facing(Event Player, Last Of((Event Player).__languageIndex__), To World);
+        Set Player Variable(Event Player, __languageIndex__, {last});
+    }}
+}}
+"#
+    )
+}
+
+#[test]
+fn detection_rule_in_default_mode() {
+    assert_eq!(
+        detection_rule(PlayerVarMode::Default, OptLevel::Off),
+        expected_rule("1.1", "Value In Array((Event Player).__languageIndex__, 0)")
+    );
+}
+
+#[test]
+fn detection_rule_without_tl_err() {
+    assert_eq!(
+        detection_rule(PlayerVarMode::NoTlErr, OptLevel::Off),
+        expected_rule(
+            "0.1",
+            "Subtract(Value In Array((Event Player).__languageIndex__, 0), 1)"
+        )
+    );
+}
+
+#[test]
+fn detection_rule_survives_the_optimizer() {
+    let rule = detection_rule(PlayerVarMode::Default, OptLevel::Speed);
+    assert!(
+        rule.contains("Start Facing(Event Player, Direction From Angles("),
+        "{rule}"
+    );
+    assert!(rule.contains("__languageIndex__ == 1.1;"), "{rule}");
+}
+
+#[test]
+fn no_detection_rule_without_the_player_variable() {
+    let out = compile(Translations::new([En, Fr]), |b, _| {
+        b.big_message(t!("Hello"));
+    });
+    assert!(!out.code.contains("Translation setup"));
+}
