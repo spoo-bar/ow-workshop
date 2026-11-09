@@ -81,6 +81,21 @@ pub(crate) struct Translated {
     pub(crate) spectator: bool,
 }
 
+/// A packed string decoded into an array of numbers or vectors; removed by lowering.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Decompress {
+    /// The packed text: one alphabet character per two digits, items separated by `"0"`.
+    pub(crate) packed: Expr,
+    /// Decode vectors (`x`, `z`, `y` in turn) instead of numbers.
+    pub(crate) vectors: bool,
+    /// Decimal place of the first digit of every item (negative: fractional digits).
+    pub(crate) min_place: i32,
+    /// One past the decimal place of the last digit.
+    pub(crate) max_place: i32,
+    /// Added to every value before packing, so all of them are non-negative.
+    pub(crate) offset: f64,
+}
+
 /// The shape of an expression.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum ExprKind {
@@ -188,6 +203,8 @@ pub(crate) enum ExprKind {
         /// Up to three placeholder arguments.
         args: Vec<Expr>,
     },
+    /// A packed string decoded into numbers or vectors; removed by lowering.
+    Decompress(Box<Decompress>),
     /// A modifier applied to a string template; removed by lowering.
     StrModify {
         /// The modifier.
@@ -269,6 +286,7 @@ impl ExprKind {
             | Self::Neg(a)
             | Self::StrModify { inner: a, .. }
             | Self::Resolve { inner: a, .. } => vec![a],
+            Self::Decompress(d) => vec![&d.packed],
             Self::IfThenElse { cond, then, else_ } => vec![cond, then, else_],
             Self::Dict { entries, default } => entries
                 .iter()

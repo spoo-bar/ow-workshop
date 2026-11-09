@@ -48,6 +48,7 @@ mod catalog;
 mod check;
 mod cli;
 pub mod colors;
+mod compress;
 mod control;
 mod count;
 mod dict;
@@ -98,6 +99,9 @@ pub use cased::{CasedTextArgs, CasedTextError};
 pub use catalog::{Catalog, Entry};
 #[doc(hidden)]
 pub use cli::lang_from_args;
+pub use compress::{
+    CompressError, Compressible, compress, compressed, decompress_numbers, decompress_vectors,
+};
 pub use control::{ForRange, IfBuilder, IntoForRange, RangeStep, range, rule_condition};
 pub use dict::{Dict, dict};
 pub use event::{

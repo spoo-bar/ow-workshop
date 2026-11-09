@@ -271,6 +271,7 @@ fn value(expr: &Expr) -> usize {
         K::Dict { .. }
         | K::Translated(_)
         | K::Resolve { .. }
+        | K::Decompress(_)
         | K::StrModify { .. }
         | K::LocalizedCall { .. }
         | K::HolyGrail

@@ -5,6 +5,9 @@ pub use crate::block::Block;
 pub use crate::builder::Builder;
 pub use crate::cased::{CasedTextArgs, CasedTextError};
 pub use crate::colors;
+pub use crate::compress::{
+    CompressError, compress, compressed, decompress_numbers, decompress_vectors,
+};
 pub use crate::control::{ForRange, IfBuilder, RangeStep, range, rule_condition};
 pub use crate::dict::{Dict, dict};
 pub use crate::event::*;

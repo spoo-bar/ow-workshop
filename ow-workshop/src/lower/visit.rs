@@ -2,7 +2,9 @@
 
 #![allow(dead_code)]
 
-use crate::ir::{Block, Expr, ExprKind, Place, SkipTarget, Stmt, StmtKind, StrExpr, Translated};
+use crate::ir::{
+    Block, Decompress, Expr, ExprKind, Place, SkipTarget, Stmt, StmtKind, StrExpr, Translated,
+};
 
 /// Calls `f` on `stmt`, then on every statement nested inside it.
 pub(crate) fn walk_stmt(stmt: &Stmt, f: &mut impl FnMut(&Stmt)) {
@@ -171,6 +173,10 @@ pub(crate) fn map_children(kind: &ExprKind, g: &mut impl FnMut(&Expr) -> Expr) -
             inner: g(inner),
             spectator: *spectator,
         },
+        K::Decompress(d) => K::Decompress(Box::new(Decompress {
+            packed: g(&d.packed),
+            ..(**d).clone()
+        })),
     }
 }
 

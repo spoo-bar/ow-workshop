@@ -17,7 +17,7 @@ mod warning_set;
 pub use diag::{Diagnostic, Diagnostics, Kind, Severity};
 pub use error_kind::ErrorKind;
 pub(crate) use expr::{
-    CmpOp, ConstRef, Expr, ExprKind, StrExpr, StrModifier, StrToken, Translated,
+    CmpOp, ConstRef, Decompress, Expr, ExprKind, StrExpr, StrModifier, StrToken, Translated,
 };
 pub(crate) use ids::{LabelId, SubId, VarId};
 pub use loc::Location;
