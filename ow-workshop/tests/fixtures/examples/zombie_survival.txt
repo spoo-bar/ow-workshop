@@ -1,3 +1,17 @@
+settings
+{
+	modes
+	{
+		Team Deathmatch
+		{
+			enabled maps
+			{
+				Workshop Chamber
+			}
+		}
+	}
+}
+
 variables {
     global:
         0: wave
