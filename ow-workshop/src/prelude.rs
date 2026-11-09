@@ -19,6 +19,7 @@ pub use crate::rule::{ConditionRef, Rule};
 pub use crate::rule_name::{RuleMeta, default_rule_name};
 pub use crate::subroutine::{Sub, SubroutineOptions};
 pub use crate::switch::SwitchBuilder;
+pub use crate::translate::{tr, tr_raw, tr_spectator};
 pub use crate::translations::{PlayerVarMode, TranslationLang, Translations};
 pub use crate::ty::*;
 pub use crate::vars::{
@@ -30,5 +31,6 @@ pub use crate::workshop::{Workshop, WorkshopExt};
 pub use crate::{
     Diagnostic, Diagnostics, Lang, LocalizedString, Settings, TeamFilter, Texture, Warning,
 };
+pub use crate::{t, t_ctx};
 pub use ow_workshop_data::chars;
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};

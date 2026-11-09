@@ -2,13 +2,16 @@
 
 use ow_workshop_data::{Lang, Map, ValueId};
 
-use super::{TranslationLang, Translations};
+use super::{PlayerVarMode, TranslationLang, Translations};
 use crate::ir::{
     ConstRef, Diagnostics, Expr, ExprKind, Program, Severity, StrExpr, StrToken, VarDecl,
 };
 
 /// Internal global holding the split of the language names.
 pub(crate) const HELPER: &str = "__overpyTranslationHelper__";
+
+/// Internal player variable holding the player's language index.
+pub(crate) const LANGUAGE_INDEX: &str = "__languageIndex__";
 
 /// Private-use character that separates translations; forbidden inside translated strings.
 pub(crate) const SEPARATOR: char = '\u{EC48}';
@@ -99,7 +102,10 @@ pub(crate) fn helper_init(langs: &[TranslationLang], detection: Detection) -> Ex
 
 /// Declares the helper global, initialized in the global init rule, when translations are on.
 pub(crate) fn declare(program: &mut Program) -> Result<(), Diagnostics> {
-    let Some(Translations { langs, .. }) = program.translations.as_ref() else {
+    let Some(Translations {
+        langs, player_var, ..
+    }) = program.translations.as_ref()
+    else {
         return Ok(());
     };
     if langs.is_empty() {
@@ -116,6 +122,7 @@ pub(crate) fn declare(program: &mut Program) -> Result<(), Diagnostics> {
         diags
     })?;
     let init = helper_init(langs, detection);
+    let player_var = *player_var;
     program.globals.declare(VarDecl {
         name: HELPER.to_owned(),
         index: None,
@@ -124,5 +131,21 @@ pub(crate) fn declare(program: &mut Program) -> Result<(), Diagnostics> {
         flags: crate::ir::VarFlags::default(),
         location: None,
     });
+    if let Some(mode) = player_var {
+        // Not yet detected: the index is fractional.
+        let start = if mode == PlayerVarMode::NoTlErr {
+            0.1
+        } else {
+            1.1
+        };
+        program.players.declare(VarDecl {
+            name: LANGUAGE_INDEX.to_owned(),
+            index: None,
+            init: Some(Expr::new(ExprKind::Num(start), None)),
+            internal: true,
+            flags: crate::ir::VarFlags::default(),
+            location: None,
+        });
+    }
     Ok(())
 }

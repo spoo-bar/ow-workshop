@@ -270,6 +270,7 @@ fn value(expr: &Expr) -> usize {
         // Removed before counting.
         K::Dict { .. }
         | K::Translated(_)
+        | K::Resolve { .. }
         | K::StrModify { .. }
         | K::LocalizedCall { .. }
         | K::HolyGrail

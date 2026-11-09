@@ -73,6 +73,6 @@ pub(crate) fn run(
         code,
         warnings: diagnostics.0,
         element_count,
-        catalog: None,
+        catalog: program.translations.take().map(|t| t.catalog),
     })
 }

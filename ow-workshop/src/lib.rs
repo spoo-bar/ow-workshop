@@ -72,6 +72,7 @@ mod subroutine;
 mod support;
 mod switch;
 mod tags;
+mod translate;
 mod translations;
 mod ty;
 mod vars;
@@ -114,12 +115,14 @@ pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
 #[doc(hidden)]
 pub mod __private {
     pub use crate::fmt::{Piece, template};
+    pub use crate::translate::translated;
 }
 pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
 pub use rule_name::{RuleMeta, default_rule_name};
 pub use subroutine::{Sub, SubroutineOptions};
 pub use switch::SwitchBuilder;
+pub use translate::{tr, tr_raw, tr_spectator};
 pub use translations::{ParseTranslationLangError, PlayerVarMode, TranslationLang, Translations};
 pub use ty::*;
 pub use vars::{

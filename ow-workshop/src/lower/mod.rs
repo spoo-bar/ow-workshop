@@ -23,6 +23,7 @@ pub(crate) mod strings;
 pub(crate) mod subs;
 pub(crate) mod switch;
 pub(crate) mod tags;
+pub(crate) mod translate;
 pub(crate) mod varflags;
 pub(crate) mod visit;
 
@@ -164,6 +165,7 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("lower dictionaries", dicts::lower),
     ("lower functions", functions::lower),
     ("string modifiers", modifiers::apply),
+    ("translated strings", translate::lower),
     ("localized strings", localized::lower),
     ("normalize strings", strings::normalize),
     ("text tags", tags::lower),

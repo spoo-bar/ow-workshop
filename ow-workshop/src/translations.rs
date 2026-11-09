@@ -6,7 +6,7 @@ use ow_workshop_data::Lang;
 
 use crate::catalog::Catalog;
 
-pub(crate) use detect::declare;
+pub(crate) use detect::{Detection, HELPER, LANGUAGE_INDEX, SEPARATOR, choose, declare};
 
 /// A translation target; the plain `Es`, `Zh` and the regional codes pick a game language.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
