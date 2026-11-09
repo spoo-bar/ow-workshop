@@ -4,7 +4,7 @@ mod detect;
 
 use ow_workshop_data::Lang;
 
-use crate::output::Catalog;
+use crate::catalog::Catalog;
 
 pub(crate) use detect::declare;
 
@@ -112,6 +112,31 @@ impl TranslationLang {
             Self::Zh | Self::ZhCn => Lang::ZhCn,
             Self::ZhTw => Lang::ZhTw,
         }
+    }
+}
+
+/// An unknown translation language code.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ParseTranslationLangError(String);
+
+impl std::fmt::Display for ParseTranslationLangError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "unknown translation language `{}`", self.0)
+    }
+}
+
+impl std::error::Error for ParseTranslationLangError {}
+
+impl std::str::FromStr for TranslationLang {
+    type Err = ParseTranslationLangError;
+
+    /// Parses a code such as `es_mx`; case and `-` versus `_` do not matter.
+    fn from_str(code: &str) -> Result<Self, Self::Err> {
+        let normalized = code.trim().replace('-', "_").to_ascii_lowercase();
+        Self::ALL
+            .into_iter()
+            .find(|lang| lang.code() == normalized)
+            .ok_or_else(|| ParseTranslationLangError(code.to_owned()))
     }
 }
 
