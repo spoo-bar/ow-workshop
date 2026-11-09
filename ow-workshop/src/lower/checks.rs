@@ -1,12 +1,13 @@
 //! Validations and warnings for specific functions and constants.
 
+use crate::ir::ErrorKind;
 use ow_workshop_data::signature::{Signature, is_subtype};
 use ow_workshop_data::{ActionId, Beam, DynamicEffect, Effect, Extension, Gamemode, Map, ValueId};
 
 use super::Ctx;
 use super::functions::{arg_index, is_const};
 use super::visit::walk_block;
-use crate::ir::{Diagnostics, Expr, ExprKind, Location, Program, Rule, Severity, Stmt, StmtKind};
+use crate::ir::{Diagnostics, Expr, ExprKind, Location, Program, Rule, Stmt, StmtKind};
 use crate::warning::Warning;
 
 /// Colors that are hard to read on a HUD.
@@ -78,7 +79,7 @@ struct Checker<'a, 'b> {
 
 impl Checker<'_, '_> {
     fn warn(&mut self, warning: Warning, message: String, loc: Option<Location>) {
-        self.ctx.warn(&self.rule.suppressed, warning, message, loc);
+        self.ctx.warn(warning, message, loc);
     }
 
     fn expr(&mut self, expr: &Expr, stmt_loc: Option<Location>) {
@@ -86,9 +87,7 @@ impl Checker<'_, '_> {
         match expr.kind() {
             ExprKind::Const(c) => match constant_problem(c.enum_name, c.key) {
                 Some(Ok(extension)) if !(self.program_has_extension)(extension) => {
-                    self.errors.push(
-                        Severity::Error,
-                        "extension-not-enabled",
+                    self.errors.error(ErrorKind::ExtensionNotEnabled,
                         format!(
                             "`{}` needs the `{extension:?}` extension, which is not enabled in the settings",
                             c.key
@@ -96,9 +95,8 @@ impl Checker<'_, '_> {
                         loc,
                     );
                 }
-                Some(Err(what)) => self.errors.push(
-                    Severity::Error,
-                    "ow1-only",
+                Some(Err(what)) => self.errors.error(
+                    ErrorKind::Ow1Only,
                     format!("the {what} `{}` only exists in Overwatch 1", c.key),
                     loc,
                 ),

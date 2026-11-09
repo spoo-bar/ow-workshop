@@ -103,7 +103,10 @@ fn the_block_comes_before_the_rules_and_ends_with_a_blank_line() {
 fn invalid_settings_fail_the_compile() {
     let settings = Settings::default().with_extension(Extension::Projectiles);
     let err = Mod(settings).compile(Lang::EnUs).expect_err("no modes");
-    assert!(err.0.iter().any(|d| d.code == "settings-no-modes"), "{err}");
+    assert!(
+        err.0.iter().any(|d| d.code() == "settings-no-modes"),
+        "{err}"
+    );
 }
 
 #[test]
@@ -112,7 +115,7 @@ fn extension_points_are_a_warning() {
         .with_mode(ModeKey::Mode(Gamemode::Skirmish), ModeSettings::default())
         .with_extension(Extension::Projectiles);
     let out = Mod(settings).compile(Lang::EnUs).expect("compiles");
-    let codes: Vec<_> = out.warnings.iter().map(|w| w.code).collect();
+    let codes: Vec<_> = out.warnings.iter().map(Diagnostic::code).collect();
     assert_eq!(codes, ["extension-points"]);
 }
 
@@ -193,6 +196,10 @@ mod workshop_values {
         }
 
         let err = Many.compile(Lang::EnUs).expect_err("too many");
-        assert!(err.0.iter().any(|d| d.code == "too-many-workshop-settings"));
+        assert!(
+            err.0
+                .iter()
+                .any(|d| d.code() == "too-many-workshop-settings")
+        );
     }
 }

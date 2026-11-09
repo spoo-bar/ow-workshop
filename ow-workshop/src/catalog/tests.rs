@@ -67,14 +67,14 @@ fn multi_line_strings_round_trip() {
 fn line_count_mismatch_is_an_error() {
     let po = "msgid \"a\\nb\"\nmsgstr \"c\"\n";
     let err = Catalog::default().merge_po(Fr, po).expect_err("mismatch");
-    assert_eq!(err.0[0].code, "po-newlines");
+    assert_eq!(err.0[0].code(), "po-newlines");
 }
 
 #[test]
 fn wrong_language_header_is_an_error() {
     let po = "msgid \"\"\nmsgstr \"\"\n\"Language: ja\\n\"\n";
     let err = Catalog::default().merge_po(Fr, po).expect_err("wrong lang");
-    assert_eq!(err.0[0].code, "po-language");
+    assert_eq!(err.0[0].code(), "po-language");
     Catalog::default().merge_po(Ja, po).expect("matches");
 }
 
@@ -125,7 +125,7 @@ fn syntax_errors_are_reported() {
         "msgid \"a\\q\"\n",
     ] {
         let err = Catalog::default().merge_po(Fr, po).expect_err(po);
-        assert_eq!(err.0[0].code, "po-syntax", "{po}");
+        assert_eq!(err.0[0].code(), "po-syntax", "{po}");
     }
 }
 

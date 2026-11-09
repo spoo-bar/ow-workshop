@@ -2,6 +2,7 @@
 
 use super::{Diagnostics, Rule, RuleError, Severity, Subs, Vars};
 use crate::CompileOptions;
+use crate::ir::ErrorKind;
 use crate::settings::Settings;
 use crate::translations::Translations;
 
@@ -32,22 +33,22 @@ impl Program {
             let Err(err) = rule.validate() else { continue };
             let (code, message) = match err {
                 RuleError::FilterNotAllowed => (
-                    "filter-not-allowed",
+                    ErrorKind::FilterNotAllowed,
                     format!(
                         "rule `{}`: only player events take a team/player filter",
                         rule.name
                     ),
                 ),
                 RuleError::SubroutineHasConditions => (
-                    "subroutine-conditions",
+                    ErrorKind::SubroutineConditions,
                     format!("rule `{}`: subroutines cannot have conditions", rule.name),
                 ),
                 RuleError::SlotOutOfRange(slot) => (
-                    "slot-out-of-range",
+                    ErrorKind::SlotOutOfRange,
                     format!("rule `{}`: slot {slot} is not in 0..=11", rule.name),
                 ),
             };
-            diags.push(Severity::Error, code, message, rule.location);
+            diags.error(code, message, rule.location);
         }
         if diags.has_errors() {
             Err(diags)

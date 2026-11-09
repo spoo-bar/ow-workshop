@@ -76,13 +76,13 @@ macro_rules! main {
 mod tests {
     use super::*;
 
-    use crate::{Diagnostic, Diagnostics, Location, Severity};
+    use crate::{Diagnostic, Diagnostics, ErrorKind, Kind, Location, Severity, Warning};
 
     #[test]
     fn diagnostics_print_like_compilers() {
         let located = Diagnostic {
             severity: Severity::Warning,
-            code: "break-outside-loop",
+            kind: Kind::Warning(Warning::BreakOutsideLoop),
             message: "break outside a loop".to_owned(),
             location: Some(Location {
                 file: "src/main.rs",
@@ -96,11 +96,11 @@ mod tests {
         );
         let plain = Diagnostic {
             severity: Severity::Error,
-            code: "x",
+            kind: Kind::Error(ErrorKind::EmitFailed),
             message: "m".to_owned(),
             location: None,
         };
-        assert_eq!(plain.to_string(), "error[x]: m");
+        assert_eq!(plain.to_string(), "error[emit-failed]: m");
         assert_eq!(
             Diagnostics(vec![located, plain])
                 .to_string()

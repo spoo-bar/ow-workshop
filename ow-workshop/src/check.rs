@@ -1,12 +1,15 @@
 //! Checks made while a rule is recorded.
 
+use crate::ir::ErrorKind;
+use crate::suppress::Suppression;
+use crate::warning::Warning;
 use std::collections::BTreeMap;
 
 use ow_workshop_data::ValueId;
 
 use crate::ir::{
-    Block, Diagnostics, Expr, ExprKind, LabelId, Location, Place, Rule, Severity, SkipTarget,
-    StmtKind, StrExpr, StrToken,
+    Block, Diagnostics, Expr, ExprKind, LabelId, Location, Place, Rule, SkipTarget, StmtKind,
+    StrExpr, StrToken,
 };
 
 /// Reports `do_while` loops that are not the first statement of the rule body.
@@ -20,9 +23,7 @@ fn visit(block: &Block, top_level: bool, rule: &str, diagnostics: &mut Diagnosti
     let mut leading = top_level;
     for stmt in &block.stmts {
         if matches!(stmt.kind, StmtKind::DoWhile { .. }) && !leading {
-            diagnostics.push(
-                Severity::Error,
-                "misplaced-do-while",
+            diagnostics.error(ErrorKind::MisplacedDoWhile,
                 format!("rule `{rule}`: `do_while` must be the first statement of a rule or subroutine body"),
                 stmt.loc,
             );
@@ -58,32 +59,36 @@ pub(crate) fn check_labels(rules: &[Rule], diagnostics: &mut Diagnostics) {
         collect(&rule.body, rule_index, &mut order, &mut labels);
     }
     for usage in labels.values() {
-        let mut error = |code: &'static str, message: &str, loc: Option<Location>| {
-            diagnostics.push(Severity::Error, code, message.to_owned(), loc);
+        let mut error = |code: ErrorKind, message: &str, loc: Option<Location>| {
+            diagnostics.error(code, message.to_owned(), loc);
         };
         for extra in usage.placed.iter().skip(1) {
             error(
-                "label-placed-twice",
+                ErrorKind::LabelPlacedTwice,
                 "label is placed more than once",
                 extra.loc,
             );
         }
         let Some(placed) = usage.placed.first() else {
             if let Some(skip) = usage.skips.first() {
-                error("label-never-placed", "label is never placed", skip.loc);
+                error(
+                    ErrorKind::LabelNeverPlaced,
+                    "label is never placed",
+                    skip.loc,
+                );
             }
             continue;
         };
         for skip in &usage.skips {
             if skip.rule != placed.rule {
                 error(
-                    "label-in-other-rule",
+                    ErrorKind::LabelInOtherRule,
                     "label is placed in a different rule than the skip that uses it",
                     skip.loc,
                 );
             } else if placed.order < skip.order {
                 error(
-                    "label-before-skip",
+                    ErrorKind::LabelBeforeSkip,
                     "label is placed before the skip; skips only jump forward",
                     skip.loc,
                 );
@@ -155,9 +160,7 @@ fn walk(expr: &Expr, in_lambda: bool, diagnostics: &mut Diagnostics) {
     if let ExprKind::Value { id, args } = expr.kind() {
         if is_lambda(*id) {
             if in_lambda {
-                diagnostics.push(
-                    Severity::Error,
-                    "nested-lambda",
+                diagnostics.error(ErrorKind::NestedLambda,
                     "array lambdas cannot be nested: the inner one would rebind the element and index"
                         .to_owned(),
                     expr.loc(),
@@ -192,9 +195,7 @@ fn multi_dim_block(block: &Block, diagnostics: &mut Diagnostics) {
         };
         if let Some(target) = target {
             if index_depth(target) >= 2 && indices(target).into_iter().any(contains_random) {
-                diagnostics.push(
-                    Severity::Error,
-                    "random-in-multi-dim-index",
+                diagnostics.error(ErrorKind::RandomInMultiDimIndex,
                     "indices of multi-dimensional places are evaluated more than once and must not be random"
                         .to_owned(),
                     stmt.loc,
@@ -240,8 +241,12 @@ fn contains_random(expr: &Expr) -> bool {
 }
 
 /// Reports literal text that the workshop would read as a placeholder, e.g. `ws_fmt!("{{0}}")`.
-pub(crate) fn check_placeholder_lookalikes(rules: &[Rule], diagnostics: &mut Diagnostics) {
-    let mut visit = |expr: &Expr| lookalikes(expr, diagnostics);
+pub(crate) fn check_placeholder_lookalikes(
+    rules: &[Rule],
+    suppression: &Suppression,
+    diagnostics: &mut Diagnostics,
+) {
+    let mut visit = |expr: &Expr| lookalikes(expr, suppression, diagnostics);
     for rule in rules {
         for cond in &rule.conditions {
             visit(&cond.expr);
@@ -252,14 +257,15 @@ pub(crate) fn check_placeholder_lookalikes(rules: &[Rule], diagnostics: &mut Dia
     }
 }
 
-fn lookalikes(expr: &Expr, diagnostics: &mut Diagnostics) {
+fn lookalikes(expr: &Expr, suppression: &Suppression, diagnostics: &mut Diagnostics) {
     if let ExprKind::Str(StrExpr::Custom { tokens, .. }) = expr.kind() {
         for token in tokens {
             if let StrToken::Text(text) = token {
-                if has_placeholder_lookalike(text) {
-                    diagnostics.push(
-                        Severity::Warning,
-                        "placeholder-lookalike",
+                if has_placeholder_lookalike(text)
+                    && !suppression.is_suppressed(Warning::PlaceholderLookalike, expr.loc())
+                {
+                    diagnostics.warning(
+                        Warning::PlaceholderLookalike,
                         format!("the text {text:?} contains `{{digits}}`, which the game reads as a placeholder"),
                         expr.loc(),
                     );
@@ -268,7 +274,7 @@ fn lookalikes(expr: &Expr, diagnostics: &mut Diagnostics) {
         }
     }
     for child in expr.kind().children() {
-        lookalikes(child, diagnostics);
+        lookalikes(child, suppression, diagnostics);
     }
 }
 

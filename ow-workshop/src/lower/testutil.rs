@@ -8,6 +8,25 @@ use crate::ir::{
 };
 use crate::options::{CompileOptions, OptLevel};
 
+/// Gives every statement, condition and expression of `program` the same source location, so
+/// suppression scopes (which are found by location) apply to the warnings it raises.
+pub(crate) fn locate(program: &mut Program) {
+    let loc = Some(crate::ir::Location {
+        file: "mod.rs",
+        line: 1,
+        column: 1,
+    });
+    for rule in &mut program.rules {
+        rule.location = loc;
+        super::visit::fold_block(&mut rule.body, &mut |stmt| vec![Stmt { loc, ..stmt }]);
+        let mut relocate = |e: Expr| Expr::new(e.kind().clone(), loc);
+        super::visit::rewrite_block_exprs(&mut rule.body, &mut relocate);
+        for cond in &mut rule.conditions {
+            cond.expr = super::visit::rewrite_expr(&cond.expr, &mut relocate);
+        }
+    }
+}
+
 pub(crate) fn num(n: f64) -> Expr {
     Expr::new(ExprKind::Num(n), None)
 }
@@ -28,6 +47,7 @@ pub(crate) fn block(kinds: Vec<StmtKind>) -> Block {
                 kind,
                 loc: None,
                 comment: None,
+                suppress: crate::ir::WarningSet::default(),
             })
             .collect(),
         ..Block::default()
@@ -125,7 +145,7 @@ pub(crate) fn kinds(program: &Program) -> Vec<&StmtKind> {
 }
 
 pub(crate) fn codes(d: &Diagnostics) -> Vec<&'static str> {
-    d.0.iter().map(|d| d.code).collect()
+    d.0.iter().map(crate::ir::Diagnostic::code).collect()
 }
 
 /// A compact, stable rendering of an expression for snapshot-style assertions.

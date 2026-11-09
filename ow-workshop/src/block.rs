@@ -5,9 +5,10 @@ use std::rc::Rc;
 
 use ow_workshop_data::{ChaseRateReeval, ChaseTimeReeval};
 
-use crate::ir::{self, ModifyOp, Stmt, StmtKind};
+use crate::ir::{self, ModifyOp, Stmt, StmtKind, WarningSet};
 use crate::ty::{Array, IntoExpr, Num, ValueType};
 use crate::vars::{Place, Plain};
+use crate::warning::Warning;
 
 /// A list of statements: a rule's actions or the body of a control-flow construct.
 #[derive(Debug, Default)]
@@ -15,6 +16,8 @@ pub struct Block {
     pub(crate) ir: ir::Block,
     /// Label counter shared by every block of the mod, so label ids are unique across rules.
     labels: Rc<Cell<u32>>,
+    /// Warnings suppressed for the statements recorded from here on.
+    pub(crate) suppressed: WarningSet,
 }
 
 // Constructed by the rule builder.
@@ -30,12 +33,14 @@ impl Block {
         Self {
             ir: ir::Block::default(),
             labels,
+            suppressed: WarningSet::default(),
         }
     }
 
     /// Runs `body` on a fresh block that shares this block's label counter.
     pub(crate) fn record(&self, body: impl FnOnce(&mut Block)) -> ir::Block {
         let mut block = Self::with_labels(Rc::clone(&self.labels));
+        block.suppressed = self.suppressed;
         body(&mut block);
         block.into_ir()
     }
@@ -55,7 +60,17 @@ impl Block {
     /// Records a statement located at the caller.
     #[track_caller]
     pub(crate) fn push(&mut self, kind: StmtKind) {
-        self.ir.stmts.push(Stmt::new(kind));
+        let mut stmt = Stmt::new(kind);
+        stmt.suppress = self.suppressed;
+        self.ir.stmts.push(stmt);
+    }
+
+    /// Runs `body` with `warning` suppressed for everything it records, nested blocks included.
+    pub fn suppress(&mut self, warning: Warning, body: impl FnOnce(&mut Block)) {
+        let outer = self.suppressed;
+        self.suppressed.insert(warning);
+        body(self);
+        self.suppressed = outer;
     }
 
     /// Records a no-op.
@@ -468,7 +483,7 @@ mod multi_dim_tests {
         let mut diags = Diagnostics::default();
         check_multi_dim_indices(&program.rules, &mut diags);
         assert!(diags.0.iter().all(|d| d.location.is_some()));
-        diags.0.iter().map(|d| d.code).collect()
+        diags.0.iter().map(Diagnostic::code).collect()
     }
 
     #[test]

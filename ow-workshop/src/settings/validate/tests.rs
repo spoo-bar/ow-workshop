@@ -1,7 +1,7 @@
 use ow_workshop_data::{Extension, Gamemode, Map};
 
 use super::*;
-use crate::ir::Diagnostic;
+use crate::ir::{Diagnostic, Severity};
 use crate::settings::{Lobby, Main, MapRef};
 
 fn check_with(settings: &mut Settings, options: &CompileOptions) -> Vec<Diagnostic> {
@@ -13,7 +13,7 @@ fn check_with(settings: &mut Settings, options: &CompileOptions) -> Vec<Diagnost
 fn check(mut settings: Settings) -> Vec<(Severity, &'static str)> {
     check_with(&mut settings, &CompileOptions::default())
         .iter()
-        .map(|d| (d.severity, d.code))
+        .map(|d| (d.severity, d.code()))
         .collect()
 }
 
@@ -236,7 +236,7 @@ fn warnings(settings: Settings) -> Vec<String> {
         .into_iter()
         .filter(|d| d.severity == Severity::Warning)
         .map(|d| {
-            assert_eq!(d.code, "extension-points");
+            assert_eq!(d.code(), "extension-points");
             d.message
         })
         .collect()
@@ -331,7 +331,7 @@ fn duplicate_extensions_are_paid_once() {
 fn extension_points_warning_can_be_suppressed() {
     let mut settings = with_tdm(Settings::default()).with_extension(Extension::Projectiles);
     let mut options = CompileOptions::default();
-    options.suppress.0.insert("extension-points".to_owned());
+    options.suppress.insert(Warning::ExtensionPoints);
     assert_eq!(check_with(&mut settings, &options), []);
 }
 

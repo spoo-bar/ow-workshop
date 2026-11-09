@@ -115,12 +115,7 @@ pub(crate) fn collect(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Di
             .map_or("?", |d| d.name.as_str());
         let Some(chase) = u.chased else { continue };
         let mut warn = |warning, message: String, site: Site| {
-            ctx.warn(
-                &program.rules[site.rule].suppressed,
-                warning,
-                message,
-                site.loc,
-            );
+            ctx.warn(warning, message, site.loc);
         };
         if u.for_loop {
             warn(

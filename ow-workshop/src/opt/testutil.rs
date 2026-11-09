@@ -3,7 +3,7 @@
 use ow_workshop_data::{Lang, ValueId};
 
 use super::{Env, Scope, optimize_expr};
-use crate::ir::{CmpOp, Diagnostics, Expr, ExprKind, Program, VarId, WarningSet};
+use crate::ir::{CmpOp, Diagnostics, Expr, ExprKind, Program, VarId};
 use crate::lower::Ctx;
 use crate::lower::testutil::num;
 use crate::options::{CompileOptions, OptLevel};
@@ -153,14 +153,16 @@ pub(crate) fn run_with(e: &Expr, options: &CompileOptions) -> (String, Vec<&'sta
         phase: super::Phase::Rewrite,
         scope: Scope::new(options),
         ctx: &mut ctx,
-        suppressed: WarningSet::default(),
         dynamic_skips: false,
         targeted: std::collections::HashSet::default(),
         has_skips: false,
         empty_string: None,
     };
     let out = sh(&optimize_expr(e, &mut env));
-    (out, diags.0.iter().map(|d| d.code).collect())
+    (
+        out,
+        diags.0.iter().map(crate::ir::Diagnostic::code).collect(),
+    )
 }
 
 /// `e` optimized for speed, rendered.

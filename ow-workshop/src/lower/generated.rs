@@ -20,6 +20,7 @@ fn rule(name: &str, event: Event, stmts: Vec<StmtKind>) -> Rule {
                 kind,
                 loc: None,
                 comment: None,
+                suppress: crate::ir::WarningSet::default(),
             })
             .collect(),
         ..Block::default()

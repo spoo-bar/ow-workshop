@@ -227,7 +227,8 @@ fn checks_reach_nested_blocks_conditions_and_arguments() {
 #[test]
 fn warnings_can_be_suppressed() {
     let mut p = program(vec![act(ActionId::Wait, vec![("time", num(9999.0))])]);
-    p.rules[0].suppressed.0.insert("wait-9999".to_owned());
+    p.rules[0].suppressed.insert(Warning::Wait9999);
+    locate(&mut p);
     let options = options(OptLevel::Size);
     let mut diags = Diagnostics::default();
     let mut ctx = Ctx::new(&options, ow_workshop_data::Lang::EnUs, &mut diags, &p);

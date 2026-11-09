@@ -154,7 +154,7 @@ fn player_and_global_variables_are_separate() {
 #[test]
 fn suppressed_per_rule() {
     let mut chased = rule(vec![chase(0, 5.0, true), for_loop(0)]);
-    chased.suppressed.0.insert("chased-var-in-for".to_owned());
+    chased.suppressed.insert(Warning::ChasedVarInFor);
     let (_, w) = flags_and_warnings(vec![chased]);
     assert_eq!(w.0.len(), 0);
 }

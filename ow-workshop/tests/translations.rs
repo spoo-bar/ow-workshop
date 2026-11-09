@@ -46,7 +46,7 @@ fn error_codes(
     let err = Mode { translations, body }
         .compile(Lang::EnUs)
         .expect_err("fails");
-    err.0.iter().map(|d| d.code).collect()
+    err.0.iter().map(Diagnostic::code).collect()
 }
 
 /// The `Big Message` line of the output.

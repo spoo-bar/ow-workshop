@@ -24,6 +24,7 @@ fn stmt(kind: StmtKind, loc: Option<Location>) -> Stmt {
         kind,
         loc,
         comment: None,
+        suppress: crate::ir::WarningSet::default(),
     }
 }
 

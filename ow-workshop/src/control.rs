@@ -105,6 +105,7 @@ impl Drop for IfBuilder<'_> {
             kind,
             loc: Some(self.loc),
             comment: None,
+            suppress: self.block.suppressed,
         });
     }
 }
@@ -382,7 +383,7 @@ mod tests {
             b.do_while(true, |b| b.wait(1));
         });
         assert_eq!(diags.0.len(), 1);
-        assert_eq!(diags.0[0].code, "misplaced-do-while");
+        assert_eq!(diags.0[0].code(), "misplaced-do-while");
         assert!(diags.0[0].location.is_some());
 
         let nested = compile_rule(|b| {

@@ -2,7 +2,8 @@
 //!
 //! Each applies to the text tokens of a string template, never to its placeholders.
 
-use crate::ir::{Diagnostics, Expr, ExprKind, Program, Severity, StrExpr, StrModifier, StrToken};
+use crate::ir::ErrorKind;
+use crate::ir::{Diagnostics, Expr, ExprKind, Program, StrExpr, StrModifier, StrToken};
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};
 use crate::tags::segments;
@@ -176,8 +177,7 @@ pub(crate) fn apply(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diag
     let mut errors = Diagnostics::default();
     let tags = crate::tags::enabled(program, ctx.options);
     for rule in &mut program.rules {
-        let suppressed = rule.suppressed.clone();
-        let mut apply = |e: Expr| apply_node(e, tags, ctx, &suppressed, &mut errors);
+        let mut apply = |e: Expr| apply_node(e, tags, ctx, &mut errors);
         for cond in &mut rule.conditions {
             cond.expr = rewrite_expr(&cond.expr, &mut apply);
         }
@@ -198,20 +198,13 @@ fn rewrite_block(block: &mut crate::ir::Block, apply: &mut impl FnMut(Expr) -> E
     }
 }
 
-fn apply_node(
-    expr: Expr,
-    tags: bool,
-    ctx: &mut Ctx<'_>,
-    suppressed: &crate::ir::WarningSet,
-    errors: &mut Diagnostics,
-) -> Expr {
+fn apply_node(expr: Expr, tags: bool, ctx: &mut Ctx<'_>, errors: &mut Diagnostics) -> Expr {
     let ExprKind::StrModify { modifier, inner } = expr.kind() else {
         return expr;
     };
     let ExprKind::Str(StrExpr::Custom { tokens, args }) = inner.kind() else {
-        errors.push(
-            Severity::Error,
-            "string-modifier-target",
+        errors.error(
+            ErrorKind::StringModifierTarget,
             "string modifiers only apply to string templates (literals and `ws_fmt!`)".to_owned(),
             expr.loc(),
         );
@@ -230,7 +223,6 @@ fn apply_node(
             }
             if !total {
                 ctx.warn(
-                    suppressed,
                     Warning::NotTotalFullwidth,
                     "some characters have no fullwidth form and stay as they are".to_owned(),
                     expr.loc(),
@@ -244,9 +236,8 @@ fn apply_node(
                 .filter(|(is_tag, _)| !is_tag)
                 .any(|(_, part)| big_letter(part).map(|t| *part = t).is_some());
             if !done {
-                errors.push(
-                    Severity::Error,
-                    "big-letters-no-match",
+                errors.error(
+                    ErrorKind::BigLettersNoMatch,
                     format!(
                         "`.big()` needs one of these characters in the text: {}",
                         big_accepted()

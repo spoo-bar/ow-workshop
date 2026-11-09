@@ -1,11 +1,10 @@
 //! The value whose string form tells the viewer's language, and the global that lists its names.
 
+use crate::ir::ErrorKind;
 use ow_workshop_data::{Lang, Map, ValueId};
 
 use super::{PlayerVarMode, TranslationLang, Translations};
-use crate::ir::{
-    ConstRef, Diagnostics, Expr, ExprKind, Program, Severity, StrExpr, StrToken, VarDecl,
-};
+use crate::ir::{ConstRef, Diagnostics, Expr, ExprKind, Program, StrExpr, StrToken, VarDecl};
 
 /// Internal global holding the split of the language names.
 pub(crate) const HELPER: &str = "__overpyTranslationHelper__";
@@ -113,12 +112,7 @@ pub(crate) fn declare(program: &mut Program) -> Result<(), Diagnostics> {
     }
     let detection = choose(langs).map_err(|message| {
         let mut diags = Diagnostics::default();
-        diags.push(
-            Severity::Error,
-            "translation-languages",
-            message.to_owned(),
-            None,
-        );
+        diags.error(ErrorKind::TranslationLanguages, message.to_owned(), None);
         diags
     })?;
     let init = helper_init(langs, detection);

@@ -4,6 +4,7 @@
 //! The compiler stores all translations of a string in one array and indexes it by the position
 //! of the viewer's language, found client-side by stringifying a constant (see `translations`).
 
+use crate::ir::ErrorKind;
 use std::fmt::Write as _;
 
 use ow_workshop_data::ValueId;
@@ -14,8 +15,8 @@ use super::visit::{blocks_mut, map_children, map_place};
 use crate::catalog::text::{number_placeholders, strip_whitespace};
 use crate::catalog::{Catalog, Entry};
 use crate::ir::{
-    Block, Diagnostics, Expr, ExprKind, Location, Program, Rule, Severity, Stmt, StmtKind, StrExpr,
-    StrToken, Translated, VarId,
+    Block, Diagnostics, Expr, ExprKind, Location, Program, Rule, Stmt, StmtKind, StrExpr, StrToken,
+    Translated, VarId,
 };
 use crate::translations::{
     Detection, HELPER, LANGUAGE_INDEX, PlayerVarMode, SEPARATOR, TranslationLang, Translations,
@@ -87,9 +88,7 @@ fn report_unconfigured(rule: &Rule, errors: &mut Diagnostics) {
         });
     });
     if found {
-        errors.push(
-            Severity::Error,
-            "translations-not-configured",
+        errors.error(ErrorKind::TranslationsNotConfigured,
             format!(
                 "rule `{}` uses translated strings, but `Workshop::translations` returns no languages",
                 rule.name
@@ -151,8 +150,8 @@ impl Lowerer {
         })
     }
 
-    fn error(&mut self, code: &'static str, message: String, loc: Option<Location>) {
-        self.errors.push(Severity::Error, code, message, loc);
+    fn error(&mut self, code: ErrorKind, message: String, loc: Option<Location>) {
+        self.errors.error(code, message, loc);
     }
 
     /// Stores the updated catalog back in the program.
@@ -239,7 +238,7 @@ impl Lowerer {
                     Expr::new(ExprKind::Index { array, index }, expr.loc())
                 } else {
                     self.error(
-                        "translation-placement",
+                        ErrorKind::TranslationPlacement,
                         "`tr(..)` must be used in a reevaluated argument of a display action"
                             .to_owned(),
                         expr.loc(),
@@ -279,8 +278,7 @@ impl Lowerer {
         let loc = expr.loc();
         let wanted = if t.raw { Place::Store } else { place };
         if place == Place::Server {
-            self.error(
-                "translation-placement",
+            self.error(ErrorKind::TranslationPlacement,
                 "translated strings must be displayed in a reevaluated argument or assigned to a variable"
                     .to_owned(),
                 loc,
@@ -368,7 +366,7 @@ impl Lowerer {
     fn parts(&mut self, t: &Translated, nargs: usize, loc: Option<Location>) -> Option<Parts> {
         if nargs > MAX_ARGS {
             self.error(
-                "translation-args",
+                ErrorKind::TranslationArgs,
                 format!("a translated string takes at most {MAX_ARGS} arguments, not {nargs}"),
                 loc,
             );
@@ -377,7 +375,7 @@ impl Lowerer {
         let stripped = strip_whitespace(&t.key);
         let Ok(key) = number_placeholders(&stripped.key) else {
             self.error(
-                "translation-args",
+                ErrorKind::TranslationArgs,
                 format!("{:?} has more than {MAX_ARGS} placeholders", t.key),
                 loc,
             );
@@ -393,7 +391,7 @@ impl Lowerer {
                 Some(Ok(numbered)) => stripped.apply(&numbered),
                 Some(Err(_)) => {
                     self.error(
-                        "translation-args",
+                        ErrorKind::TranslationArgs,
                         format!(
                             "the {} translation of {key:?} has too many placeholders",
                             lang.code()
@@ -405,7 +403,7 @@ impl Lowerer {
             };
             if text.contains(SEPARATOR) {
                 self.error(
-                    "translation-separator",
+                    ErrorKind::TranslationSeparator,
                     format!(
                         "the {} text of {key:?} contains U+EC48, which is reserved",
                         lang.code()
@@ -415,8 +413,7 @@ impl Lowerer {
                 return None;
             }
             if let Some(bad) = placeholder_out_of_range(&text, nargs) {
-                self.error(
-                    "translation-placeholder",
+                self.error(ErrorKind::TranslationPlaceholder,
                     format!("the {} text of {key:?} uses {{{bad}}}, but only {nargs} arguments are given", lang.code()),
                     loc,
                 );
@@ -442,7 +439,7 @@ impl Lowerer {
             let part = mark_placeholders(text);
             if part.len() > PART_BYTES {
                 self.error(
-                    "translation-length",
+                    ErrorKind::TranslationLength,
                     format!("a translation of {key:?} is longer than {PART_BYTES} bytes"),
                     loc,
                 );

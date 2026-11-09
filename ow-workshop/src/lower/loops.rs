@@ -5,9 +5,9 @@
 
 use super::visit::blocks_mut;
 use super::{Ctx, const_truthiness};
+use crate::ir::ErrorKind;
 use crate::ir::{
-    Block, Diagnostics, Expr, ExprKind, LabelId, Program, Rule, Severity, SkipTarget, Stmt,
-    StmtKind, WarningSet,
+    Block, Diagnostics, Expr, ExprKind, LabelId, Program, Rule, SkipTarget, Stmt, StmtKind,
 };
 use crate::warning::Warning;
 
@@ -21,7 +21,6 @@ enum Enclosing {
 
 struct Env<'a, 'b> {
     ctx: &'a mut Ctx<'b>,
-    suppressed: &'a WarningSet,
     rule: &'a str,
     errors: Diagnostics,
 }
@@ -31,6 +30,7 @@ fn mk(kind: StmtKind, like: &Stmt) -> Stmt {
         kind,
         loc: like.loc,
         comment: None,
+        suppress: like.suppress,
     }
 }
 
@@ -56,7 +56,6 @@ fn skip_to(label: LabelId, like: &Stmt) -> Stmt {
 
 fn outside(env: &mut Env<'_, '_>, stmt: &Stmt, warning: Warning, what: &str) -> Stmt {
     env.ctx.warn(
-        env.suppressed,
         warning,
         format!(
             "rule `{}`: `{what}` outside a loop; the rule is aborted instead",
@@ -100,9 +99,7 @@ fn lower_stmt(stmt: Stmt, stack: &mut Vec<Enclosing>, env: &mut Env<'_, '_>) -> 
             }
         },
         StmtKind::DoWhile { .. } => {
-            env.errors.push(
-                Severity::Error,
-                "misplaced-do-while",
+            env.errors.error(ErrorKind::MisplacedDoWhile,
                 format!(
                     "rule `{}`: `do_while` must be the first statement of a rule or subroutine body",
                     env.rule
@@ -150,10 +147,8 @@ fn lower_block(block: &mut Block, stack: &mut Vec<Enclosing>, env: &mut Env<'_, 
 /// Lowers the `do_while` at the top of a rule body, then everything else.
 fn lower_rule(rule: &mut Rule, ctx: &mut Ctx<'_>, errors: &mut Diagnostics) {
     let name = rule.name.clone();
-    let suppressed = rule.suppressed.clone();
     let mut env = Env {
         ctx,
-        suppressed: &suppressed,
         rule: &name,
         errors: Diagnostics::default(),
     };
@@ -169,9 +164,7 @@ fn lower_rule(rule: &mut Rule, ctx: &mut Ctx<'_>, errors: &mut Diagnostics) {
             continue;
         };
         if !leading {
-            env.errors.push(
-                Severity::Error,
-                "misplaced-do-while",
+            env.errors.error(ErrorKind::MisplacedDoWhile,
                 format!(
                     "rule `{name}`: `do_while` must be the first statement of a rule or subroutine body"
                 ),

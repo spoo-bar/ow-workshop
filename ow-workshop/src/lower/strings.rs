@@ -2,9 +2,7 @@
 //! merges adjacent text. Runs before the optimizer and before splitting.
 
 use crate::fmt::push_text;
-use crate::ir::{
-    Block, Diagnostics, Expr, ExprKind, Location, Program, StrExpr, StrToken, WarningSet,
-};
+use crate::ir::{Block, Diagnostics, Expr, ExprKind, Location, Program, StrExpr, StrToken};
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};
 use crate::opt::Scope;
@@ -20,7 +18,6 @@ pub(crate) fn normalize(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), 
         let mut env = Env {
             ctx: &mut *ctx,
             optimize: scope.enabled(),
-            suppressed: rule.suppressed.clone(),
         };
         for cond in &mut rule.conditions {
             cond.expr = rewrite_expr(&cond.expr, &mut |e| normalize_node(e, &mut env));
@@ -33,7 +30,6 @@ pub(crate) fn normalize(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), 
 struct Env<'a, 'b> {
     ctx: &'a mut Ctx<'b>,
     optimize: bool,
-    suppressed: WarningSet,
 }
 
 fn normalize_block(block: &mut Block, scope: Scope, env: &mut Env<'_, '_>) {
@@ -119,7 +115,6 @@ fn push_arg(
             ExprKind::Null => return push_text(out, "0"),
             ExprKind::Array(items) => {
                 env.ctx.warn(
-                    &env.suppressed,
                     Warning::ArrayInString,
                     "only the first element of an array shows in a string; use `array_to_string`"
                         .to_owned(),

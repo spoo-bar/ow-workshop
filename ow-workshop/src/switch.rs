@@ -52,6 +52,7 @@ impl<T> Drop for SwitchBuilder<'_, T> {
             kind,
             loc: Some(self.loc),
             comment: None,
+            suppress: self.block.suppressed,
         });
     }
 }

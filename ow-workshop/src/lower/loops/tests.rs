@@ -172,17 +172,15 @@ fn break_and_continue_outside_a_loop_abort_with_a_warning() {
 #[test]
 fn suppressed_warnings_stay_quiet() {
     let mut p = program(vec![StmtKind::Break]);
-    p.rules[0]
-        .suppressed
-        .0
-        .insert("break-outside-loop".to_owned());
+    p.rules[0].suppressed.insert(Warning::BreakOutsideLoop);
+    locate(&mut p);
     let w = run(lower, &mut p, &options(OptLevel::Size)).expect("lowers");
     assert_eq!(kinds(&p), [&StmtKind::Abort]);
     assert_eq!(w.0.len(), 0);
 
     let mut p = program(vec![StmtKind::Continue]);
     let mut opts = CompileOptions::default();
-    opts.suppress.0.insert("continue-outside-loop".to_owned());
+    opts.suppress.insert(Warning::ContinueOutsideLoop);
     let w = run(lower, &mut p, &opts).expect("lowers");
     assert_eq!(w.0.len(), 0);
 }

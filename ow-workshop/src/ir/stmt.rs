@@ -2,7 +2,7 @@
 
 use ow_workshop_data::{ActionId, StartRuleBehavior};
 
-use super::{Expr, LabelId, Location, OptOverride, SubId, VarId};
+use super::{Expr, LabelId, Location, OptOverride, SubId, VarId, WarningSet};
 
 /// An assignable target.
 #[derive(Clone, Debug, PartialEq)]
@@ -208,6 +208,8 @@ pub(crate) struct Stmt {
     pub(crate) loc: Option<Location>,
     /// Printed as `"text"` on the line above.
     pub(crate) comment: Option<String>,
+    /// Warnings suppressed for this statement by the blocks around it.
+    pub(crate) suppress: WarningSet,
 }
 
 impl Stmt {
@@ -218,6 +220,7 @@ impl Stmt {
             kind,
             loc: Some(Location::caller()),
             comment: None,
+            suppress: WarningSet::default(),
         }
     }
 }

@@ -194,7 +194,6 @@ pub(crate) fn check(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diag
                 .map_or("?", |d| d.name.as_str());
             if let Some(what) = missing(sub, caller) {
                 ctx.warn(
-                    &rule.suppressed,
                     Warning::MismatchedSubroutineEvent,
                     format!(
                         "Calling subroutine {name}, which uses {what}, from a {} rule",
@@ -204,7 +203,6 @@ pub(crate) fn check(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diag
                 );
             } else if sub.wait && restart {
                 ctx.warn(
-                    &rule.suppressed,
                     Warning::StartRuleCrash,
                     format!(
                         "Restarting subroutine {name}, which waits, accumulates server state; the server crashes after about 465 restarts"

@@ -4,6 +4,7 @@
 #![allow(dead_code, unused_imports)]
 
 mod diag;
+mod error_kind;
 mod expr;
 mod ids;
 mod loc;
@@ -11,22 +12,25 @@ mod program;
 mod rule;
 mod stmt;
 mod vars;
+mod warning_set;
 
-pub use diag::{Diagnostic, Diagnostics, Severity};
+pub use diag::{Diagnostic, Diagnostics, Kind, Severity};
+pub use error_kind::ErrorKind;
 pub(crate) use expr::{
     CmpOp, ConstRef, Expr, ExprKind, StrExpr, StrModifier, StrToken, Translated,
 };
 pub(crate) use ids::{LabelId, SubId, VarId};
 pub use loc::Location;
 pub(crate) use program::Program;
+pub use rule::TeamFilter;
 pub(crate) use rule::{
     Cond, Event, MAX_SLOT, OptOverride, PlayerFilter, PlayerSlot, Rule, RuleError,
 };
-pub use rule::{TeamFilter, WarningSet};
 pub(crate) use stmt::{Block, ModifyOp, Place, SkipTarget, Stmt, StmtKind};
 pub(crate) use vars::{
     Allocation, CallGraph, MAX_SLOTS, SubDecl, SubUsage, Subs, VarDecl, VarFlags, Vars,
 };
+pub use warning_set::WarningSet;
 
 #[cfg(test)]
 mod rule_tests;

@@ -1,13 +1,12 @@
 //! Workshop settings: checks their strings, rewrites the characters the workshop cannot paste, and
 //! keeps their names apart.
 
+use crate::ir::ErrorKind;
 use std::collections::BTreeSet;
 
 use ow_workshop_data::ValueId;
 
-use crate::ir::{
-    Block, Diagnostics, Expr, ExprKind, Location, Program, Severity, StrExpr, StrToken, WarningSet,
-};
+use crate::ir::{Block, Diagnostics, Expr, ExprKind, Location, Program, StrExpr, StrToken};
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};
 use crate::warning::Warning;
@@ -88,7 +87,6 @@ pub(crate) fn lower(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diag
             ctx: &mut *ctx,
             errors: &mut errors,
             used: &mut used,
-            suppressed: rule.suppressed.clone(),
         };
         let mut node = |e: Expr| lower_node(e, &mut env);
         for cond in &mut rule.conditions {
@@ -113,12 +111,11 @@ struct Env<'a, 'b> {
     ctx: &'a mut Ctx<'b>,
     errors: &'a mut Diagnostics,
     used: &'a mut Used,
-    suppressed: WarningSet,
 }
 
 impl Env<'_, '_> {
-    fn error(&mut self, code: &'static str, message: String, loc: Option<Location>) {
-        self.errors.push(Severity::Error, code, message, loc);
+    fn error(&mut self, code: ErrorKind, message: String, loc: Option<Location>) {
+        self.errors.error(code, message, loc);
     }
 
     /// The text of a plain literal string, or an error.
@@ -135,7 +132,7 @@ impl Env<'_, '_> {
             return Some(text);
         }
         self.error(
-            "workshop-setting-not-literal",
+            ErrorKind::WorkshopSettingNotLiteral,
             format!(
                 "the {} of a workshop setting must be a plain string, not a placeholder or an \
                  expression",
@@ -159,7 +156,7 @@ impl Env<'_, '_> {
             let chars = text.chars().count();
             if chars > MAX_CHARS {
                 self.error(
-                    "workshop-setting-too-long",
+                    ErrorKind::WorkshopSettingTooLong,
                     format!(
                         "the {} of a workshop setting is {chars} characters long; the most is \
                          {MAX_CHARS}",
@@ -180,7 +177,7 @@ impl Env<'_, '_> {
             .find(|candidate| !self.used.names.contains(candidate));
         let Some(chosen) = chosen else {
             self.error(
-                "workshop-setting-name-exhausted",
+                ErrorKind::WorkshopSettingNameExhausted,
                 format!(
                     "more than 67 workshop settings are named the same; rename some of `{name}`"
                 ),
@@ -201,7 +198,7 @@ impl Env<'_, '_> {
         self.used.count += 1;
         if self.used.count == MAX_SETTINGS + 1 {
             self.error(
-                "too-many-workshop-settings",
+                ErrorKind::TooManyWorkshopSettings,
                 format!("a mod can have at most {MAX_SETTINGS} workshop settings"),
                 loc,
             );
@@ -259,7 +256,6 @@ fn combo(args: &mut [Expr], loc: Option<Location>, env: &mut Env<'_, '_>) {
         && *default != 0.0
     {
         env.ctx.warn(
-            &env.suppressed,
             Warning::WorkshopSettingEnumDefault,
             "a combo whose default is not its first option cannot select that option in the \
              lobby settings"
@@ -269,7 +265,7 @@ fn combo(args: &mut [Expr], loc: Option<Location>, env: &mut Env<'_, '_>) {
     }
     let ExprKind::Array(options) = args[3].kind() else {
         env.error(
-            "workshop-setting-not-literal",
+            ErrorKind::WorkshopSettingNotLiteral,
             "the options of a workshop setting must be a list of plain strings".to_owned(),
             loc,
         );
