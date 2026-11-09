@@ -12,9 +12,13 @@ mod arrays;
 mod build;
 mod conditions;
 mod control;
+#[cfg(test)]
+mod eval;
 mod helpers;
 mod logic;
 mod math;
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod proptests;
 mod replacements;
 mod scope;
 mod size;
