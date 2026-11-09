@@ -187,7 +187,7 @@ fn helper_is_an_internal_initialized_global() {
 #[test]
 fn ambiguous_languages_are_an_error() {
     let err = declared(Some(Translations::new([En, Zh, EsMx, EsEs]))).expect_err("ambiguous");
-    assert_eq!(err.0[0].code, "translation-languages");
+    assert_eq!(err.0[0].code(), "translation-languages");
 }
 
 #[test]

@@ -1,9 +1,10 @@
 //! Reading and writing gettext `.po` text.
 
+use crate::ir::ErrorKind;
 use std::fmt::Write as _;
 
 use super::{Catalog, Entry};
-use crate::ir::{Diagnostics, Severity};
+use crate::ir::Diagnostics;
 use crate::translations::TranslationLang;
 
 /// The flag that marks an entry whose occurrences may need different translations.
@@ -61,7 +62,7 @@ impl Catalog {
         if !msgstr.is_empty() && msgstr.matches('\n').count() != msgid.matches('\n').count() {
             error(
                 errors,
-                "po-newlines",
+                ErrorKind::PoNewlines,
                 raw.line,
                 format!("the translation of {msgid:?} has a different number of lines"),
             );
@@ -100,13 +101,13 @@ impl Catalog {
     }
 }
 
-fn error(errors: &mut Diagnostics, code: &'static str, line: usize, message: String) {
+fn error(errors: &mut Diagnostics, code: ErrorKind, line: usize, message: String) {
     let message = if line > 0 {
         format!("line {line}: {message}")
     } else {
         message
     };
-    errors.push(Severity::Error, code, message, None);
+    errors.error(code, message, None);
 }
 
 /// Checks the `Language` line of the header.
@@ -120,7 +121,7 @@ fn check_header(lang: TranslationLang, header: &str, line: usize, errors: &mut D
     {
         error(
             errors,
-            "po-language",
+            ErrorKind::PoLanguage,
             line,
             format!("the file is for language `{found}`, not `{}`", lang.code()),
         );
@@ -156,7 +157,7 @@ fn parse(po: &str, raws: &mut Vec<Raw>, errors: &mut Diagnostics) {
             let Some(f) = field else {
                 error(
                     errors,
-                    "po-syntax",
+                    ErrorKind::PoSyntax,
                     n,
                     "a string without a keyword".to_owned(),
                 );
@@ -164,7 +165,12 @@ fn parse(po: &str, raws: &mut Vec<Raw>, errors: &mut Diagnostics) {
             };
             (f, line)
         } else {
-            error(errors, "po-syntax", n, format!("unexpected `{line}`"));
+            error(
+                errors,
+                ErrorKind::PoSyntax,
+                n,
+                format!("unexpected `{line}`"),
+            );
             return;
         };
         let (f, rest) = next;
@@ -176,7 +182,12 @@ fn parse(po: &str, raws: &mut Vec<Raw>, errors: &mut Diagnostics) {
             current.line = n;
         }
         let Some(text) = unquote(rest.trim()) else {
-            error(errors, "po-syntax", n, format!("bad string `{rest}`"));
+            error(
+                errors,
+                ErrorKind::PoSyntax,
+                n,
+                format!("bad string `{rest}`"),
+            );
             return;
         };
         let slot = match f {

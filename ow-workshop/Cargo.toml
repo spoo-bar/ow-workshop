@@ -15,6 +15,7 @@ serde = ["dep:serde"]
 ow-workshop-data = { path = "../ow-workshop-data", version = "0.1.0" }
 ow-workshop-macros = { path = "../ow-workshop-macros", version = "0.1.0" }
 ryu-js = "1"
+thiserror = "2"
 serde = { version = "1", default-features = false, features = ["derive", "std"], optional = true }
 
 [dev-dependencies]

@@ -1,9 +1,9 @@
 //! Text tags in string templates: the `<` of each tag becomes `Global.__holygrail__`.
 
 use crate::fmt::push_text;
+use crate::ir::ErrorKind;
 use crate::ir::{
-    Block, Diagnostics, Expr, ExprKind, Location, Program, Severity, StrExpr, StrToken, VarId,
-    WarningSet,
+    Block, Diagnostics, Expr, ExprKind, Location, Program, StrExpr, StrToken, VarId, WarningSet,
 };
 use crate::lower::Ctx;
 use crate::lower::strings::unnumber;
@@ -18,9 +18,8 @@ pub(crate) fn lower(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diag
     let grail = holygrail_var(program).filter(|_| enabled);
     if enabled && grail.is_none() {
         let mut errors = Diagnostics::default();
-        errors.push(
-            Severity::Error,
-            "missing-holygrail",
+        errors.error(
+            ErrorKind::MissingHolygrail,
             "text tags are enabled but `__holygrail__` was not declared".to_owned(),
             None,
         );

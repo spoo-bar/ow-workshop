@@ -1,5 +1,6 @@
 //! The rule a mod defines with `Builder::rule`.
 
+use crate::ir::ErrorKind;
 use std::cell::Cell;
 use std::marker::PhantomData;
 use std::rc::Rc;
@@ -10,9 +11,7 @@ use crate::block::Block;
 use crate::check::check_do_while;
 use crate::event::{EventType, PlayerEvent};
 use crate::expr::Expr;
-use crate::ir::{
-    self, Cond, Diagnostics, PlayerFilter, PlayerSlot, Severity, TeamFilter, WarningSet,
-};
+use crate::ir::{self, Cond, Diagnostics, PlayerFilter, PlayerSlot, TeamFilter, WarningSet};
 use crate::ty::{Bool, IntoExpr};
 use crate::warning::Warning;
 
@@ -132,9 +131,8 @@ impl<E: EventType> Rule<E> {
         rule.suppressed = self.suppressed;
         rule.comment = self.comment;
         if self.slot.is_some() && self.hero.is_some() {
-            diagnostics.push(
-                Severity::Error,
-                "slot-and-hero",
+            diagnostics.error(
+                ErrorKind::SlotAndHero,
                 format!(
                     "rule `{}`: `slot` and `hero` are mutually exclusive",
                     rule.name
@@ -286,7 +284,7 @@ mod tests {
         });
         let (_, diags) = finish(ws);
         assert!(diags.has_errors());
-        assert_eq!(diags.0[0].code, "slot-and-hero");
+        assert_eq!(diags.0[0].code(), "slot-and-hero");
         assert!(diags.0[0].location.is_some());
     }
 

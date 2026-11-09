@@ -80,7 +80,7 @@ fn filter_on_a_global_rule_is_rejected() {
     let mut program = Program::default();
     program.rules.push(rule);
     let diags = program.validate().unwrap_err();
-    assert_eq!(diags.0[0].code, "filter-not-allowed");
+    assert_eq!(diags.0[0].code(), "filter-not-allowed");
 }
 
 #[test]

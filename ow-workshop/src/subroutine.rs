@@ -1,12 +1,13 @@
 //! Subroutines: rules called by name, sharing the caller's event values.
 
+use crate::ir::ErrorKind;
 use ow_workshop_data::StartRuleBehavior;
 
 use crate::block::Block;
 use crate::builder::Builder;
 use crate::check::check_do_while;
 use crate::event::{Ev, SubroutineEvent};
-use crate::ir::{self, Diagnostics, Location, Severity, StmtKind, SubDecl, SubId};
+use crate::ir::{self, Diagnostics, Location, StmtKind, SubDecl, SubId};
 
 /// A declared subroutine; call it with [`Block::call`] or [`Block::start_rule`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -56,9 +57,8 @@ pub(crate) fn report_undefined(
 ) {
     for (decl, state) in subs.entries.iter().zip(states) {
         if !state.defined {
-            diagnostics.push(
-                Severity::Error,
-                "undefined-subroutine",
+            diagnostics.error(
+                ErrorKind::UndefinedSubroutine,
                 format!("subroutine `{}` is declared but never defined", decl.name),
                 decl.location,
             );
@@ -117,9 +117,8 @@ impl Builder {
         };
         let name = decl.name.clone();
         if state.defined {
-            self.diagnostics_mut().push(
-                Severity::Error,
-                "subroutine-defined-twice",
+            self.diagnostics_mut().error(
+                ErrorKind::SubroutineDefinedTwice,
                 format!("subroutine `{name}` is defined more than once"),
                 Some(loc),
             );
@@ -275,7 +274,7 @@ mod tests {
         ws.declare_subroutine("ghost");
         let (_, diags) = finish(ws);
         assert_eq!(diags.0.len(), 1);
-        assert_eq!(diags.0[0].code, "undefined-subroutine");
+        assert_eq!(diags.0[0].code(), "undefined-subroutine");
         assert!(diags.0[0].location.is_some());
     }
 
@@ -285,7 +284,7 @@ mod tests {
         let s = ws.subroutine("s", |_, _| {});
         ws.define(s, |_, _| {});
         let (program, diags) = finish(ws);
-        assert_eq!(diags.0[0].code, "subroutine-defined-twice");
+        assert_eq!(diags.0[0].code(), "subroutine-defined-twice");
         assert_eq!(program.rules.len(), 1);
     }
 
@@ -297,6 +296,6 @@ mod tests {
             b.do_while(true, |b| b.pass());
         });
         let (_, diags) = finish(ws);
-        assert_eq!(diags.0[0].code, "misplaced-do-while");
+        assert_eq!(diags.0[0].code(), "misplaced-do-while");
     }
 }

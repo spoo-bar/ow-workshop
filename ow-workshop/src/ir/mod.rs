@@ -4,6 +4,7 @@
 #![allow(dead_code, unused_imports)]
 
 mod diag;
+mod error_kind;
 mod expr;
 mod ids;
 mod loc;
@@ -12,7 +13,8 @@ mod rule;
 mod stmt;
 mod vars;
 
-pub use diag::{Diagnostic, Diagnostics, Severity};
+pub use diag::{Diagnostic, Diagnostics, Kind, Severity};
+pub use error_kind::ErrorKind;
 pub(crate) use expr::{
     CmpOp, ConstRef, Expr, ExprKind, StrExpr, StrModifier, StrToken, Translated,
 };

@@ -3,13 +3,13 @@
 //! The workshop only reads arrays by index and only assigns one dimension, so lookups become
 //! array searches and `a[i][j] = v` rebuilds `a[i]` from slices.
 
+use crate::ir::ErrorKind;
 use ow_workshop_data::ValueId;
 
 use super::Ctx;
 use super::visit::{fold_block, rewrite_block_exprs, walk_block};
 use crate::ir::{
-    CmpOp, Diagnostics, Expr, ExprKind, Location, ModifyOp, Place, Program, Severity, Stmt,
-    StmtKind,
+    CmpOp, Diagnostics, Expr, ExprKind, Location, ModifyOp, Place, Program, Stmt, StmtKind,
 };
 
 /// Slice count meaning "to the end of the array".
@@ -79,9 +79,8 @@ fn report_unread(program: &Program, errors: &mut Diagnostics) {
     for rule in &program.rules {
         walk_block(&rule.body, &mut |stmt: &Stmt| {
             if let Some(dict) = stmt.exprs().into_iter().find_map(find_dict) {
-                errors.push(
-                    Severity::Error,
-                    "dict-not-indexed",
+                errors.error(
+                    ErrorKind::DictNotIndexed,
                     format!(
                         "rule `{}`: a dictionary can only be read with `get`",
                         rule.name

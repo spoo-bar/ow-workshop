@@ -19,7 +19,7 @@ fn internal(name: &str) -> VarDecl {
 }
 
 fn codes(d: &Diagnostics) -> Vec<&'static str> {
-    d.0.iter().map(|d| d.code).collect()
+    d.0.iter().map(crate::ir::Diagnostic::code).collect()
 }
 
 #[test]

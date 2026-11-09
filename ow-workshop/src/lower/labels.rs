@@ -6,9 +6,9 @@
 
 use super::visit::{blocks_mut, walk_block};
 use super::{Ctx, RuleCtx};
+use crate::ir::ErrorKind;
 use crate::ir::{
-    Block, Diagnostics, Expr, ExprKind, LabelId, Program, Rule, Severity, SkipTarget, Stmt,
-    StmtKind,
+    Block, Diagnostics, Expr, ExprKind, LabelId, Program, Rule, SkipTarget, Stmt, StmtKind,
 };
 use crate::options::OptLevel;
 
@@ -168,9 +168,8 @@ fn resolve_rule(rule: &Rule, diags: &mut Diagnostics) -> Resolution {
     for (i, item) in items.iter().enumerate() {
         let Item::Label(l) = item else { continue };
         if at.insert(*l, i).is_some() {
-            diags.push(
-                Severity::Error,
-                "duplicate-label",
+            diags.error(
+                ErrorKind::DuplicateLabel,
                 format!("rule `{}`: a label is placed twice", rule.name),
                 rule.location,
             );
@@ -193,9 +192,8 @@ fn resolve_rule(rule: &Rule, diags: &mut Diagnostics) -> Resolution {
                 distances[*ordinal].push(before[j] - before[i + 1]);
             } else {
                 distances[*ordinal].push(0);
-                diags.push(
-                    Severity::Error,
-                    "label-not-found",
+                diags.error(
+                    ErrorKind::LabelNotFound,
                     format!(
                         "rule `{}`: a skip targets a label that is not placed after it",
                         rule.name

@@ -289,7 +289,7 @@ mod tests {
             b.wait(outer.len());
         });
         assert_eq!(diags.0.len(), 1);
-        assert_eq!(diags.0[0].code, "nested-lambda");
+        assert_eq!(diags.0[0].code(), "nested-lambda");
         assert!(diags.0[0].location.is_some());
     }
 }

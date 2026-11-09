@@ -468,7 +468,7 @@ mod multi_dim_tests {
         let mut diags = Diagnostics::default();
         check_multi_dim_indices(&program.rules, &mut diags);
         assert!(diags.0.iter().all(|d| d.location.is_some()));
-        diags.0.iter().map(|d| d.code).collect()
+        diags.0.iter().map(Diagnostic::code).collect()
     }
 
     #[test]

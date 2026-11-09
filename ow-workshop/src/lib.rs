@@ -102,7 +102,9 @@ pub use event::{
 };
 pub use expr::{Expr, null, vect};
 pub use generated::api::*;
-pub use ir::{Diagnostic, Diagnostics, Location, Severity, TeamFilter, WarningSet};
+pub use ir::{
+    Diagnostic, Diagnostics, ErrorKind, Kind, Location, Severity, TeamFilter, WarningSet,
+};
 pub use label::Label;
 pub use localized::{localized, localized_en};
 pub use math::{ceil, floor, round};

@@ -2,7 +2,8 @@
 //!
 //! Each applies to the text tokens of a string template, never to its placeholders.
 
-use crate::ir::{Diagnostics, Expr, ExprKind, Program, Severity, StrExpr, StrModifier, StrToken};
+use crate::ir::ErrorKind;
+use crate::ir::{Diagnostics, Expr, ExprKind, Program, StrExpr, StrModifier, StrToken};
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};
 use crate::tags::segments;
@@ -209,9 +210,8 @@ fn apply_node(
         return expr;
     };
     let ExprKind::Str(StrExpr::Custom { tokens, args }) = inner.kind() else {
-        errors.push(
-            Severity::Error,
-            "string-modifier-target",
+        errors.error(
+            ErrorKind::StringModifierTarget,
             "string modifiers only apply to string templates (literals and `ws_fmt!`)".to_owned(),
             expr.loc(),
         );
@@ -244,9 +244,8 @@ fn apply_node(
                 .filter(|(is_tag, _)| !is_tag)
                 .any(|(_, part)| big_letter(part).map(|t| *part = t).is_some());
             if !done {
-                errors.push(
-                    Severity::Error,
-                    "big-letters-no-match",
+                errors.error(
+                    ErrorKind::BigLettersNoMatch,
                     format!(
                         "`.big()` needs one of these characters in the text: {}",
                         big_accepted()

@@ -1,11 +1,12 @@
 //! Checks the settings and the workshop extension budget.
 
+use crate::ir::ErrorKind;
 use ow_workshop_data::settings::{Kind, Section};
 use ow_workshop_data::{Extension, Gamemode, Lang};
 
 use super::schema::{find, hero_sections, mode_sections};
 use super::{HeroTeam, MapSelection, ModeKey, ModeSettings, SettingValue, Settings, Values};
-use crate::ir::{Diagnostics, Severity};
+use crate::ir::Diagnostics;
 use crate::options::CompileOptions;
 use crate::warning::Warning;
 
@@ -62,7 +63,7 @@ pub(crate) fn validate(settings: &mut Settings, options: &CompileOptions, diags:
     let mut check = Check { diags };
     if settings.modes.is_empty() {
         check.error(
-            "settings-no-modes",
+            ErrorKind::SettingsNoModes,
             "the settings have no `modes`; enable at least one game mode".to_owned(),
         );
     }
@@ -72,7 +73,7 @@ pub(crate) fn validate(settings: &mut Settings, options: &CompileOptions, diags:
     let max_slots = slots.max();
     if max_slots > MAX_SLOTS {
         check.error(
-            "settings-slots",
+            ErrorKind::SettingsSlots,
             format!(
                 "the lobby seats {max_slots} players (team 1: {}, team 2: {}, free-for-all: {}); \
                  the most is {MAX_SLOTS}",
@@ -143,8 +144,8 @@ struct Check<'a> {
 }
 
 impl Check<'_> {
-    fn error(&mut self, code: &'static str, message: String) {
-        self.diags.push(Severity::Error, code, message, None);
+    fn error(&mut self, code: ErrorKind, message: String) {
+        self.diags.error(code, message, None);
     }
 
     fn maps(&mut self, settings: &Settings) {
@@ -157,7 +158,7 @@ impl Check<'_> {
                 && mode.only_in_ow1()
             {
                 self.error(
-                    "settings-ow1-only",
+                    ErrorKind::SettingsOw1Only,
                     format!("the game mode `{name}` only exists in Overwatch 1"),
                 );
             }
@@ -167,12 +168,12 @@ impl Check<'_> {
                 let map_name = map.map.name(Lang::EnUs);
                 if map.map.only_in_ow1() {
                     self.error(
-                        "settings-ow1-only",
+                        ErrorKind::SettingsOw1Only,
                         format!("the map `{map_name}` only exists in Overwatch 1"),
                     );
                 } else if !can_play(*key, map.map.gamemodes()) {
                     self.error(
-                        "settings-unknown-map",
+                        ErrorKind::SettingsUnknownMap,
                         format!("`{map_name}` is not a map of the game mode `{name}`"),
                     );
                 }
@@ -250,15 +251,16 @@ impl Check<'_> {
             return;
         };
         let (code, message) = match problem {
-            NumberProblem::NotWhole => {
-                ("settings-not-integer", format!("{n} is not a whole number"))
-            }
+            NumberProblem::NotWhole => (
+                ErrorKind::SettingsNotInteger,
+                format!("{n} is not a whole number"),
+            ),
             NumberProblem::TooSmall(min) => (
-                "settings-out-of-range",
+                ErrorKind::SettingsOutOfRange,
                 format!("{n} is below the minimum {min}"),
             ),
             NumberProblem::TooLarge(max) => (
-                "settings-out-of-range",
+                ErrorKind::SettingsOutOfRange,
                 format!("{n} is above the maximum {max}"),
             ),
         };
@@ -278,7 +280,7 @@ impl Check<'_> {
         };
         if let Some(problem) = string_problem(max_chars, max_bytes, text) {
             self.error(
-                "settings-string-too-long",
+                ErrorKind::SettingsStringTooLong,
                 format!("{place}: `{key}` {problem}"),
             );
         }
@@ -289,9 +291,8 @@ impl Check<'_> {
         let spent = spent_points(settings);
         let available = available_points(settings, max_slots);
         if spent > available {
-            self.diags.push(
-                Severity::Warning,
-                Warning::ExtensionPoints.code(),
+            self.diags.warning(
+                Warning::ExtensionPoints,
                 format!(
                     "the extensions cost {spent} points, but the settings give {available}; \
                      free up lobby slots or play only workshop maps"

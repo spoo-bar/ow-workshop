@@ -1,5 +1,7 @@
 //! Variable and subroutine registries with index allocation.
 
+use crate::ir::ErrorKind;
+use crate::warning::Warning;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use super::{Diagnostics, Expr, Location, Severity, SubId, VarId};
@@ -277,9 +279,8 @@ fn check_names(slots: &[Slot], kind: &str, diags: &mut Diagnostics) {
     let mut names: HashMap<&str, usize> = HashMap::new();
     for (i, slot) in slots.iter().enumerate() {
         if !is_valid_name(slot.name) {
-            diags.push(
-                Severity::Error,
-                "invalid-name",
+            diags.error(
+                ErrorKind::InvalidName,
                 format!(
                     "{kind} name `{}` must match [A-Za-z_][A-Za-z0-9_]*",
                     slot.name
@@ -288,18 +289,16 @@ fn check_names(slots: &[Slot], kind: &str, diags: &mut Diagnostics) {
             );
         }
         if names.insert(slot.name, i).is_some() {
-            diags.push(
-                Severity::Error,
-                "duplicate-name",
+            diags.error(
+                ErrorKind::DuplicateName,
                 format!("{kind} `{}` is declared twice", slot.name),
                 slot.location,
             );
         }
         let lower = slot.name.to_ascii_lowercase();
         if CENSORED.iter().any(|bad| lower.contains(bad)) {
-            diags.push(
-                Severity::Warning,
-                "censored-var-name",
+            diags.warning(
+                Warning::CensoredVarName,
                 format!("the game refuses to paste the {kind} name `{}`", slot.name),
                 slot.location,
             );
@@ -314,13 +313,13 @@ fn allocate(
 ) -> Result<Allocation, Diagnostics> {
     let mut diags = Diagnostics::default();
     let error = |diags: &mut Diagnostics, code, message, loc| {
-        diags.push(Severity::Error, code, message, loc);
+        diags.error(code, message, loc);
     };
 
     if slots.len() > MAX_SLOTS {
         error(
             &mut diags,
-            "too-many",
+            ErrorKind::TooMany,
             format!("{} {kind}s declared; the limit is {MAX_SLOTS}", slots.len()),
             None,
         );
@@ -340,7 +339,7 @@ fn allocate(
         if index >= MAX_SLOTS {
             error(
                 &mut diags,
-                "index-out-of-range",
+                ErrorKind::IndexOutOfRange,
                 format!(
                     "{kind} `{}` has index {index}; allowed are 0..={}",
                     slot.name,
@@ -351,7 +350,7 @@ fn allocate(
         } else if table.taken[index] {
             error(
                 &mut diags,
-                "duplicate-index",
+                ErrorKind::DuplicateIndex,
                 format!("{kind} index {index} is used twice (`{}`)", slot.name),
                 slot.location,
             );

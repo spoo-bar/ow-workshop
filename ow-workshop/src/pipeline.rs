@@ -1,6 +1,7 @@
 //! The compile passes: generated rules → checks → lower → optimize → labels → flatten → count → emit.
 
-use crate::ir::{Diagnostics, Program, Severity};
+use crate::ir::ErrorKind;
+use crate::ir::{Diagnostics, Program};
 use crate::lower::{self, Ctx};
 use crate::output::CompileOutput;
 use crate::translations::Translations;
@@ -46,9 +47,8 @@ pub(crate) fn run(
     }
     let counts = crate::count::count(&program, lang);
     if counts.over_limit() {
-        diagnostics.push(
-            Severity::Error,
-            "element-limit",
+        diagnostics.error(
+            ErrorKind::TooManyElements,
             format!(
                 "the mod uses {} elements; the game allows {}",
                 counts.total,
@@ -61,9 +61,8 @@ pub(crate) fn run(
     let element_count = counts.total;
     let debug = program.options.debug_element_count.then_some(&counts);
     let Ok(code) = crate::emit::emit(&program, lang, debug) else {
-        diagnostics.push(
-            Severity::Error,
-            "emit-failed",
+        diagnostics.error(
+            ErrorKind::EmitFailed,
             "the program still contains a node that lowering should have removed".to_owned(),
             None,
         );

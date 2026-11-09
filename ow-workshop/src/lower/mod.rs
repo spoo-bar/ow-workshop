@@ -31,7 +31,7 @@ pub(crate) mod workshop_settings;
 use ow_workshop_data::Lang;
 
 use crate::ir::{
-    Diagnostics, Event, Expr, ExprKind, LabelId, Location, Program, Rule, Severity, Stmt, StmtKind,
+    Diagnostics, Event, Expr, ExprKind, LabelId, Location, Program, Rule, Stmt, StmtKind,
     WarningSet,
 };
 use crate::options::{CompileOptions, OptLevel};
@@ -87,7 +87,7 @@ impl<'a> Ctx<'a> {
         if suppressed.0.contains(code) || self.options.suppress.0.contains(code) {
             return;
         }
-        self.diags.push(Severity::Warning, code, message, loc);
+        self.diags.warning(warning, message, loc);
     }
 
     /// A label no statement uses yet.

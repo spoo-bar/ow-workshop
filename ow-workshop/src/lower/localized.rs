@@ -1,8 +1,9 @@
 //! Lowers `localized(..)` calls to `String("phrase", a, b, c)`, padding the arguments with `Null`.
 
+use crate::ir::ErrorKind;
 use ow_workshop_data::ValueId;
 
-use crate::ir::{Diagnostics, Expr, ExprKind, Program, Severity, StrExpr};
+use crate::ir::{Diagnostics, Expr, ExprKind, Program, StrExpr};
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};
 
@@ -42,9 +43,8 @@ fn lower_node(expr: Expr, errors: &mut Diagnostics) -> Expr {
     let phrase = match phrase {
         Ok(phrase) => *phrase,
         Err(text) => {
-            errors.push(
-                Severity::Error,
-                "unknown-localized-string",
+            errors.error(
+                ErrorKind::UnknownLocalizedString,
                 format!("{text:?} is not a built-in localized phrase"),
                 expr.loc(),
             );
@@ -52,9 +52,8 @@ fn lower_node(expr: Expr, errors: &mut Diagnostics) -> Expr {
         }
     };
     if args.len() > SLOTS {
-        errors.push(
-            Severity::Error,
-            "too-many-localized-args",
+        errors.error(
+            ErrorKind::TooManyLocalizedArgs,
             format!(
                 "a localized string takes at most {SLOTS} arguments, not {}",
                 args.len()

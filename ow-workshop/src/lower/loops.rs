@@ -5,9 +5,10 @@
 
 use super::visit::blocks_mut;
 use super::{Ctx, const_truthiness};
+use crate::ir::ErrorKind;
 use crate::ir::{
-    Block, Diagnostics, Expr, ExprKind, LabelId, Program, Rule, Severity, SkipTarget, Stmt,
-    StmtKind, WarningSet,
+    Block, Diagnostics, Expr, ExprKind, LabelId, Program, Rule, SkipTarget, Stmt, StmtKind,
+    WarningSet,
 };
 use crate::warning::Warning;
 
@@ -100,9 +101,7 @@ fn lower_stmt(stmt: Stmt, stack: &mut Vec<Enclosing>, env: &mut Env<'_, '_>) -> 
             }
         },
         StmtKind::DoWhile { .. } => {
-            env.errors.push(
-                Severity::Error,
-                "misplaced-do-while",
+            env.errors.error(ErrorKind::MisplacedDoWhile,
                 format!(
                     "rule `{}`: `do_while` must be the first statement of a rule or subroutine body",
                     env.rule
@@ -169,9 +168,7 @@ fn lower_rule(rule: &mut Rule, ctx: &mut Ctx<'_>, errors: &mut Diagnostics) {
             continue;
         };
         if !leading {
-            env.errors.push(
-                Severity::Error,
-                "misplaced-do-while",
+            env.errors.error(ErrorKind::MisplacedDoWhile,
                 format!(
                     "rule `{name}`: `do_while` must be the first statement of a rule or subroutine body"
                 ),

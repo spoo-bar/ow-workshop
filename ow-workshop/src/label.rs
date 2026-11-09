@@ -72,7 +72,7 @@ mod tests {
         let mut diags = Diagnostics::default();
         check_labels(&program.rules, &mut diags);
         assert!(diags.0.iter().all(|d| d.location.is_some()));
-        diags.0.iter().map(|d| d.code).collect()
+        diags.0.iter().map(crate::ir::Diagnostic::code).collect()
     }
 
     #[test]

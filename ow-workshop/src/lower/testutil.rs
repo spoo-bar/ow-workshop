@@ -125,7 +125,7 @@ pub(crate) fn kinds(program: &Program) -> Vec<&StmtKind> {
 }
 
 pub(crate) fn codes(d: &Diagnostics) -> Vec<&'static str> {
-    d.0.iter().map(|d| d.code).collect()
+    d.0.iter().map(crate::ir::Diagnostic::code).collect()
 }
 
 /// A compact, stable rendering of an expression for snapshot-style assertions.

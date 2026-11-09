@@ -160,7 +160,10 @@ pub(crate) fn run_with(e: &Expr, options: &CompileOptions) -> (String, Vec<&'sta
         empty_string: None,
     };
     let out = sh(&optimize_expr(e, &mut env));
-    (out, diags.0.iter().map(|d| d.code).collect())
+    (
+        out,
+        diags.0.iter().map(crate::ir::Diagnostic::code).collect(),
+    )
 }
 
 /// `e` optimized for speed, rendered.
