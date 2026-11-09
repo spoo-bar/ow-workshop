@@ -331,7 +331,7 @@ fn duplicate_extensions_are_paid_once() {
 fn extension_points_warning_can_be_suppressed() {
     let mut settings = with_tdm(Settings::default()).with_extension(Extension::Projectiles);
     let mut options = CompileOptions::default();
-    options.suppress.0.insert("extension-points".to_owned());
+    options.suppress.insert(Warning::ExtensionPoints);
     assert_eq!(check_with(&mut settings, &options), []);
 }
 

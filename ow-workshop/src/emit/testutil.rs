@@ -59,6 +59,7 @@ pub(super) fn stmt_in(lang: Lang, kind: StmtKind) -> String {
         kind,
         loc: None,
         comment: None,
+        suppress: crate::ir::WarningSet::default(),
     };
     write_stmt(&mut out, cx, &stmt).unwrap();
     out

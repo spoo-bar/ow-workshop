@@ -105,6 +105,7 @@ impl Drop for IfBuilder<'_> {
             kind,
             loc: Some(self.loc),
             comment: None,
+            suppress: self.block.suppressed,
         });
     }
 }

@@ -51,6 +51,7 @@ fn action(id: ActionId, args: Vec<Expr>) -> Stmt {
         kind: StmtKind::Action { id, args },
         loc: None,
         comment: None,
+        suppress: crate::ir::WarningSet::default(),
     }
 }
 
@@ -59,6 +60,7 @@ fn stmt(kind: StmtKind) -> Stmt {
         kind,
         loc: None,
         comment: None,
+        suppress: crate::ir::WarningSet::default(),
     }
 }
 

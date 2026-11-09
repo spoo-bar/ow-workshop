@@ -177,8 +177,7 @@ pub(crate) fn apply(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diag
     let mut errors = Diagnostics::default();
     let tags = crate::tags::enabled(program, ctx.options);
     for rule in &mut program.rules {
-        let suppressed = rule.suppressed.clone();
-        let mut apply = |e: Expr| apply_node(e, tags, ctx, &suppressed, &mut errors);
+        let mut apply = |e: Expr| apply_node(e, tags, ctx, &mut errors);
         for cond in &mut rule.conditions {
             cond.expr = rewrite_expr(&cond.expr, &mut apply);
         }
@@ -199,13 +198,7 @@ fn rewrite_block(block: &mut crate::ir::Block, apply: &mut impl FnMut(Expr) -> E
     }
 }
 
-fn apply_node(
-    expr: Expr,
-    tags: bool,
-    ctx: &mut Ctx<'_>,
-    suppressed: &crate::ir::WarningSet,
-    errors: &mut Diagnostics,
-) -> Expr {
+fn apply_node(expr: Expr, tags: bool, ctx: &mut Ctx<'_>, errors: &mut Diagnostics) -> Expr {
     let ExprKind::StrModify { modifier, inner } = expr.kind() else {
         return expr;
     };
@@ -230,7 +223,6 @@ fn apply_node(
             }
             if !total {
                 ctx.warn(
-                    suppressed,
                     Warning::NotTotalFullwidth,
                     "some characters have no fullwidth form and stay as they are".to_owned(),
                     expr.loc(),

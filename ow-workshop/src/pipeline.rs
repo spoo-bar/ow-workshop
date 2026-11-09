@@ -4,11 +4,32 @@ use crate::ir::ErrorKind;
 use crate::ir::{Diagnostics, Program};
 use crate::lower::{self, Ctx};
 use crate::output::CompileOutput;
+use crate::suppress::Suppression;
 use crate::translations::Translations;
 use ow_workshop_data::Lang;
 
-/// Runs every pass over a recorded program.
+/// Runs every pass over a recorded program. Diagnostics come back deduplicated and ordered.
 pub(crate) fn run(
+    program: Program,
+    diagnostics: Diagnostics,
+    translations: Option<Translations>,
+    lang: Lang,
+) -> Result<CompileOutput, Diagnostics> {
+    match compile(program, diagnostics, translations, lang) {
+        Ok(mut output) => {
+            let mut warnings = Diagnostics(std::mem::take(&mut output.warnings));
+            warnings.finish();
+            output.warnings = warnings.0;
+            Ok(output)
+        }
+        Err(mut found) => {
+            found.finish();
+            Err(found)
+        }
+    }
+}
+
+fn compile(
     mut program: Program,
     mut diagnostics: Diagnostics,
     translations: Option<Translations>,
@@ -21,7 +42,8 @@ pub(crate) fn run(
     crate::check::check_labels(&program.rules, &mut diagnostics);
     crate::check::check_nested_lambdas(&program.rules, &mut diagnostics);
     crate::check::check_multi_dim_indices(&program.rules, &mut diagnostics);
-    crate::check::check_placeholder_lookalikes(&program.rules, &mut diagnostics);
+    let suppression = Suppression::new(&program.options, &program.rules);
+    crate::check::check_placeholder_lookalikes(&program.rules, &suppression, &mut diagnostics);
     if diagnostics.has_errors() {
         return Err(diagnostics);
     }
@@ -38,7 +60,13 @@ pub(crate) fn run(
         program.subroutines.allocate(),
     ] {
         match allocation {
-            Ok(allocated) => diagnostics.0.extend(allocated.warnings.0),
+            Ok(allocated) => diagnostics.0.extend(
+                allocated
+                    .warnings
+                    .0
+                    .into_iter()
+                    .filter(|d| !suppression.drops(d)),
+            ),
             Err(found) => {
                 diagnostics.0.extend(found.0);
                 return Err(diagnostics);

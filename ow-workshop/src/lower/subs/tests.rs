@@ -44,6 +44,7 @@ fn check_program(subs: u32, rules: Vec<Rule>) -> Diagnostics {
     for i in 0..subs {
         p.subroutines.declare(SubDecl::new(format!("sub{i}")));
     }
+    locate(&mut p);
     run(check, &mut p, &options(OptLevel::Size)).expect("checks")
 }
 
@@ -219,9 +220,7 @@ fn calls_inside_subroutines_are_not_checked() {
 #[test]
 fn warnings_can_be_suppressed_per_rule() {
     let mut rule = caller(Event::OngoingGlobal, vec![call(0)]);
-    rule.suppressed
-        .0
-        .insert("mismatched-subroutine-event".to_owned());
+    rule.suppressed.insert(Warning::MismatchedSubroutineEvent);
     let w = check_program(1, vec![sub(0, vec![value(ValueId::EventPlayer)]), rule]);
     assert_eq!(w.0.len(), 0);
 }

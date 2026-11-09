@@ -32,9 +32,9 @@ use ow_workshop_data::Lang;
 
 use crate::ir::{
     Diagnostics, Event, Expr, ExprKind, LabelId, Location, Program, Rule, Stmt, StmtKind,
-    WarningSet,
 };
 use crate::options::{CompileOptions, OptLevel};
+use crate::suppress::Suppression;
 use crate::warning::Warning;
 
 /// State shared by the passes of one compilation.
@@ -45,6 +45,7 @@ pub(crate) struct Ctx<'a> {
     pub(crate) lang: Lang,
     /// Warnings (and errors that do not stop the pass) found so far.
     pub(crate) diags: &'a mut Diagnostics,
+    suppression: Suppression,
     next_label: u32,
 }
 
@@ -71,20 +72,14 @@ impl<'a> Ctx<'a> {
             options,
             lang,
             diags,
+            suppression: Suppression::new(options, &program.rules),
             next_label,
         }
     }
 
-    /// Reports `warning` unless the rule (`suppressed`) or the options silence it.
-    pub(crate) fn warn(
-        &mut self,
-        suppressed: &WarningSet,
-        warning: Warning,
-        message: String,
-        loc: Option<Location>,
-    ) {
-        let code = warning.code();
-        if suppressed.0.contains(code) || self.options.suppress.0.contains(code) {
+    /// Reports `warning` unless the options, the rule or an enclosing block suppress it.
+    pub(crate) fn warn(&mut self, warning: Warning, message: String, loc: Option<Location>) {
+        if self.suppression.is_suppressed(warning, loc) {
             return;
         }
         self.diags.warning(warning, message, loc);

@@ -241,10 +241,7 @@ fn the_combo_warning_can_be_suppressed() {
         args: vec![setting(combo("c", "n", ["a", "b"], 1))],
     }]);
     let mut options = options(OptLevel::Off);
-    options
-        .suppress
-        .0
-        .insert("workshop-setting-enum-default".to_owned());
+    options.suppress.insert(Warning::WorkshopSettingEnumDefault);
     let diags = run(lower, &mut p, &options).expect("lowers");
     assert_eq!(codes(&diags), [] as [&str; 0]);
 }

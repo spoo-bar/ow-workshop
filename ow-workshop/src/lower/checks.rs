@@ -79,7 +79,7 @@ struct Checker<'a, 'b> {
 
 impl Checker<'_, '_> {
     fn warn(&mut self, warning: Warning, message: String, loc: Option<Location>) {
-        self.ctx.warn(&self.rule.suppressed, warning, message, loc);
+        self.ctx.warn(warning, message, loc);
     }
 
     fn expr(&mut self, expr: &Expr, stmt_loc: Option<Location>) {

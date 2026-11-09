@@ -105,6 +105,21 @@ impl Diagnostics {
         self.0.push(Diagnostic::new(warning, message, location));
     }
 
+    /// Drops repeated diagnostics (same kind, message and location), then orders the rest by
+    /// location (file, line, column) and, within a location, by the order they were raised.
+    /// Diagnostics without a location come last.
+    pub(crate) fn finish(&mut self) {
+        let mut seen = std::collections::HashSet::new();
+        self.0
+            .retain(|d| seen.insert((d.kind, d.message.clone(), d.location)));
+        self.0.sort_by_key(|d| {
+            (
+                d.location.is_none(),
+                d.location.map(|l| (l.file, l.line, l.column)),
+            )
+        });
+    }
+
     /// Whether any diagnostic is an error.
     pub fn has_errors(&self) -> bool {
         self.0.iter().any(|d| d.severity == Severity::Error)
@@ -214,5 +229,23 @@ mod tests {
         diags.error(ErrorKind::EmitFailed, "m".to_owned(), None);
         let error: &dyn std::error::Error = &diags;
         assert_eq!(error.to_string(), "error[emit-failed]: m");
+    }
+
+    #[test]
+    fn finish_dedups_and_orders_by_location() {
+        let warn =
+            |w: Warning, m: &str, loc: Option<Location>| Diagnostic::new(w, m.to_owned(), loc);
+        let mut diags = Diagnostics(vec![
+            warn(Warning::DarkColor, "no location", None),
+            warn(Warning::DarkColor, "b", Some(at("b.rs", 1, 1))),
+            warn(Warning::DarkColor, "a2", Some(at("a.rs", 9, 1))),
+            warn(Warning::DarkColor, "a1", Some(at("a.rs", 2, 7))),
+            warn(Warning::DarkColor, "a1", Some(at("a.rs", 2, 7))),
+            // Same place, different message: kept, in raise order.
+            warn(Warning::DarkColor, "a1 again", Some(at("a.rs", 2, 7))),
+        ]);
+        diags.finish();
+        let messages: Vec<_> = diags.0.iter().map(|d| d.message.as_str()).collect();
+        assert_eq!(messages, ["a1", "a1 again", "a2", "b", "no location"]);
     }
 }

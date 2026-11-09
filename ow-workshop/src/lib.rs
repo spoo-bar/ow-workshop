@@ -71,6 +71,7 @@ mod rule_name;
 mod settings;
 mod subroutine;
 mod support;
+mod suppress;
 mod switch;
 mod tags;
 mod translate;

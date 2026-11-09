@@ -6,9 +6,7 @@ use std::collections::BTreeSet;
 
 use ow_workshop_data::ValueId;
 
-use crate::ir::{
-    Block, Diagnostics, Expr, ExprKind, Location, Program, StrExpr, StrToken, WarningSet,
-};
+use crate::ir::{Block, Diagnostics, Expr, ExprKind, Location, Program, StrExpr, StrToken};
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};
 use crate::warning::Warning;
@@ -89,7 +87,6 @@ pub(crate) fn lower(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diag
             ctx: &mut *ctx,
             errors: &mut errors,
             used: &mut used,
-            suppressed: rule.suppressed.clone(),
         };
         let mut node = |e: Expr| lower_node(e, &mut env);
         for cond in &mut rule.conditions {
@@ -114,7 +111,6 @@ struct Env<'a, 'b> {
     ctx: &'a mut Ctx<'b>,
     errors: &'a mut Diagnostics,
     used: &'a mut Used,
-    suppressed: WarningSet,
 }
 
 impl Env<'_, '_> {
@@ -260,7 +256,6 @@ fn combo(args: &mut [Expr], loc: Option<Location>, env: &mut Env<'_, '_>) {
         && *default != 0.0
     {
         env.ctx.warn(
-            &env.suppressed,
             Warning::WorkshopSettingEnumDefault,
             "a combo whose default is not its first option cannot select that option in the \
              lobby settings"

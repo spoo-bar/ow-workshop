@@ -31,9 +31,7 @@ pub(crate) use scope::Scope;
 
 use std::collections::HashSet;
 
-use crate::ir::{
-    Block, Diagnostics, Expr, LabelId, Location, Program, Rule, Stmt, SubId, VarId, WarningSet,
-};
+use crate::ir::{Block, Diagnostics, Expr, LabelId, Location, Program, Rule, Stmt, SubId, VarId};
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};
 use crate::warning::Warning;
@@ -58,7 +56,6 @@ pub(crate) struct Env<'a, 'b> {
     /// The shared pass context, for warnings.
     pub(crate) ctx: &'a mut Ctx<'b>,
     /// Warnings the rule being optimized suppresses.
-    pub(crate) suppressed: WarningSet,
     /// Whether the rule has a skip whose distance is only known at runtime: statements of such
     /// a rule must not be removed or merged.
     pub(crate) dynamic_skips: bool,
@@ -73,7 +70,7 @@ pub(crate) struct Env<'a, 'b> {
 impl Env<'_, '_> {
     /// Reports a warning unless the rule or the options silence it.
     pub(crate) fn warn(&mut self, warning: Warning, message: String, loc: Option<Location>) {
-        self.ctx.warn(&self.suppressed, warning, message, loc);
+        self.ctx.warn(warning, message, loc);
     }
 }
 
@@ -176,7 +173,6 @@ fn optimize_rule(
         phase: Phase::Rewrite,
         scope,
         ctx,
-        suppressed: rule.suppressed.clone(),
         dynamic_skips: crate::lower::labels::has_dynamic_skip(rule),
         targeted,
         has_skips,

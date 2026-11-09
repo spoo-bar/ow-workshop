@@ -2,9 +2,7 @@
 
 use crate::fmt::push_text;
 use crate::ir::ErrorKind;
-use crate::ir::{
-    Block, Diagnostics, Expr, ExprKind, Location, Program, StrExpr, StrToken, VarId, WarningSet,
-};
+use crate::ir::{Block, Diagnostics, Expr, ExprKind, Location, Program, StrExpr, StrToken, VarId};
 use crate::lower::Ctx;
 use crate::lower::strings::unnumber;
 use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr_skipping};
@@ -29,7 +27,6 @@ pub(crate) fn lower(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diag
         let mut env = Env {
             ctx: &mut *ctx,
             grail,
-            suppressed: rule.suppressed.clone(),
         };
         let mut node = |e: Expr| lower_node(e, &mut env);
         for cond in &mut rule.conditions {
@@ -44,7 +41,6 @@ struct Env<'a, 'b> {
     ctx: &'a mut Ctx<'b>,
     /// `None` while tags are disabled.
     grail: Option<VarId>,
-    suppressed: WarningSet,
 }
 
 fn lower_block(block: &mut Block, node: &mut impl FnMut(Expr) -> Expr) {
@@ -64,7 +60,6 @@ fn lower_node(expr: Expr, env: &mut Env<'_, '_>) -> Expr {
             let Some(grail) = grail else {
                 if !find_tags(&items(&tokens)).is_empty() {
                     env.ctx.warn(
-                        &env.suppressed,
                         Warning::Tags,
                         "this string has a text tag, but tags are disabled; set `CompileOptions::tags`"
                             .to_owned(),
@@ -132,7 +127,6 @@ fn autocorrect(
         match tx_fix(text) {
             TxFix::Fixed(len, fixed) => text.replace_range(..len, &fixed),
             TxFix::Malformed => env.ctx.warn(
-                &env.suppressed,
                 Warning::MalformattedTx,
                 "a texture id must be `C` followed by exactly 14 hex digits".to_owned(),
                 loc,

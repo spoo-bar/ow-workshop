@@ -1,6 +1,7 @@
 //! Checks made while a rule is recorded.
 
 use crate::ir::ErrorKind;
+use crate::suppress::Suppression;
 use crate::warning::Warning;
 use std::collections::BTreeMap;
 
@@ -240,8 +241,12 @@ fn contains_random(expr: &Expr) -> bool {
 }
 
 /// Reports literal text that the workshop would read as a placeholder, e.g. `ws_fmt!("{{0}}")`.
-pub(crate) fn check_placeholder_lookalikes(rules: &[Rule], diagnostics: &mut Diagnostics) {
-    let mut visit = |expr: &Expr| lookalikes(expr, diagnostics);
+pub(crate) fn check_placeholder_lookalikes(
+    rules: &[Rule],
+    suppression: &Suppression,
+    diagnostics: &mut Diagnostics,
+) {
+    let mut visit = |expr: &Expr| lookalikes(expr, suppression, diagnostics);
     for rule in rules {
         for cond in &rule.conditions {
             visit(&cond.expr);
@@ -252,11 +257,13 @@ pub(crate) fn check_placeholder_lookalikes(rules: &[Rule], diagnostics: &mut Dia
     }
 }
 
-fn lookalikes(expr: &Expr, diagnostics: &mut Diagnostics) {
+fn lookalikes(expr: &Expr, suppression: &Suppression, diagnostics: &mut Diagnostics) {
     if let ExprKind::Str(StrExpr::Custom { tokens, .. }) = expr.kind() {
         for token in tokens {
             if let StrToken::Text(text) = token {
-                if has_placeholder_lookalike(text) {
+                if has_placeholder_lookalike(text)
+                    && !suppression.is_suppressed(Warning::PlaceholderLookalike, expr.loc())
+                {
                     diagnostics.warning(
                         Warning::PlaceholderLookalike,
                         format!("the text {text:?} contains `{{digits}}`, which the game reads as a placeholder"),
@@ -267,7 +274,7 @@ fn lookalikes(expr: &Expr, diagnostics: &mut Diagnostics) {
         }
     }
     for child in expr.kind().children() {
-        lookalikes(child, diagnostics);
+        lookalikes(child, suppression, diagnostics);
     }
 }
 

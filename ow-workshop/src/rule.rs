@@ -111,7 +111,7 @@ impl<E: EventType> Rule<E> {
 
     /// Suppresses a warning for this rule.
     pub fn suppress(&mut self, warning: Warning) {
-        self.suppressed.0.insert(warning.code().to_owned());
+        self.suppressed.insert(warning);
     }
 
     /// Attaches a free-form note to the rule.
@@ -233,7 +233,7 @@ mod tests {
         let rule = &program.rules[0];
         assert!(rule.disabled && rule.delimiter);
         assert_eq!(rule.new_page.as_deref(), Some("page"));
-        assert!(rule.suppressed.0.contains("break-outside-loop"));
+        assert!(rule.suppressed.contains(Warning::BreakOutsideLoop));
         assert_eq!(rule.comment.as_deref(), Some("note"));
         assert_eq!(program.rules[1].new_page.as_deref(), Some(""));
     }

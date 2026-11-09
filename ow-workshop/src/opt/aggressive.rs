@@ -60,11 +60,13 @@ pub(super) fn skip_if(stmt: Stmt, env: &mut Env<'_, '_>) -> Vec<Stmt> {
         kind,
         loc: stmt.loc,
         comment: None,
+        suppress: stmt.suppress,
     };
     let mut out = vec![Stmt {
         kind: StmtKind::SkipIf(skip_when, SkipTarget::Label(label)),
         loc: stmt.loc,
         comment: stmt.comment.clone(),
+        suppress: crate::ir::WarningSet::default(),
     }];
     out.extend(then.stmts.iter().cloned());
     // The `Pass` after the label keeps the skip's landing spot a statement of its own.

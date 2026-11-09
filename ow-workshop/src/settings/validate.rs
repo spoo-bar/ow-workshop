@@ -80,7 +80,7 @@ pub(crate) fn validate(settings: &mut Settings, options: &CompileOptions, diags:
                 slots.team1, slots.team2, slots.ffa
             ),
         );
-    } else if !options.suppress.0.contains(Warning::ExtensionPoints.code()) {
+    } else if !options.suppress.contains(Warning::ExtensionPoints) {
         check.extension_points(settings, max_slots);
     }
 }

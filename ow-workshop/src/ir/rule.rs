@@ -1,10 +1,8 @@
 //! Rules, events and optimizer overrides.
 
-use std::collections::BTreeSet;
-
 use ow_workshop_data::Hero;
 
-use super::{Block, Expr, Location, SubId};
+use super::{Block, Expr, Location, SubId, WarningSet};
 
 /// When a rule runs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -92,10 +90,6 @@ pub(crate) struct OptOverride {
     /// Strict-mode override; `None` inherits.
     pub(crate) strict: Option<bool>,
 }
-
-/// Names of warnings suppressed for a rule.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct WarningSet(pub BTreeSet<String>);
 
 /// One condition of a rule.
 #[derive(Clone, Debug, PartialEq)]
