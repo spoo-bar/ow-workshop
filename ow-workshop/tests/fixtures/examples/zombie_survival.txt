@@ -1,7 +1,3 @@
----
-source: ow-workshop/tests/examples.rs
-expression: "code(&zombie_survival::ZombieSurvival { waves: 5 })"
----
 variables {
     global:
         0: wave
@@ -152,3 +148,4 @@ rule ("[HUD] Leaderboard") {
         Create HUD Text(All Players(All Teams), Null, Null, Custom String("Leader: {0}", First Of(Sorted Array(Filtered Array(All Players(All Teams), Compare(Team Of(Current Array Element), ==, Team 1)), Multiply(-1, (Current Array Element).score)))), Left, 0, Null, Null, Color(White), Visible To Sort Order String and Color, Default Visibility);
     }
 }
+

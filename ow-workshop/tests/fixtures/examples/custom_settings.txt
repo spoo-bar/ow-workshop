@@ -1,7 +1,3 @@
----
-source: ow-workshop/tests/examples.rs
-expression: code
----
 settings
 {
 	main
@@ -83,3 +79,4 @@ rule ("Hard mode") {
         Set Max Health(Event Player, 150);
     }
 }
+
