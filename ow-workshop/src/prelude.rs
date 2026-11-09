@@ -1,5 +1,6 @@
 //! The items a mod needs: `use ow_workshop::prelude::*;`.
 
+pub use crate::array_to_string::array_to_string;
 pub use crate::block::Block;
 pub use crate::builder::Builder;
 pub use crate::cased::{CasedTextArgs, CasedTextError};
@@ -30,6 +31,7 @@ pub use crate::settings::{
 };
 pub use crate::subroutine::{Sub, SubroutineOptions};
 pub use crate::switch::SwitchBuilder;
+pub use crate::text::{button_to_string, time_to_string};
 pub use crate::translate::{tr, tr_raw, tr_spectator};
 pub use crate::translations::{PlayerVarMode, TranslationLang, Translations};
 pub use crate::ty::*;

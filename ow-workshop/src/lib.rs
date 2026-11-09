@@ -39,6 +39,8 @@
 extern crate self as ow_workshop;
 
 mod array;
+mod array_helpers;
+mod array_to_string;
 mod block;
 mod builder;
 mod cased;
@@ -76,6 +78,7 @@ mod support;
 mod suppress;
 mod switch;
 mod tags;
+mod text;
 mod translate;
 mod translations;
 mod ty;
@@ -88,6 +91,7 @@ mod workshop_enum;
 pub mod workshop_setting;
 mod wrap;
 
+pub use array_to_string::array_to_string;
 pub use block::Block;
 pub use builder::Builder;
 pub use cased::{CasedTextArgs, CasedTextError};
@@ -139,6 +143,7 @@ pub use settings::{
 };
 pub use subroutine::{Sub, SubroutineOptions};
 pub use switch::SwitchBuilder;
+pub use text::{button_to_string, time_to_string};
 pub use translate::{tr, tr_raw, tr_spectator};
 pub use translations::{ParseTranslationLangError, PlayerVarMode, TranslationLang, Translations};
 pub use ty::*;
