@@ -129,7 +129,7 @@ pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
 pub use options::{CompileOptions, EmptyString, OptLevel, Replacements};
 pub use output::CompileOutput;
 pub use ow_workshop_data::chars;
-pub use ow_workshop_data::{Lang, LocalizedString, Texture};
+pub use ow_workshop_data::{Extension, Gamemode, Lang, LocalizedString, Map, Texture};
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
 pub use players::{
     PlayerHelperError, PlayerHelpers, RealPlayersArgs, RealRadiusArgs, real_closest_player,
