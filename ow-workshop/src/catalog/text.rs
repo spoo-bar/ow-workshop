@@ -1,9 +1,9 @@
 //! Normalizing a string before it is looked up in the catalog.
 
-use std::fmt::Write as _;
-
 // The string lowering that calls these lands in the next change.
 #![allow(dead_code)]
+
+use std::fmt::Write as _;
 
 /// Most placeholders a translated string may have.
 const MAX_PLACEHOLDERS: usize = 16;
