@@ -48,18 +48,62 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - run: cargo build -p ow-workshop --target wasm32-unknown-unknown
-      # Skipped until a crate depends on wasm-bindgen (see Cargo.lock).
       # The runner version must match the wasm-bindgen version in Cargo.lock.
       - id: wbg
         run: |
           v=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/[^0-9.]/,"",$0); print; exit}' Cargo.lock)
           echo "version=$v" >> "$GITHUB_OUTPUT"
-      - if: steps.wbg.outputs.version != ''
-        run: cargo install wasm-bindgen-cli --locked --version "${{ steps.wbg.outputs.version }}"
-      - if: steps.wbg.outputs.version != ''
+      - run: cargo install wasm-bindgen-cli --locked --version "${{ steps.wbg.outputs.version }}"
+      - name: Run the ow-workshop tests on WASM
         run: cargo test -p ow-workshop --target wasm32-unknown-unknown
         env:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
+
+  # The core must stay WASM-safe: no randomness, filesystem, clock or threads.
+  wasm-safe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: No getrandom in the WASM dependency tree
+        run: |
+          if cargo tree -p ow-workshop --target wasm32-unknown-unknown -e normal,build --prefix none | grep -E '^getrandom '; then
+            echo "::error::getrandom is in the wasm32 dependency tree of ow-workshop"
+            exit 1
+          fi
+      - name: No filesystem, clock, process or thread APIs in the core
+        # cli.rs only expands inside the user's native `main!`.
+        run: |
+          if grep -rnE 'std::(fs|time|process|thread)\b|SystemTime|Instant::now|thread::spawn' \
+              ow-workshop/src ow-workshop-data/src --include='*.rs' \
+              | grep -v '^ow-workshop/src/cli.rs:'; then
+            echo "::error::the core uses an API that does not exist on wasm32-unknown-unknown"
+            exit 1
+          fi
+
+  wasm-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: sudo apt-get install -y --no-install-recommends binaryen
+      - run: cargo build -p wasm-smoke --release --target wasm32-unknown-unknown
+      - name: Report the size
+        run: |
+          raw=target/wasm32-unknown-unknown/release/wasm_smoke.wasm
+          wasm-opt -Oz "$raw" -o wasm_smoke.opt.wasm
+          {
+            echo "### WASM size (hello_world \`compile(lang)\`)"
+            echo "| | bytes |"
+            echo "|---|---|"
+            echo "| release | $(stat -c %s "$raw") |"
+            echo "| \`wasm-opt -Oz\` | $(stat -c %s wasm_smoke.opt.wasm) |"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
   docs:
     runs-on: ubuntu-latest
