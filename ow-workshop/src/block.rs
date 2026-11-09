@@ -69,6 +69,12 @@ impl Block {
         self.ir.stmts.push(stmt);
     }
 
+    /// Prints a note line above the next action; it costs no element.
+    #[track_caller]
+    pub fn comment(&mut self, text: impl Into<String>) {
+        self.push(StmtKind::Comment(text.into()));
+    }
+
     /// Runs `body` with `warning` suppressed for everything it records, nested blocks included.
     pub fn suppress(&mut self, warning: Warning, body: impl FnOnce(&mut Block)) {
         let outer = self.suppressed;
