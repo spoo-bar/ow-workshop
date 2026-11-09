@@ -2,8 +2,12 @@ settings
 {
 	modes
 	{
-		General
+		Team Deathmatch
 		{
+			enabled maps
+			{
+				Workshop Chamber
+			}
 		}
 	}
 }
