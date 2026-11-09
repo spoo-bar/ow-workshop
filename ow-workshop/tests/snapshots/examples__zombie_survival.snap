@@ -1,0 +1,154 @@
+---
+source: ow-workshop/tests/examples.rs
+expression: "code(&zombie_survival::ZombieSurvival { waves: 5 })"
+---
+variables {
+    global:
+        0: wave
+        1: state
+        2: spawn_points
+        3: spawn_index
+    player:
+        0: score
+        1: lives
+}
+
+subroutines {
+    0: spawn_wave
+}
+
+rule ("Initialize player variables") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    actions {
+        Set Player Variable(Event Player, lives, 3);
+    }
+}
+
+rule ("[Setup] Collect spawn points") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Disable Inspector Recording;
+        Set Global Variable(spawn_points, Spawn Points(Team 2));
+        Set Global Variable(state, 0);
+    }
+}
+
+rule ("[Setup] Start when players are in") {
+    event {
+        Ongoing - Global;
+    }
+    conditions {
+        Global.state == False;
+        Number Of Players(All Teams) >= 1;
+    }
+    actions {
+        Wait(5, Ignore Condition);
+        Set Global Variable(state, 1);
+        If(True);
+            Skip(Value In Array(Array(4, 0, 2), Add(1, Index Of Array Value(Array(1, 2), Global.state))));
+            //label_1:
+            Big Message(All Players(All Teams), Custom String("Survive!"));
+        Else;
+            //label_2:
+            Big Message(All Players(All Teams), Custom String("Game over"));
+        Else;
+            //label_0:
+        End;
+    }
+}
+
+rule ("[Waves] Subroutine spawn_wave") {
+    event {
+        Subroutine;
+        spawn_wave;
+    }
+    actions {
+        Modify Global Variable(wave, Add, 1);
+        For Global Variable(spawn_index, 0, Min(Count Of(Global.spawn_points), Add(Global.wave, 3)), 1);
+            Create Dummy Bot(Hero(Reaper), Team 2, Global.spawn_index, Value In Array(Global.spawn_points, Global.spawn_index), Vector(0, 0, 0));
+        End;
+    }
+}
+
+rule ("[Waves] Run the waves") {
+    event {
+        Ongoing - Global;
+    }
+    conditions {
+        Global.state == 1;
+    }
+    actions {
+        While(Compare(Global.wave, <, 5));
+            Call Subroutine(spawn_wave);
+            Wait Until(Not(Count Of(Filtered Array(All Players(All Teams), Compare(Team Of(Current Array Element), ==, Team 2)))), 120);
+            Wait(5, Ignore Condition);
+        End;
+        Set Global Variable(state, 2);
+        If(True);
+            Skip(Value In Array(Array(4, 0, 2), Add(1, Index Of Array Value(Array(1, 2), Global.state))));
+            //label_4:
+            Big Message(All Players(All Teams), Custom String("Survive!"));
+        Else;
+            //label_5:
+            Big Message(All Players(All Teams), Custom String("Game over"));
+        Else;
+            //label_3:
+        End;
+    }
+}
+
+rule ("[Players] Score on kill") {
+    event {
+        Player Died;
+        All;
+        All;
+    }
+    conditions {
+        Attacker != Victim;
+        Team Of(Victim) == Team 2;
+    }
+    actions {
+        Modify Player Variable(Attacker, score, Add, 100);
+    }
+}
+
+rule ("[Players] Lose a life") {
+    event {
+        Player Died;
+        All;
+        All;
+    }
+    conditions {
+        Team Of(Victim) == Team 1;
+    }
+    actions {
+        Modify Player Variable(Victim, lives, Add, -1);
+        If(Compare((Victim).lives, <=, 0));
+            Disable Built-In Game Mode Respawning(Victim);
+    }
+}
+
+rule ("[HUD] Wave counter") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Create HUD Text(All Players(All Teams), Custom String("Wave {0}", Global.wave), Null, Null, Left, 0, Color(White), Null, Null, Visible To Sort Order String and Color, Default Visibility);
+        Create HUD Text(All Players(All Teams), Null, Custom String("{0} survivors", Number Of Living Players(All Teams)), Null, Left, 0, Null, Color(White), Null, Visible To Sort Order String and Color, Default Visibility);
+    }
+}
+
+rule ("[HUD] Leaderboard") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Create HUD Text(All Players(All Teams), Null, Null, Custom String("Leader: {0}", First Of(Sorted Array(Filtered Array(All Players(All Teams), Compare(Team Of(Current Array Element), ==, Team 1)), Multiply(-1, (Current Array Element).score)))), Left, 0, Null, Null, Color(White), Visible To Sort Order String and Color, Default Visibility);
+    }
+}
