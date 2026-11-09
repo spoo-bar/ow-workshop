@@ -10,10 +10,12 @@ pub use crate::compress::{
     CompressError, compress, compressed, decompress_numbers, decompress_vectors,
 };
 pub use crate::control::{ForRange, IfBuilder, RangeStep, range, rule_condition};
+pub use crate::debug;
 pub use crate::dict::{Dict, dict};
 pub use crate::event::*;
 pub use crate::expr::{Expr, null, vect};
 pub use crate::generated::api::*;
+pub use crate::hud::HudArgs;
 pub use crate::label::Label;
 pub use crate::localized::{localized, localized_en};
 pub use crate::math::{self, ceil, floor, round};

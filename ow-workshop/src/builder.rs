@@ -18,6 +18,8 @@ pub struct Builder {
     pub(crate) sub_states: Vec<crate::subroutine::SubState>,
     prefix: String,
     template: Option<fn(&RuleMeta) -> String>,
+    /// Whether the mod enables text tags.
+    pub(crate) tags: bool,
 }
 
 // Recording methods are used as the API grows.
@@ -29,6 +31,12 @@ impl Builder {
             template: Some(template),
             ..Self::default()
         }
+    }
+
+    /// Tells the blocks recorded from here on whether the mod enables text tags.
+    pub(crate) fn with_tags(mut self, tags: bool) -> Self {
+        self.tags = tags;
+        self
     }
 
     /// Runs `build` with `prefix` on the names of the rules and subroutines it defines.
@@ -71,6 +79,7 @@ impl Builder {
     ) {
         let loc = Location::caller();
         let mut rule = RuleBuilder::new(Rc::clone(&self.labels));
+        rule.tags = self.tags;
         build(&mut rule, Ev::new());
         let name = self.resolve_name(&name.into(), rule.is_delimiter(), loc);
         let rule = rule.finish(name, event, &mut self.diagnostics);

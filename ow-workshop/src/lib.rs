@@ -52,6 +52,7 @@ mod columns;
 mod compress;
 mod control;
 mod count;
+mod debug;
 mod dict;
 mod emit;
 mod event;
@@ -59,6 +60,7 @@ mod expr;
 mod flatten;
 mod fmt;
 mod generated;
+mod hud;
 mod ir;
 mod label;
 mod localized;
@@ -105,6 +107,7 @@ pub use compress::{
     CompressError, Compressible, compress, compressed, decompress_numbers, decompress_vectors,
 };
 pub use control::{ForRange, IfBuilder, IntoForRange, RangeStep, range, rule_condition};
+pub use debug::DebugValue;
 pub use dict::{Dict, dict};
 pub use event::{
     Ev, EventType, HasDamage, HasDamageOrHealing, HasEventPlayer, HasHealing, OngoingEachPlayer,
@@ -115,6 +118,7 @@ pub use event::{
 };
 pub use expr::{Expr, null, vect};
 pub use generated::api::*;
+pub use hud::HudArgs;
 pub use ir::{
     Diagnostic, Diagnostics, ErrorKind, Kind, Location, Severity, TeamFilter, WarningSet,
 };

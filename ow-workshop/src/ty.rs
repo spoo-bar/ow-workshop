@@ -11,7 +11,11 @@ mod sealed {
 }
 
 /// A workshop value type usable as the parameter of [`Expr`].
-pub trait ValueType: sealed::Sealed {}
+pub trait ValueType: sealed::Sealed {
+    /// Whether values of this type are arrays.
+    #[doc(hidden)]
+    const IS_ARRAY: bool = false;
+}
 
 /// `Self` may be used where `S` is expected.
 pub trait Is<S: ValueType>: ValueType {}
@@ -112,7 +116,9 @@ markers! {
 pub struct Array<T>(PhantomData<fn() -> T>, std::convert::Infallible);
 
 impl<T: ValueType> sealed::Sealed for Array<T> {}
-impl<T: ValueType> ValueType for Array<T> {}
+impl<T: ValueType> ValueType for Array<T> {
+    const IS_ARRAY: bool = true;
+}
 impl<T: Is<U>, U: ValueType> Is<Array<U>> for Array<T> {}
 impl<T: ValueType> Is<Any> for Array<T> {}
 impl<T: Is<Player>> Is<Players> for Array<T> {}
