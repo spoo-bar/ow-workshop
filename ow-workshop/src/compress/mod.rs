@@ -137,6 +137,32 @@ fn decode<T>(
     fixed(text(packed), vectors, min_place, max_place, offset)
 }
 
+/// The decoding expression for `items` when they are all number literals or all vector literals
+/// that fit; `None` otherwise (`Null` is not a number here, so it is never packed).
+pub(crate) fn compress_items(items: &[ir::Expr], loc: ir::Location) -> Option<ir::Expr> {
+    if items
+        .iter()
+        .any(|item| matches!(item.kind(), ExprKind::Null))
+    {
+        return None;
+    }
+    let (values, vectors) = if let Ok(numbers) = items.iter().map(number).collect() {
+        (Values::Numbers(numbers), false)
+    } else {
+        let vectors = items.iter().map(vector).collect::<Result<_, _>>().ok()?;
+        (Values::Vectors(vectors), true)
+    };
+    let packed = pack(&values, false).ok()?;
+    let node = ExprKind::Decompress(Box::new(Decompress {
+        packed: text(&packed.text).into_ir(),
+        vectors,
+        min_place: packed.min_place,
+        max_place: packed.max_place,
+        offset: packed.offset,
+    }));
+    Some(ir::Expr::new(node, Some(loc)))
+}
+
 /// A string literal that keeps every character: `Expr<Str>::from` would drop carriage returns,
 /// which are digits of the alphabet.
 #[track_caller]

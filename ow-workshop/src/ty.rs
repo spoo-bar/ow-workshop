@@ -42,6 +42,16 @@ impl<S: Is<T>, T: ValueType> IntoExpr<T> for &Expr<S> {
     }
 }
 
+/// `None` is `Null`.
+impl<S: IntoExpr<T>, T: ValueType> IntoExpr<T> for Option<S> {
+    fn into_expr(self) -> Expr<T> {
+        match self {
+            Some(value) => value.into_expr(),
+            None => Expr::literal(crate::ir::ExprKind::Null),
+        }
+    }
+}
+
 macro_rules! markers {
     ($($(#[$doc:meta])* $name:ident),* $(,)?) => {$(
         $(#[$doc])*

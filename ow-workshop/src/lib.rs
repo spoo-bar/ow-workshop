@@ -48,6 +48,7 @@ mod catalog;
 mod check;
 mod cli;
 pub mod colors;
+mod columns;
 mod compress;
 mod control;
 mod count;
@@ -99,6 +100,7 @@ pub use cased::{CasedTextArgs, CasedTextError};
 pub use catalog::{Catalog, Entry};
 #[doc(hidden)]
 pub use cli::lang_from_args;
+pub use columns::{ColumnPlace, Columns, Table};
 pub use compress::{
     CompressError, Compressible, compress, compressed, decompress_numbers, decompress_vectors,
 };

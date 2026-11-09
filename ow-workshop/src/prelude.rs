@@ -5,6 +5,7 @@ pub use crate::block::Block;
 pub use crate::builder::Builder;
 pub use crate::cased::{CasedTextArgs, CasedTextError};
 pub use crate::colors;
+pub use crate::columns::Columns;
 pub use crate::compress::{
     CompressError, compress, compressed, decompress_numbers, decompress_vectors,
 };
