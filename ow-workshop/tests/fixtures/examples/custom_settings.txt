@@ -1,0 +1,82 @@
+settings
+{
+	main
+	{
+		Mode Name: "Custom Settings"
+		Description: "Shows settings, workshop settings and translations"
+	}
+	lobby
+	{
+		Max Team 1 Players: 4
+		Max Team 2 Players: 0
+	}
+	modes
+	{
+		Team Deathmatch
+		{
+			enabled maps
+			{
+				Workshop Chamber
+				Workshop Island
+			}
+		}
+	}
+	heroes
+	{
+		General
+		{
+			Reaper
+			{
+				Wraith Form Cooldown Time: 50%
+			}
+			disabled heroes
+			{
+				Bastion
+			}
+		}
+	}
+	extensions
+	{
+		Beam Effects
+	}
+}
+
+variables {
+    global:
+        127: __overpyTranslationHelper__
+}
+
+rule ("Initialize global variables") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Set Global Variable(__overpyTranslationHelper__, String Split(Custom String("0White0Blanc"), First Of(Null)));
+    }
+}
+
+rule ("Round banner") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Create HUD Text(All Players(All Teams), Value In Array(String Split(Custom String("ＴＬＥｒｒRound {0} of {1}Manche {0} sur {1}", Match Round, Workshop Setting Integer(Custom String("Gameplay"), Custom String("Rounds"), 5, 1, 20, 0)), Global.__overpyTranslationHelper__), Absolute Value(Index Of Array Value(Global.__overpyTranslationHelper__, String Split(Color(White), Empty Array)))), Null, Null, Left, 0, Color(White), Null, Null, Visible To Sort Order String and Color, Default Visibility);
+    }
+}
+
+rule ("Hard mode") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Workshop Setting Toggle(Custom String("Gameplay"), Custom String("Hard mode"), False, 0) == True;
+        Workshop Setting Combo(Custom String("Gameplay"), Custom String("Difficulty"), 1, Array(Custom String("Easy"), Custom String("Normal"), Custom String("Hard")), 0) >= 2;
+    }
+    actions {
+        Create HUD Text(Event Player, Null, Value In Array(String Split(Custom String("ＴＬＥｒｒHard mode is onLe mode difficile est activé"), Global.__overpyTranslationHelper__), Absolute Value(Index Of Array Value(Global.__overpyTranslationHelper__, String Split(Color(White), Empty Array)))), Null, Left, 0, Null, Color(White), Null, Visible To Sort Order String and Color, Default Visibility);
+        Set Max Health(Event Player, 150);
+    }
+}
+

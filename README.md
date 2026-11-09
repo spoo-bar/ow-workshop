@@ -1,6 +1,7 @@
 # ow-workshop
 
-Write Overwatch Workshop mods in Rust. Implement `Workshop` for a type and compile it to the text you paste into *Custom Game → Settings → Workshop*.
+Write Overwatch Workshop mods in Rust.
+Implement `Workshop` for a type and compile it to the text you paste into *Custom Game → Settings → Workshop*.
 
 ```rust
 use ow_workshop::prelude::*;
@@ -30,6 +31,13 @@ impl Workshop for Deathmatch {
 }
 ```
 
-*The API is under construction; this sample shows the target design.*
+## Examples
+
+Run one with `cargo run -p ow-workshop --example <name>`:
+
+- [`hello_world`](ow-workshop/examples/hello_world.rs): the smallest useful mod.
+- [`zombie_survival`](ow-workshop/examples/zombie_survival.rs): variables, subroutines, loops, `switch` and a leaderboard.
+- [`custom_settings`](ow-workshop/examples/custom_settings.rs): game settings, workshop settings and translations.
+- [`deathmatch`](ow-workshop/examples/deathmatch.rs): the sample above.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) to get involved. Licensed under GPL-3.0.

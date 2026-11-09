@@ -3,6 +3,54 @@
 //! Implement [`Workshop`] for a type and call [`WorkshopExt::compile`]; the core does no I/O.
 //! [`main!`] defines a native command-line `main` for it.
 //!
+//! # Quick start
+//!
+//! ```
+//! use ow_workshop::prelude::*;
+//!
+//! struct HelloWorld;
+//!
+//! impl Workshop for HelloWorld {
+//!     type Globals = ();
+//!     type Players = ();
+//!
+//!     fn build(&self, ws: &mut Builder, (): &(), (): &()) {
+//!         ws.rule("Header", OngoingGlobal, |r, _| {
+//!             r.actions(|b| b.hud_header("Hello, Workshop!"));
+//!         });
+//!
+//!         ws.rule("Welcome", OngoingEachPlayer, |r, ev| {
+//!             r.condition(ev.event_player().has_spawned());
+//!             r.actions(|b| b.small_message(ws_fmt!("Welcome, {}!", ev.event_player())));
+//!         });
+//!     }
+//! }
+//!
+//! let output = HelloWorld.compile(Lang::EnUs).expect("compiles");
+//! assert!(output.code.contains("Custom String(\"Hello, Workshop!\")"));
+//! ```
+//!
+//! # Pasting into the game
+//!
+//! Print `output.code` (or use [`main!`] and `cargo run`), copy it, then in *Custom Game →
+//! Settings → Workshop* choose *Paste Rules*.
+//!
+//! # Concepts and their API
+//!
+//! | Workshop concept | Rust API |
+//! |---|---|
+//! | Rules and events | [`Builder::rule`], event types such as [`OngoingGlobal`] and [`PlayerDied`] |
+//! | Conditions | [`Rule::condition`], comparisons like [`Expr::eq`] |
+//! | Variables | `#[derive(GlobalVars)]`, `#[derive(PlayerVars)]`, [`Global`], [`PlayerVar`] |
+//! | Subroutines | [`Builder::declare_subroutine`], [`Builder::define`], [`Block::call`] |
+//! | Skip and labels | [`Label`], [`Block::switch`], [`Block::break_`] |
+//! | Strings | [`ws_fmt!`](ws_fmt), [`CasedTextArgs`], [`spaces_for`] |
+//! | Settings | [`Workshop::settings`], [`Settings`], [`workshop_setting`] |
+//! | Translations | [`Workshop::translations`], [`t!`], [`Translations`] |
+//!
+//! The `examples` directory has runnable mods: `hello_world`, `zombie_survival` and
+//! `custom_settings`.
+//!
 //! # Using it from WASM
 //!
 //! `ow-workshop` has no `wasm-bindgen` dependency. Export a function from your own crate, which
@@ -129,7 +177,7 @@ pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
 pub use options::{CompileOptions, EmptyString, OptLevel, Replacements};
 pub use output::CompileOutput;
 pub use ow_workshop_data::chars;
-pub use ow_workshop_data::{Lang, LocalizedString, Texture};
+pub use ow_workshop_data::{Extension, Gamemode, Lang, LocalizedString, Map, Texture};
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
 pub use players::{
     PlayerHelperError, PlayerHelpers, RealPlayersArgs, RealRadiusArgs, real_closest_player,
