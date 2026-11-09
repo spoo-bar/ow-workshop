@@ -2,32 +2,8 @@
 
 use super::{Diagnostics, Rule, RuleError, Severity, Subs, Vars};
 use crate::CompileOptions;
+use crate::settings::Settings;
 use crate::translations::Translations;
-use ow_workshop_data::Extension;
-
-/// Custom game settings; the rest is filled in by the settings epic.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-#[non_exhaustive]
-pub struct Settings {
-    /// Workshop extensions the mod turns on.
-    pub(crate) extensions: Vec<Extension>,
-}
-
-impl Settings {
-    /// Turns a workshop extension on.
-    #[must_use]
-    pub fn with_extension(mut self, extension: Extension) -> Self {
-        if !self.extensions.contains(&extension) {
-            self.extensions.push(extension);
-        }
-        self
-    }
-
-    /// Whether the extension is on.
-    pub(crate) fn has_extension(&self, extension: Extension) -> bool {
-        self.extensions.contains(&extension)
-    }
-}
 
 /// Everything the passes transform.
 #[derive(Clone, Debug, Default, PartialEq)]

@@ -27,6 +27,10 @@ mod values;
 )]
 mod actions;
 
+#[rustfmt::skip]
+#[allow(missing_docs)]
+pub(crate) mod settings;
+
 /// Everything generated, under one path.
 pub mod api {
     pub use super::actions::*;

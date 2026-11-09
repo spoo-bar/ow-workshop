@@ -281,6 +281,7 @@ dependencies = [
  "proptest",
  "ryu-js",
  "serde",
+ "serde_json",
  "similar",
  "trybuild",
  "wasm-bindgen-test",

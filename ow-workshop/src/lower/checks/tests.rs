@@ -1,9 +1,9 @@
 use ow_workshop_data::{ActionId, Beam, Effect, Extension, Gamemode, Map, ValueId};
 
 use super::*;
-use crate::ir::Settings;
 use crate::lower::testutil::*;
 use crate::options::OptLevel;
+use crate::settings::Settings;
 
 fn check_body(body: Vec<StmtKind>) -> Result<Diagnostics, Diagnostics> {
     check_with(body, Settings::default())
