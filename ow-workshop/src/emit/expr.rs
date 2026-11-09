@@ -87,6 +87,7 @@ pub(super) fn write_expr(out: &mut impl Write, cx: Cx<'_>, expr: &Expr) -> fmt::
         // Removed by lowering and label resolution.
         K::Dict { .. }
         | K::Translated(_)
+        | K::Resolve { .. }
         | K::StrModify { .. }
         | K::LocalizedCall { .. }
         | K::HolyGrail

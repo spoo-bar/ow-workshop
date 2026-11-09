@@ -149,9 +149,13 @@ pub(crate) fn map_children(kind: &ExprKind, g: &mut impl FnMut(&Expr) -> Expr) -
             default: default.as_ref().map(&mut *g),
         },
         K::Translated(t) => K::Translated(Translated {
-            key: t.key.clone(),
             args: t.args.iter().map(&mut *g).collect(),
+            ..t.clone()
         }),
+        K::Resolve { inner, spectator } => K::Resolve {
+            inner: g(inner),
+            spectator: *spectator,
+        },
     }
 }
 

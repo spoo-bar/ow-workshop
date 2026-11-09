@@ -71,8 +71,14 @@ pub(crate) enum StrModifier {
 pub(crate) struct Translated {
     /// Lookup key (the source-language text).
     pub(crate) key: String,
+    /// Disambiguating context.
+    pub(crate) context: Option<String>,
     /// Placeholder arguments.
     pub(crate) args: Vec<Expr>,
+    /// Keep the array of all translations even where a display action would pick one.
+    pub(crate) raw: bool,
+    /// Pick the language without the player variable.
+    pub(crate) spectator: bool,
 }
 
 /// The shape of an expression.
@@ -166,6 +172,13 @@ pub(crate) enum ExprKind {
     },
     /// A language-dependent string; removed by lowering.
     Translated(Translated),
+    /// Picks the viewer's language out of a stored translated string; removed by lowering.
+    Resolve {
+        /// The stored array of translations.
+        inner: Expr,
+        /// Pick the language without the player variable.
+        spectator: bool,
+    },
     /// The raw `<` character kept in `__holygrail__`; replaced by that global when lowering.
     HolyGrail,
     /// A call of a localized (built-in phrase) string; removed by lowering.
@@ -252,7 +265,10 @@ impl ExprKind {
             | Self::Div(a, b)
             | Self::Mod(a, b)
             | Self::Pow(a, b) => vec![a, b],
-            Self::Not(a) | Self::Neg(a) | Self::StrModify { inner: a, .. } => vec![a],
+            Self::Not(a)
+            | Self::Neg(a)
+            | Self::StrModify { inner: a, .. }
+            | Self::Resolve { inner: a, .. } => vec![a],
             Self::IfThenElse { cond, then, else_ } => vec![cond, then, else_],
             Self::Dict { entries, default } => entries
                 .iter()

@@ -42,6 +42,7 @@ mod array;
 mod block;
 mod builder;
 mod cased;
+mod catalog;
 mod check;
 mod cli;
 mod control;
@@ -71,6 +72,7 @@ mod subroutine;
 mod support;
 mod switch;
 mod tags;
+mod translate;
 mod translations;
 mod ty;
 mod vars;
@@ -84,6 +86,7 @@ mod wrap;
 pub use block::Block;
 pub use builder::Builder;
 pub use cased::{CasedTextArgs, CasedTextError};
+pub use catalog::{Catalog, Entry};
 #[doc(hidden)]
 pub use cli::lang_from_args;
 pub use control::{ForRange, IfBuilder, IntoForRange, RangeStep, range, rule_condition};
@@ -103,7 +106,7 @@ pub use localized::{localized, localized_en};
 pub use math::{ceil, floor, round};
 pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
 pub use options::{CompileOptions, EmptyString, OptLevel, Replacements};
-pub use output::{Catalog, CompileOutput};
+pub use output::CompileOutput;
 pub use ow_workshop_data::chars;
 pub use ow_workshop_data::{Lang, LocalizedString, Texture};
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
@@ -112,13 +115,15 @@ pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
 #[doc(hidden)]
 pub mod __private {
     pub use crate::fmt::{Piece, template};
+    pub use crate::translate::translated;
 }
 pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
 pub use rule_name::{RuleMeta, default_rule_name};
 pub use subroutine::{Sub, SubroutineOptions};
 pub use switch::SwitchBuilder;
-pub use translations::Translations;
+pub use translate::{tr, tr_raw, tr_spectator};
+pub use translations::{ParseTranslationLangError, PlayerVarMode, TranslationLang, Translations};
 pub use ty::*;
 pub use vars::{
     Global, GlobalHandle, GlobalVars, Indexed, Indexed2, Indexed3, Place, Plain, PlayerHandle,

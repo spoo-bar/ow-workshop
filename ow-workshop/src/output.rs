@@ -1,11 +1,7 @@
 //! The result of a compilation.
 
+use crate::catalog::Catalog;
 use crate::ir::Diagnostic;
-
-/// A listing of the strings and elements of a mod; filled in by the catalog epic.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-#[non_exhaustive]
-pub struct Catalog;
 
 /// The result of a successful compilation.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -17,6 +13,6 @@ pub struct CompileOutput {
     pub warnings: Vec<Diagnostic>,
     /// Number of elements the mod uses.
     pub element_count: usize,
-    /// Optional catalog of the mod's contents.
+    /// The updated translation catalog, for the caller to write out.
     pub catalog: Option<Catalog>,
 }

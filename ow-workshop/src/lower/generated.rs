@@ -213,6 +213,7 @@ pub(crate) fn add_rules(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), 
         generated.push(inspector_rule());
     }
     crate::tags::declare(program, ctx.options);
+    crate::translations::declare(program)?;
     generated.extend(tags_rule(program, ctx));
     generated.extend(translation_rule(program, ctx));
     generated.extend(global_init_rule(program, ctx));

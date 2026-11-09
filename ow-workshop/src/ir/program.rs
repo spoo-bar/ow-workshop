@@ -2,6 +2,7 @@
 
 use super::{Diagnostics, Rule, RuleError, Severity, Subs, Vars};
 use crate::CompileOptions;
+use crate::translations::Translations;
 use ow_workshop_data::Extension;
 
 /// Custom game settings; the rest is filled in by the settings epic.
@@ -43,6 +44,8 @@ pub(crate) struct Program {
     pub(crate) settings: Settings,
     /// Compile options.
     pub(crate) options: CompileOptions,
+    /// Language-dependent strings, when the mod has translations.
+    pub(crate) translations: Option<Translations>,
 }
 
 impl Program {
