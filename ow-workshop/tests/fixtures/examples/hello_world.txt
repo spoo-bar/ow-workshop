@@ -1,7 +1,3 @@
----
-source: ow-workshop/tests/examples.rs
-expression: "code(&hello_world::HelloWorld)"
----
 rule ("Header") {
     event {
         Ongoing - Global;
@@ -25,3 +21,4 @@ rule ("Welcome") {
         Small Message(Event Player, Custom String("Welcome, {0}!", Event Player));
     }
 }
+
