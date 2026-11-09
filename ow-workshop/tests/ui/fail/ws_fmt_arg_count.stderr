@@ -1,0 +1,23 @@
+error: invalid reference to positional argument 1 (there is 1 argument)
+ --> tests/ui/fail/ws_fmt_arg_count.rs:4:21
+  |
+4 |     let _ = ws_fmt!("{} and {}", 1);
+  |                     ^^^^^^^^^^^
+
+error: argument never used in the format string
+ --> tests/ui/fail/ws_fmt_arg_count.rs:5:30
+  |
+5 |     let _ = ws_fmt!("{}", 1, 2);
+  |                              ^
+
+error: cannot mix `{}` and `{0}` placeholders in one string
+ --> tests/ui/fail/ws_fmt_arg_count.rs:6:21
+  |
+6 |     let _ = ws_fmt!("{} {0}", 1);
+  |                     ^^^^^^^^
+
+error: format specs are not supported in `ws_fmt!`
+ --> tests/ui/fail/ws_fmt_arg_count.rs:7:21
+  |
+7 |     let _ = ws_fmt!("{:?}", 1);
+  |                     ^^^^^^

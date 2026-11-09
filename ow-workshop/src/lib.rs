@@ -41,6 +41,7 @@ extern crate self as ow_workshop;
 mod array;
 mod block;
 mod builder;
+mod cased;
 mod check;
 mod cli;
 mod control;
@@ -50,9 +51,11 @@ mod emit;
 mod event;
 mod expr;
 mod flatten;
+mod fmt;
 mod generated;
 mod ir;
 mod label;
+mod localized;
 mod lower;
 mod math;
 mod ops;
@@ -67,10 +70,12 @@ mod rule_name;
 mod subroutine;
 mod support;
 mod switch;
+mod tags;
 mod translations;
 mod ty;
 mod vars;
 mod warning;
+mod width;
 mod workshop;
 #[cfg(test)]
 mod workshop_enum;
@@ -78,6 +83,7 @@ mod wrap;
 
 pub use block::Block;
 pub use builder::Builder;
+pub use cased::{CasedTextArgs, CasedTextError};
 #[doc(hidden)]
 pub use cli::lang_from_args;
 pub use control::{ForRange, IfBuilder, IntoForRange, RangeStep, range, rule_condition};
@@ -93,12 +99,20 @@ pub use expr::{Expr, null, vect};
 pub use generated::api::*;
 pub use ir::{Diagnostic, Diagnostics, Location, Settings, Severity, TeamFilter, WarningSet};
 pub use label::Label;
+pub use localized::{localized, localized_en};
 pub use math::{ceil, floor, round};
 pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
 pub use options::{CompileOptions, EmptyString, OptLevel, Replacements};
 pub use output::{Catalog, CompileOutput};
-pub use ow_workshop_data::Lang;
-pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum};
+pub use ow_workshop_data::chars;
+pub use ow_workshop_data::{Lang, LocalizedString, Texture};
+pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
+
+/// Support items for macro expansions; not public API.
+#[doc(hidden)]
+pub mod __private {
+    pub use crate::fmt::{Piece, template};
+}
 pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
 pub use rule_name::{RuleMeta, default_rule_name};
@@ -111,4 +125,5 @@ pub use vars::{
     PlayerVar, PlayerVarRef, PlayerVars, RawPlace, VarRegistry,
 };
 pub use warning::Warning;
+pub use width::{TextWidthError, spaces_for, spaces_for_str, visual_len};
 pub use workshop::{Workshop, WorkshopExt};

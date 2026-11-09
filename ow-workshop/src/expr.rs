@@ -2,7 +2,7 @@
 
 use std::marker::PhantomData;
 
-use crate::ir::{self, ConstRef, ExprKind, StrExpr, StrToken};
+use crate::ir::{self, ConstRef, ExprKind, StrExpr};
 use crate::ty::{Any, Array, Bool, ConstEnum, Int, IntoExpr, Is, Num, Str, ValueType, Vector};
 
 /// A workshop value of type `T`. Cheap to clone; it has no `PartialEq` (use `eq`, `ne`, …).
@@ -154,11 +154,8 @@ impl IntoExpr<Bool> for bool {
 
 impl From<&str> for Expr<Str> {
     fn from(s: &str) -> Self {
-        let tokens = if s.is_empty() {
-            Vec::new()
-        } else {
-            vec![StrToken::Text(s.to_owned())]
-        };
+        let mut tokens = Vec::new();
+        crate::fmt::push_text(&mut tokens, s);
         Self::literal(ExprKind::Str(StrExpr::Custom {
             tokens,
             args: Vec::new(),
@@ -214,6 +211,7 @@ mod tests {
     use ow_workshop_data::{Hero, Team};
 
     use super::*;
+    use crate::ir::StrToken;
     use crate::ty::Player;
 
     #[test]

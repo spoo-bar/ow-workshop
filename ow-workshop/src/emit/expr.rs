@@ -30,6 +30,16 @@ pub(super) fn write_expr(out: &mut impl Write, cx: Cx<'_>, expr: &Expr) -> fmt::
             let items: Vec<&Expr> = items.iter().collect();
             write_call(out, cx, ValueId::Array.name(cx.lang), &items)
         }
+        K::Value {
+            id: ValueId::LocalizedString,
+            args,
+        } if matches!(
+            args.first().map(Expr::kind),
+            Some(K::Str(StrExpr::Localized(_)))
+        ) =>
+        {
+            write_localized(out, cx, args)
+        }
         K::Value { id, args } => {
             let args: Vec<&Expr> = args.iter().collect();
             write_name_and_args(out, cx, id.name(cx.lang), &args)
@@ -75,9 +85,13 @@ pub(super) fn write_expr(out: &mut impl Write, cx: Cx<'_>, expr: &Expr) -> fmt::
             out.write_char(')')
         }
         // Removed by lowering and label resolution.
-        K::Dict { .. } | K::Translated(_) | K::RuleCondition | K::LabelDistance(_) => {
-            Err(fmt::Error)
-        }
+        K::Dict { .. }
+        | K::Translated(_)
+        | K::StrModify { .. }
+        | K::LocalizedCall { .. }
+        | K::HolyGrail
+        | K::RuleCondition
+        | K::LabelDistance(_) => Err(fmt::Error),
     }
 }
 
@@ -139,6 +153,29 @@ fn write_const(out: &mut impl Write, cx: Cx<'_>, c: ConstRef) -> fmt::Result {
         Some(id) => write!(out, "{}({name})", id.name(cx.lang)),
         None => out.write_str(name),
     }
+}
+
+/// `String("phrase", a, b, c)`; trailing `Null` arguments are left out.
+fn write_localized(out: &mut impl Write, cx: Cx<'_>, args: &[Expr]) -> fmt::Result {
+    let (phrase, rest) = match args.split_first() {
+        Some((first, rest)) => match first.kind() {
+            ExprKind::Str(StrExpr::Localized(phrase)) => (phrase, rest),
+            _ => return Err(fmt::Error),
+        },
+        None => return Err(fmt::Error),
+    };
+    out.write_str(ValueId::LocalizedString.name(cx.lang))?;
+    out.write_char('(')?;
+    write_string(out, phrase.text(cx.lang))?;
+    let used = rest
+        .iter()
+        .rposition(|arg| !matches!(arg.kind(), ExprKind::Null))
+        .map_or(0, |last| last + 1);
+    for arg in &rest[..used] {
+        out.write_str(", ")?;
+        write_expr(out, cx, arg)?;
+    }
+    out.write_char(')')
 }
 
 /// `Custom String("text {0}", a, b, c)`; trailing `Null` arguments are left out.

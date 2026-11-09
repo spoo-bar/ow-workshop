@@ -38,6 +38,14 @@ pub enum Warning {
     TypeCheck,
     /// `Value In Array` on a number, which is always 0.
     ArrayIndexNumber,
+    /// An array in a string, of which only the first element shows.
+    ArrayInString,
+    /// `.fullwidth()` text with characters that have no fullwidth form.
+    NotTotalFullwidth,
+    /// A text tag (`<fg…>`, `<tx…>`) while tags are disabled.
+    Tags,
+    /// A `<tx…>` tag whose texture id is not 14 hex digits after `C`.
+    MalformattedTx,
 }
 
 impl Warning {
@@ -62,6 +70,10 @@ impl Warning {
             Self::CancelContraryMotion => "cancel-contrary-motion",
             Self::TypeCheck => "type-check",
             Self::ArrayIndexNumber => "array-index-number",
+            Self::ArrayInString => "array-in-string",
+            Self::NotTotalFullwidth => "not-total-fullwidth",
+            Self::Tags => "tags",
+            Self::MalformattedTx => "malformatted-tx",
         }
     }
 }

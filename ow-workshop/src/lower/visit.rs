@@ -73,6 +73,7 @@ pub(crate) fn map_children(kind: &ExprKind, g: &mut impl FnMut(&Expr) -> Expr) -
         | K::ArrayElem
         | K::ArrayIndex
         | K::RuleCondition
+        | K::HolyGrail
         | K::LabelDistance(_) => kind.clone(),
         K::Vector([x, y, z]) => K::Vector([g(x), g(y), g(z)]),
         K::Array(items) => K::Array(items.iter().map(&mut *g).collect()),
@@ -128,6 +129,14 @@ pub(crate) fn map_children(kind: &ExprKind, g: &mut impl FnMut(&Expr) -> Expr) -
             let (a, b) = pair(g, a, b);
             K::Pow(a, b)
         }
+        K::LocalizedCall { phrase, args } => K::LocalizedCall {
+            phrase: phrase.clone(),
+            args: args.iter().map(&mut *g).collect(),
+        },
+        K::StrModify { modifier, inner } => K::StrModify {
+            modifier: *modifier,
+            inner: g(inner),
+        },
         K::Not(a) => K::Not(g(a)),
         K::Neg(a) => K::Neg(g(a)),
         K::IfThenElse { cond, then, else_ } => K::IfThenElse {

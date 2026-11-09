@@ -52,7 +52,7 @@ fn custom(text: &str, args: Vec<Expr>, like: &Expr) -> Expr {
         let placeholder = rest.strip_prefix('{').and_then(|r| {
             let digit = r.chars().next()?.to_digit(10)?;
             let r = r.get(1..)?.strip_prefix('}')?;
-            Some((u8::try_from(digit).ok()?, r))
+            Some((usize::try_from(digit).ok()?, r))
         });
         if let Some((n, after)) = placeholder {
             tokens.push(StrToken::Arg(n));

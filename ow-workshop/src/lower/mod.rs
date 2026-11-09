@@ -15,9 +15,14 @@ pub(crate) mod dicts;
 pub(crate) mod functions;
 pub(crate) mod generated;
 pub(crate) mod labels;
+pub(crate) mod localized;
 pub(crate) mod loops;
+pub(crate) mod modifiers;
+pub(crate) mod split;
+pub(crate) mod strings;
 pub(crate) mod subs;
 pub(crate) mod switch;
+pub(crate) mod tags;
 pub(crate) mod varflags;
 pub(crate) mod visit;
 
@@ -158,7 +163,12 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("lower loops", loops::lower),
     ("lower dictionaries", dicts::lower),
     ("lower functions", functions::lower),
+    ("string modifiers", modifiers::apply),
+    ("localized strings", localized::lower),
+    ("normalize strings", strings::normalize),
+    ("text tags", tags::lower),
     ("optimize", crate::opt::run),
+    ("split strings", split::run),
     ("resolve labels", labels::resolve_labels),
     // Flattening runs inside counting and printing, which need the structured form.
     ("literal limits and boolean slots", crate::wrap::run),

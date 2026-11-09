@@ -38,7 +38,7 @@ pub(crate) enum StrToken {
     /// Literal text.
     Text(String),
     /// Placeholder `{n}`, an index into the string's args.
-    Arg(u8),
+    Arg(usize),
 }
 
 /// A string-valued expression.
@@ -53,6 +53,17 @@ pub(crate) enum StrExpr {
     },
     /// A built-in localized string.
     Localized(LocalizedString),
+}
+
+/// A rewrite of the text of a string template.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum StrModifier {
+    /// Fullwidth lookalikes.
+    Fullwidth,
+    /// The large Blizzard Global font.
+    Big,
+    /// Lowercase letters that the game does not uppercase.
+    CaseSensitive,
 }
 
 /// A string that depends on the viewer's language; removed by lowering.
@@ -155,6 +166,22 @@ pub(crate) enum ExprKind {
     },
     /// A language-dependent string; removed by lowering.
     Translated(Translated),
+    /// The raw `<` character kept in `__holygrail__`; replaced by that global when lowering.
+    HolyGrail,
+    /// A call of a localized (built-in phrase) string; removed by lowering.
+    LocalizedCall {
+        /// The phrase, or the English text that matched none.
+        phrase: Result<LocalizedString, String>,
+        /// Up to three placeholder arguments.
+        args: Vec<Expr>,
+    },
+    /// A modifier applied to a string template; removed by lowering.
+    StrModify {
+        /// The modifier.
+        modifier: StrModifier,
+        /// The string it applies to.
+        inner: Expr,
+    },
     /// The enclosing rule's own condition; removed by lowering.
     RuleCondition,
     /// Distance from the enclosing `Skip` to a label; resolved to a number with the labels.
@@ -207,6 +234,7 @@ impl ExprKind {
             | Self::ArrayElem
             | Self::ArrayIndex
             | Self::RuleCondition
+            | Self::HolyGrail
             | Self::LabelDistance(_) => Vec::new(),
             Self::Vector(parts) => parts.iter().collect(),
             Self::Array(items) => items.iter().collect(),
@@ -224,7 +252,7 @@ impl ExprKind {
             | Self::Div(a, b)
             | Self::Mod(a, b)
             | Self::Pow(a, b) => vec![a, b],
-            Self::Not(a) | Self::Neg(a) => vec![a],
+            Self::Not(a) | Self::Neg(a) | Self::StrModify { inner: a, .. } => vec![a],
             Self::IfThenElse { cond, then, else_ } => vec![cond, then, else_],
             Self::Dict { entries, default } => entries
                 .iter()
@@ -232,6 +260,7 @@ impl ExprKind {
                 .chain(default)
                 .collect(),
             Self::Translated(t) => t.args.iter().collect(),
+            Self::LocalizedCall { args, .. } => args.iter().collect(),
         }
     }
 }
