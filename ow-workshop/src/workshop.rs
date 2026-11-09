@@ -1,10 +1,11 @@
 //! The `Workshop` trait users implement to define a mod.
 
 use crate::builder::Builder;
-use crate::ir::{Diagnostics, Program, Settings};
+use crate::ir::{Diagnostics, Program};
 use crate::options::CompileOptions;
 use crate::output::CompileOutput;
 use crate::pipeline;
+use crate::settings::Settings;
 use crate::translations::Translations;
 use crate::vars::{GlobalVars, PlayerVars, VarRegistry};
 use ow_workshop_data::Lang;

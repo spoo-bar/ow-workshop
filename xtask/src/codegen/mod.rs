@@ -3,6 +3,7 @@
 mod api;
 mod enums;
 mod naming;
+mod setters;
 mod settings;
 mod signatures;
 mod tables;
@@ -41,6 +42,9 @@ pub fn run(data_dir: &Path, out_dir: &Path, api_dir: &Path, renames: &Path) -> R
         let tokens = api::generate(&data, &renames, part)?;
         fs::write(&path, format(tokens)?).map_err(|e| format!("{}: {e}", path.display()))?;
     }
+    let path = api_dir.join("settings.rs");
+    fs::write(&path, format(setters::generate(&data)?)?)
+        .map_err(|e| format!("{}: {e}", path.display()))?;
     Ok(())
 }
 

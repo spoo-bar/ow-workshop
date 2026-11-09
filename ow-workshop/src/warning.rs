@@ -46,6 +46,10 @@ pub enum Warning {
     Tags,
     /// A `<tx…>` tag whose texture id is not 14 hex digits after `C`.
     MalformattedTx,
+    /// The extensions cost more points than the settings leave.
+    ExtensionPoints,
+    /// A combo workshop setting whose default is not its first option, which then cannot be selected.
+    WorkshopSettingEnumDefault,
 }
 
 impl Warning {
@@ -74,6 +78,8 @@ impl Warning {
             Self::NotTotalFullwidth => "not-total-fullwidth",
             Self::Tags => "tags",
             Self::MalformattedTx => "malformatted-tx",
+            Self::ExtensionPoints => "extension-points",
+            Self::WorkshopSettingEnumDefault => "workshop-setting-enum-default",
         }
     }
 }

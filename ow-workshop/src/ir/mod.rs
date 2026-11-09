@@ -19,7 +19,6 @@ pub(crate) use expr::{
 pub(crate) use ids::{LabelId, SubId, VarId};
 pub use loc::Location;
 pub(crate) use program::Program;
-pub use program::Settings;
 pub(crate) use rule::{
     Cond, Event, MAX_SLOT, OptOverride, PlayerFilter, PlayerSlot, Rule, RuleError,
 };

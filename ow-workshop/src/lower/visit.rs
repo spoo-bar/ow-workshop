@@ -56,6 +56,21 @@ pub(crate) fn rewrite_expr(expr: &Expr, f: &mut impl FnMut(Expr) -> Expr) -> Exp
     f(Expr::new(kind, expr.loc()))
 }
 
+/// Like [`rewrite_expr`], but nodes for which `skip` holds are kept as they are, children and all.
+pub(crate) fn rewrite_expr_skipping(
+    expr: &Expr,
+    skip: &impl Fn(&Expr) -> bool,
+    f: &mut impl FnMut(Expr) -> Expr,
+) -> Expr {
+    if skip(expr) {
+        return expr.clone();
+    }
+    let kind = map_children(expr.kind(), &mut |child| {
+        rewrite_expr_skipping(child, skip, f)
+    });
+    f(Expr::new(kind, expr.loc()))
+}
+
 fn pair(g: &mut impl FnMut(&Expr) -> Expr, a: &Expr, b: &Expr) -> (Expr, Expr) {
     (g(a), g(b))
 }

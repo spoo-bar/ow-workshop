@@ -12,6 +12,7 @@ mod expr;
 mod keyword;
 mod number;
 mod rule;
+mod settings;
 mod stmt;
 mod string;
 mod summary;
@@ -50,8 +51,8 @@ fn indent(out: &mut impl Write, depth: usize) -> fmt::Result {
     Ok(())
 }
 
-/// Prints the whole program: the element-count summary (with `counts`), the variables and
-/// subroutines blocks, then the rules.
+/// Prints the whole program: the element-count summary (with `counts`), the settings block, the
+/// variables and subroutines blocks, then the rules.
 pub(crate) fn emit(
     program: &Program,
     lang: Lang,
@@ -66,6 +67,7 @@ pub(crate) fn emit(
     if let Some(counts) = counts {
         summary::write_summary(&mut out, cx, counts)?;
     }
+    settings::write_settings(&mut out, cx)?;
     if !program.options.exclude_variables_block {
         variables::write_variables(&mut out, cx)?;
         variables::write_subroutines(&mut out, cx)?;

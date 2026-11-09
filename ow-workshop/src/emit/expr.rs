@@ -40,6 +40,10 @@ pub(super) fn write_expr(out: &mut impl Write, cx: Cx<'_>, expr: &Expr) -> fmt::
         {
             write_localized(out, cx, args)
         }
+        K::Value {
+            id: ValueId::CreateWorkshopSettingHero,
+            args,
+        } => write_hero_setting(out, cx, args),
         K::Value { id, args } => {
             let args: Vec<&Expr> = args.iter().collect();
             write_name_and_args(out, cx, id.name(cx.lang), &args)
@@ -154,6 +158,24 @@ fn write_const(out: &mut impl Write, cx: Cx<'_>, c: ConstRef) -> fmt::Result {
         Some(id) => write!(out, "{}({name})", id.name(cx.lang)),
         None => out.write_str(name),
     }
+}
+
+/// `Workshop Setting Hero(..)`: its default is the bare hero name, not `Hero(..)`.
+fn write_hero_setting(out: &mut impl Write, cx: Cx<'_>, args: &[Expr]) -> fmt::Result {
+    out.write_str(ValueId::CreateWorkshopSettingHero.name(cx.lang))?;
+    out.write_char('(')?;
+    for (i, arg) in args.iter().enumerate() {
+        if i > 0 {
+            out.write_str(", ")?;
+        }
+        match arg.kind() {
+            ExprKind::Const(c) if i == 2 => {
+                out.write_str(constant_name(c.enum_name, c.key, cx.lang).ok_or(fmt::Error)?)?;
+            }
+            _ => write_expr(out, cx, arg)?,
+        }
+    }
+    out.write_char(')')
 }
 
 /// `String("phrase", a, b, c)`; trailing `Null` arguments are left out.

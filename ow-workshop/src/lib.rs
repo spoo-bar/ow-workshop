@@ -68,6 +68,7 @@ pub mod prelude;
 mod raycast;
 mod rule;
 mod rule_name;
+mod settings;
 mod subroutine;
 mod support;
 mod switch;
@@ -81,6 +82,7 @@ mod width;
 mod workshop;
 #[cfg(test)]
 mod workshop_enum;
+pub mod workshop_setting;
 mod wrap;
 
 pub use block::Block;
@@ -100,7 +102,7 @@ pub use event::{
 };
 pub use expr::{Expr, null, vect};
 pub use generated::api::*;
-pub use ir::{Diagnostic, Diagnostics, Location, Settings, Severity, TeamFilter, WarningSet};
+pub use ir::{Diagnostic, Diagnostics, Location, Severity, TeamFilter, WarningSet};
 pub use label::Label;
 pub use localized::{localized, localized_en};
 pub use math::{ceil, floor, round};
@@ -120,6 +122,10 @@ pub mod __private {
 pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
 pub use rule_name::{RuleMeta, default_rule_name};
+pub use settings::{
+    HeroSelection, HeroSettings, HeroTeam, Lobby, Main, MapRef, MapSelection, ModeKey,
+    ModeSettings, SettingValue, Settings, Values, WorkshopValue,
+};
 pub use subroutine::{Sub, SubroutineOptions};
 pub use switch::SwitchBuilder;
 pub use translate::{tr, tr_raw, tr_spectator};

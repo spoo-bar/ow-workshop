@@ -8,7 +8,7 @@ use ow_workshop_data::Lang;
 
 /// Runs every pass over a recorded program.
 pub(crate) fn run(
-    program: Program,
+    mut program: Program,
     mut diagnostics: Diagnostics,
     translations: Option<Translations>,
     lang: Lang,
@@ -16,6 +16,7 @@ pub(crate) fn run(
     if let Err(found) = program.validate() {
         diagnostics.0.extend(found.0);
     }
+    crate::settings::validate(&mut program.settings, &program.options, &mut diagnostics);
     crate::check::check_labels(&program.rules, &mut diagnostics);
     crate::check::check_nested_lambdas(&program.rules, &mut diagnostics);
     crate::check::check_multi_dim_indices(&program.rules, &mut diagnostics);
@@ -23,7 +24,6 @@ pub(crate) fn run(
     if diagnostics.has_errors() {
         return Err(diagnostics);
     }
-    let mut program = program;
     program.translations = translations;
     let options = program.options.clone();
     let mut ctx = Ctx::new(&options, lang, &mut diagnostics, &program);

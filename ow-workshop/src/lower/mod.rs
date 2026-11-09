@@ -26,6 +26,7 @@ pub(crate) mod tags;
 pub(crate) mod translate;
 pub(crate) mod varflags;
 pub(crate) mod visit;
+pub(crate) mod workshop_settings;
 
 use ow_workshop_data::Lang;
 
@@ -167,6 +168,7 @@ pub(crate) const PIPELINE: &[(&str, Pass)] = &[
     ("string modifiers", modifiers::apply),
     ("translated strings", translate::lower),
     ("localized strings", localized::lower),
+    ("workshop settings", workshop_settings::lower),
     ("normalize strings", strings::normalize),
     ("text tags", tags::lower),
     ("optimize", crate::opt::run),

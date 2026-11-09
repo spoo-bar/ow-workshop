@@ -17,6 +17,10 @@ pub use crate::output::CompileOutput;
 pub use crate::raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use crate::rule::{ConditionRef, Rule};
 pub use crate::rule_name::{RuleMeta, default_rule_name};
+pub use crate::settings::{
+    HeroSelection, HeroSettings, HeroTeam, Lobby, Main, MapRef, MapSelection, ModeKey,
+    ModeSettings, SettingValue, Settings, Values, WorkshopValue,
+};
 pub use crate::subroutine::{Sub, SubroutineOptions};
 pub use crate::switch::SwitchBuilder;
 pub use crate::translate::{tr, tr_raw, tr_spectator};
@@ -28,9 +32,8 @@ pub use crate::vars::{
 };
 pub use crate::width::{TextWidthError, spaces_for, spaces_for_str, visual_len};
 pub use crate::workshop::{Workshop, WorkshopExt};
-pub use crate::{
-    Diagnostic, Diagnostics, Lang, LocalizedString, Settings, TeamFilter, Texture, Warning,
-};
+pub use crate::workshop_setting;
+pub use crate::{Diagnostic, Diagnostics, Lang, LocalizedString, TeamFilter, Texture, Warning};
 pub use crate::{t, t_ctx};
 pub use ow_workshop_data::chars;
 pub use ow_workshop_macros::{GlobalVars, PlayerVars, WorkshopEnum, ws_fmt};
