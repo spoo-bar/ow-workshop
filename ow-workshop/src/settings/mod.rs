@@ -75,6 +75,11 @@ impl Settings {
         self
     }
 
+    /// Whether nothing is set, so no settings block is printed.
+    pub(crate) fn is_empty(&self) -> bool {
+        *self == Self::default()
+    }
+
     /// Whether the extension is on.
     pub(crate) fn has_extension(&self, extension: Extension) -> bool {
         self.extensions.contains(&extension)
