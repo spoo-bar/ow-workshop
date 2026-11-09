@@ -7,7 +7,8 @@ use crate::ir::{
 };
 use crate::lower::Ctx;
 use crate::lower::strings::unnumber;
-use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};
+use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr_skipping};
+use crate::lower::workshop_settings::is_workshop_setting;
 use crate::tags::{Item, TxFix, find_tags, holygrail_var, items, tx_fix};
 use crate::warning::Warning;
 
@@ -33,7 +34,7 @@ pub(crate) fn lower(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diag
         };
         let mut node = |e: Expr| lower_node(e, &mut env);
         for cond in &mut rule.conditions {
-            cond.expr = rewrite_expr(&cond.expr, &mut node);
+            cond.expr = rewrite_expr_skipping(&cond.expr, &is_setting, &mut node);
         }
         lower_block(&mut rule.body, &mut node);
     }
@@ -49,7 +50,7 @@ struct Env<'a, 'b> {
 
 fn lower_block(block: &mut Block, node: &mut impl FnMut(Expr) -> Expr) {
     for stmt in &mut block.stmts {
-        map_stmt_roots(stmt, &mut |e| rewrite_expr(e, node));
+        map_stmt_roots(stmt, &mut |e| rewrite_expr_skipping(e, &is_setting, node));
         for child in blocks_mut(stmt) {
             lower_block(child, node);
         }
@@ -79,6 +80,11 @@ fn lower_node(expr: Expr, env: &mut Env<'_, '_>) -> Expr {
         }
         _ => expr,
     }
+}
+
+/// Workshop settings keep their tags as plain text.
+fn is_setting(expr: &Expr) -> bool {
+    matches!(expr.kind(), ExprKind::Value { id, .. } if is_workshop_setting(*id))
 }
 
 /// Replaces the `<` of every tag with an argument holding `__holygrail__`.

@@ -32,6 +32,7 @@ pub use crate::vars::{
 };
 pub use crate::width::{TextWidthError, spaces_for, spaces_for_str, visual_len};
 pub use crate::workshop::{Workshop, WorkshopExt};
+pub use crate::workshop_setting;
 pub use crate::{Diagnostic, Diagnostics, Lang, LocalizedString, TeamFilter, Texture, Warning};
 pub use crate::{t, t_ctx};
 pub use ow_workshop_data::chars;

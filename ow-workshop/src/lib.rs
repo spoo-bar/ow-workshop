@@ -82,6 +82,7 @@ mod width;
 mod workshop;
 #[cfg(test)]
 mod workshop_enum;
+pub mod workshop_setting;
 mod wrap;
 
 pub use block::Block;

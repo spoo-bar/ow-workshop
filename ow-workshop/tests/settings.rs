@@ -4,7 +4,7 @@ mod common;
 
 use common::assert_workshop_code_eq;
 use ow_workshop::prelude::*;
-use ow_workshop_data::{Extension, Gamemode, Hero, Map};
+use ow_workshop_data::{Extension, Gamemode, Map};
 
 const SHION: &str = include_str!("fixtures/reference/shionSettings.txt");
 const EXTENSIONS: &str = include_str!("fixtures/reference/extensions.txt");
@@ -12,6 +12,8 @@ const EXTENSIONS: &str = include_str!("fixtures/reference/extensions.txt");
 #[derive(GlobalVars)]
 struct Globals {
     round: Global<Num>,
+    flag: Global<Bool>,
+    who: Global<Hero>,
 }
 
 struct Mod(Settings);
@@ -112,4 +114,85 @@ fn extension_points_are_a_warning() {
     let out = Mod(settings).compile(Lang::EnUs).expect("compiles");
     let codes: Vec<_> = out.warnings.iter().map(|w| w.code).collect();
     assert_eq!(codes, ["extension-points"]);
+}
+
+mod workshop_values {
+    use super::*;
+
+    struct Values;
+
+    impl Workshop for Values {
+        type Globals = Globals;
+        type Players = ();
+
+        fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
+            ws.rule("workshop settings", OngoingGlobal, |r, _| {
+                r.actions(|b| {
+                    b.set(g.flag, workshop_setting::toggle("", "boolean", true));
+                    b.set(g.round, workshop_setting::int("int", "int", 3));
+                    b.set(
+                        g.round,
+                        workshop_setting::int("int", "unsigned int", 3).unsigned(),
+                    );
+                    b.set(
+                        g.round,
+                        workshop_setting::real("float", "float<2.5;19>", 3.5).range(2.5..=19.0),
+                    );
+                    b.set(g.who, workshop_setting::hero("hero", "hero", Hero::Ana));
+                    b.set(
+                        g.who,
+                        workshop_setting::hero("hero", "hero", Hero::WreckingBall).sort(3),
+                    );
+                    b.set(
+                        g.round,
+                        workshop_setting::combo("enum", "enum", ["a", "b\nc\nd"], 0),
+                    );
+                    b.set(
+                        g.round,
+                        workshop_setting::combo("<txC00000000008E02>", "{x}", ["a:b"], 0),
+                    );
+                });
+            });
+        }
+    }
+
+    #[test]
+    fn matches_the_reference_lines() {
+        let code = Values.compile(Lang::EnUs).expect("compiles").code;
+        for line in [
+            r#"Workshop Setting Toggle(Custom String("　"), Custom String("boolean"), True, 0)"#,
+            r#"Workshop Setting Integer(Custom String("int"), Custom String("int"), 3, -999999999999, 999999999999, 0)"#,
+            r#"Workshop Setting Integer(Custom String("int"), Custom String("unsigned int"), 3, 0, 999999999999, 0)"#,
+            "Workshop Setting Real(Custom String(\"float\"), Custom String(\"float<2.5\u{E003B}19>\"), 3.5, 2.5, 19, 0)",
+            r#"Workshop Setting Hero(Custom String("hero"), Custom String("hero"), Ana, 0)"#,
+            "Workshop Setting Hero(Custom String(\"hero\"), Custom String(\"hero\u{1}\"), Wrecking Ball, 3)",
+            r#"Workshop Setting Combo(Custom String("enum"), Custom String("enum"), 0, Array(Custom String("a"), Custom String("b\nc\nd")), 0)"#,
+            "Workshop Setting Combo(Custom String(\"<txC00000000008E02>\"), Custom String(\"\u{E007B}x\u{E007D}\"), 0, Array(Custom String(\"a\u{E003A}b\")), 0)",
+        ] {
+            assert!(code.contains(line), "missing {line}\nin\n{code}");
+        }
+    }
+
+    #[test]
+    fn a_hundred_and_twenty_nine_settings_fail() {
+        struct Many;
+
+        impl Workshop for Many {
+            type Globals = Globals;
+            type Players = ();
+
+            fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
+                ws.rule("many", OngoingGlobal, |r, _| {
+                    r.actions(|b| {
+                        for i in 0..129 {
+                            b.set(g.round, workshop_setting::int("c", &format!("n{i}"), 0));
+                        }
+                    });
+                });
+            }
+        }
+
+        let err = Many.compile(Lang::EnUs).expect_err("too many");
+        assert!(err.0.iter().any(|d| d.code == "too-many-workshop-settings"));
+    }
 }

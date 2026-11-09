@@ -48,6 +48,8 @@ pub enum Warning {
     MalformattedTx,
     /// The extensions cost more points than the settings leave.
     ExtensionPoints,
+    /// A combo workshop setting whose default is not its first option, which then cannot be selected.
+    WorkshopSettingEnumDefault,
 }
 
 impl Warning {
@@ -77,6 +79,7 @@ impl Warning {
             Self::Tags => "tags",
             Self::MalformattedTx => "malformatted-tx",
             Self::ExtensionPoints => "extension-points",
+            Self::WorkshopSettingEnumDefault => "workshop-setting-enum-default",
         }
     }
 }
