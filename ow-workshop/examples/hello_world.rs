@@ -2,6 +2,7 @@
 #![cfg_attr(target_arch = "wasm32", no_main)]
 
 use ow_workshop::prelude::*;
+use ow_workshop::{Gamemode, Map};
 
 pub struct HelloWorld;
 
@@ -31,7 +32,11 @@ impl Workshop for HelloWorld {
     }
 
     fn settings(&self) -> Settings {
-        Settings::default().with_mode(ModeKey::General, ModeSettings::default())
+        let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
+        Settings::default().with_mode(
+            ModeKey::Mode(Gamemode::TeamDeathmatch),
+            ModeSettings::default().maps(maps),
+        )
     }
 }
 
