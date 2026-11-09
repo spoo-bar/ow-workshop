@@ -7,6 +7,7 @@
 )]
 
 use ow_workshop_data::ValueId;
+#[cfg(not(target_arch = "wasm32"))]
 use proptest::prelude::*;
 
 use super::*;
@@ -320,6 +321,8 @@ fn errors() {
     );
 }
 
+// `proptest` is a native-only dev-dependency.
+#[cfg(not(target_arch = "wasm32"))]
 proptest! {
     #[test]
     fn numbers_decode_within_a_thousandth(values in prop::collection::vec(-49_000.0f64..49_000.0, 1..40)) {
