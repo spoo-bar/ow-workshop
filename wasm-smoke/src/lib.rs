@@ -1,4 +1,4 @@
-//! Exports `compile(lang) -> String` for the hello_world mod. CI builds it for
+//! Exports `compile(lang) -> String` for the `hello_world` mod. CI builds it for
 //! `wasm32-unknown-unknown`, runs `wasm-opt -Oz` and reports the size.
 
 use ow_workshop::prelude::*;
