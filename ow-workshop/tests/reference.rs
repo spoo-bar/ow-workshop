@@ -45,7 +45,6 @@ stub!(compression, "compression", "#101");
 stub!(customgamesettings, "customGameSettings", "#101");
 stub!(enums, "enums", "#101");
 stub!(extensions, "extensions", "#101");
-stub!(functions, "functions", "#101");
 stub!(gotos, "gotos", "#101");
 stub!(loops, "loops", "#101");
 stub!(lowercase, "lowercase", "#101");
@@ -2071,4 +2070,440 @@ fn arrays() {
     };
     assert_eq!(printed(&output), 11);
     assert_eq!(printed(fixture), 11);
+}
+
+// functions: `A` is an array (it is appended to), `B` a number (it is chased), the rest hold
+// anything.
+#[derive(GlobalVars)]
+struct FnGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Array<Any>>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Any>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Any>,
+    #[ow(name = "E", index = 4)]
+    e: Global<Any>,
+    #[ow(name = "X", index = 23)]
+    x: Global<Any>,
+    #[ow(name = "Y", index = 24)]
+    y: Global<Any>,
+    #[ow(name = "Z", index = 25)]
+    z: Global<Any>,
+}
+
+#[derive(PlayerVars)]
+struct FnPlayers {
+    #[ow(name = "B", index = 1)]
+    b: PlayerVar<Num>,
+}
+
+struct Functions;
+
+impl Workshop for Functions {
+    type Globals = FnGlobals;
+    type Players = FnPlayers;
+
+    fn build(&self, ws: &mut Builder, g: &FnGlobals, p: &FnPlayers) {
+        let (a, b, c, d, e) = (
+            || g.a.get().erase(),
+            || g.b.get().erase(),
+            || g.c.get(),
+            || g.d.get(),
+            || g.e.get(),
+        );
+        // Stores any value in `A`.
+        macro_rules! sa {
+            ($x:expr, $v:expr) => {
+                $x.set(g.a, $v.erase().cast::<Array<Any>>())
+            };
+        }
+        // Reads a value as another type.
+        macro_rules! ty {
+            ($t:ty, $v:expr) => {
+                $v.erase().cast::<$t>()
+            };
+        }
+        let team_args = |t: Expr<Any>| ty!(Team, t);
+        ws.rule("function", OngoingEachPlayer, |r, ev| {
+            let me = ev.event_player();
+            let hud = |value: i32, color: Color| HudArgs {
+                location: HudPosition::Left.into(),
+                sort_order: n(value),
+                color: color.into(),
+                reevaluation: HudReeval::VisibilityAndString.into(),
+                spec_visibility: SpecVisibility::Always.into(),
+                ..HudArgs::default()
+            };
+            r.actions(|x| {
+                let cast = |include: bool| {
+                    ray_cast_with(
+                        ty!(Position, b()),
+                        ty!(Position, c()),
+                        RayCastArgs {
+                            players_to_include: ty!(Array<Player>, d()),
+                            players_to_exclude: ty!(Array<Player>, e()),
+                            include_player_owned_objects: include.into(),
+                        },
+                    )
+                };
+                sa!(x, cast(true).hit_player());
+                sa!(x, cast(false).hit_position());
+                sa!(x, cast(true).hit_normal());
+                sa!(x, math::sign(-3));
+                sa!(
+                    x,
+                    ty!(Str, b()).slice_with(
+                        2,
+                        SubstringArgs {
+                            substring_length: n(4)
+                        }
+                    )
+                );
+
+                x.chase_over_time(
+                    me.var(p.b),
+                    9999,
+                    3,
+                    ChaseTimeReeval::DestinationAndDuration,
+                );
+                x.chase_over_time(
+                    me.var(p.b),
+                    9999,
+                    3,
+                    ChaseTimeReeval::DestinationAndDuration,
+                );
+                x.chase_at_rate(me.var(p.b), 9999, 3, ChaseRateReeval::DestinationAndRate);
+                x.chase_over_time(g.b, 9999, 1, ChaseTimeReeval::DestinationAndDuration);
+                x.chase_at_rate(g.b, 99999, 1, ChaseRateReeval::DestinationAndRate);
+
+                x.hud_header_with("test", hud(1, Color::Red));
+                x.hud_subtext_with("test", hud(1, Color::Red));
+                x.hud_subheader_with("test", hud(1, Color::Red));
+                x.hud_text_with(HudTextArgs {
+                    visible_to: null(),
+                    header: Expr::<Str>::from("azer").erase(),
+                    subheader: Expr::<Str>::from("dqsf").erase(),
+                    text: Expr::<Str>::from("fdsq").erase(),
+                    location: HudPosition::Left.into(),
+                    sort_order: n(-1),
+                    header_color: Color::Red.into(),
+                    subheader_color: Color::White.into(),
+                    text_color: Color::Yellow.into(),
+                    reevaluation: HudReeval::VisibilitySortOrderAndString.into(),
+                    spec_visibility: SpecVisibility::Never.into(),
+                });
+                x.wait(0);
+                sa!(x, closest_player(ty!(Position, b()), team_args(c())));
+                sa!(
+                    x,
+                    real_closest_player_with(
+                        ty!(Position, b()),
+                        RealPlayersArgs {
+                            team: team_args(c())
+                        }
+                    )
+                    .expect("literal center")
+                );
+                sa!(
+                    x,
+                    living_players_with(GetLivingPlayersArgs {
+                        team: team_args(c())
+                    })
+                    .filter(|pl, _| pl.has_spawned())
+                    .sorted_by(|pl, _| distance(ty!(Position, pl), ty!(Position, b())))
+                    .first()
+                );
+                let spawned = |team: Expr<Any>| {
+                    living_players_with(GetLivingPlayersArgs {
+                        team: team_args(team),
+                    })
+                    .filter(|pl, _| pl.has_spawned())
+                };
+                sa!(x, farthest_player(ty!(Position, b()), team_args(c())));
+                sa!(
+                    x,
+                    real_farthest_player_with(
+                        ty!(Position, b()),
+                        RealPlayersArgs {
+                            team: team_args(c())
+                        }
+                    )
+                    .expect("literal center")
+                );
+                sa!(
+                    x,
+                    spawned(c())
+                        .sorted_by(|pl, _| -distance(ty!(Position, pl), ty!(Position, b())))
+                        .first()
+                );
+                // The real version: spawned, living players other than `A`, by angle to `A`'s view.
+                let reticle = || {
+                    let me = ty!(Player, a());
+                    living_players_with(GetLivingPlayersArgs {
+                        team: team_args(b()),
+                    })
+                    .filter(|pl, _| pl.has_spawned() & pl.erase().ne(a()))
+                    .sorted_by(move |pl, _| {
+                        angle_between_vectors(
+                            me.facing_direction(),
+                            ty!(Vector, pl) - ty!(Vector, me.eye_position()),
+                        )
+                    })
+                    .first()
+                };
+                sa!(
+                    x,
+                    ty!(Player, a()).player_closest_to_reticle(team_args(b()))
+                );
+                sa!(x, reticle());
+                sa!(x, reticle());
+                sa!(
+                    x,
+                    math::line_intersects_sphere(
+                        ty!(Position, b()),
+                        ty!(Direction, random::choice(ty!(Array<Any>, c()))),
+                        ty!(Position, d()),
+                        ty!(Num, random::choice(ty!(Array<Any>, e()))),
+                    )
+                );
+                x.comment("Color.YELLOW");
+                sa!(x, rgb(255, 255, 0));
+                sa!(x, current_map());
+            });
+        });
+        ws.rule("beams", OngoingGlobal, |r, _| {
+            let beam = |kind: Beam, start: Expr<Position>, end: Expr<Position>| {
+                let opts = CreateBeamArgs {
+                    color: Color::White.into(),
+                    reevaluation: EffectReeval::VisibilityPositionAndRadius.into(),
+                };
+                (kind, start, end, opts)
+            };
+            let [va, vb, vc, vd, vz] = [a(), b(), c(), d(), g.z.get()].map(|v| ty!(Num, v));
+            let line = |first: Expr<Num>| {
+                (
+                    vect(first, vb.clone(), vc.clone()),
+                    vect(va.clone(), vd.clone(), vc.clone()),
+                )
+            };
+            r.actions(|x| {
+                let all = ty!(Players, a());
+                let mut create = |(kind, start, end, opts): (
+                    Beam,
+                    Expr<Position>,
+                    Expr<Position>,
+                    CreateBeamArgs,
+                )| {
+                    x.create_beam_with(all.clone(), kind, start, end, opts);
+                };
+                create(beam(Beam::Grapple, ty!(Position, b()), ty!(Position, c())));
+                let (s1, e1) = line(va.clone());
+                create(beam(Beam::Grapple, ty!(Position, s1), ty!(Position, e1)));
+                let (s2, e2) = line(vz.clone());
+                create(beam(Beam::Grapple, ty!(Position, s2), ty!(Position, e2)));
+                for kind in [Beam::Good, Beam::Good, Beam::Bad] {
+                    let (s, e) = line(va.clone());
+                    create(beam(kind, ty!(Position, s), ty!(Position, e)));
+                }
+                let (s, _) = line(va.clone());
+                let end = vect(va.clone(), vd.clone(), vz.clone());
+                create(beam(Beam::Bad, ty!(Position, s), ty!(Position, end)));
+            });
+        });
+        ws.rule("vectors", OngoingGlobal, |r, _| {
+            let [vb, vc, vd] = [b(), c(), d()].map(|v| ty!(Num, v));
+            r.actions(|x| {
+                sa!(x, vect(vb.clone(), vc.clone(), vd.clone()));
+                sa!(x, ty!(Vector, b()).x());
+                for (value, note) in [
+                    (vect(vb.clone(), vc.clone(), vd.clone()).x(), "B"),
+                    (vect(vb.clone(), vc.clone(), vd.clone()).y(), "C"),
+                    (vect(vb.clone(), vc.clone(), vd.clone()).z(), "D"),
+                ] {
+                    x.comment(note);
+                    sa!(x, value);
+                }
+                x.comment("Vector.UP");
+                sa!(x, vect(0, 1, 0));
+            });
+        });
+        ws.rule("optimizations with literals", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                macro_rules! app {
+                    ($note:literal, $v:expr) => {{
+                        x.comment($note);
+                        x.append(g.a, $v.erase());
+                    }};
+                }
+                let v = |a: i32, b: i32, c: i32| vect(a, b, c);
+                app!("4", math::ceil(3.3));
+                app!("3", math::floor(3.7));
+                app!("4", math::round(3.5));
+                app!("3", math::round(2.5));
+                app!("5", abs(-5));
+                app!("1.012", acos(0.53));
+                app!("3.1415", acos(-3));
+                app!("113.633", acos_deg(-0.4));
+                app!("-0.302", asin(-0.3));
+                app!("36.865", asin_deg(0.6));
+                app!("1.584", atan2(920, -12));
+                app!("140.057", atan2_deg(103, -123));
+                app!("0.996", cos(490));
+                app!("-0.934", cos_deg(921));
+                app!(
+                    "vect(3951, -3165, -6406)",
+                    cross_product(v(23, 53, -12), v(120, -2, 75))
+                );
+                app!(
+                    "vect(-0.182, 0.273, 0.945)",
+                    direction_towards(v(129, 23, -120), v(-75, 329, 938))
+                );
+                app!("1014.740", distance(v(329, -12, 643), v(-23, -125, -302)));
+                app!("43498", dot_product(v(129, -35, 239), v(-12, 345, 239)));
+                app!("Team 2", opposite_team(Team::One));
+                app!("Team 1", opposite_team(Team::Two));
+                app!("All Teams", opposite_team(Team::All));
+                app!("0", len(items(vec![])));
+                app!("3", len(items(vec![b(), c(), d()])));
+                app!("4", math::log(10000, 10));
+                app!("13.287", math::log(10000, 2));
+                app!("9.210", math::ln(10000));
+                app!("32", max(5, 32));
+                app!("-31", min(-31, 6));
+                app!("vect(-0.017, 0.433, 0.901)", normalize(v(-13, 324, 674)));
+                app!("0.704", sin(19.63));
+                app!("-0.218", sin_deg(-12.6));
+                app!("0", sqrt(-4));
+                app!("9.656", sqrt(93.23));
+                app!("1.364", tan(912));
+                app!("-36.648", tan_deg(91.563));
+                app!(
+                    "vect(342, -88, 68)",
+                    vector_towards(v(-123, 53, 64), v(219, -35, 132))
+                );
+            });
+        });
+        ws.rule(
+            "optimizations for function combinations",
+            OngoingGlobal,
+            |r, _| {
+                let team = || ty!(Team, b());
+                let on_team = || all_players_with(GetPlayersArgs { team: team() });
+                r.actions(|x| {
+                    x.comment("directionTowards(x, y)");
+                    sa!(
+                        x,
+                        normalize(vector_towards(
+                            ty!(Position, g.x.get()),
+                            ty!(Position, g.y.get())
+                        ))
+                    );
+                    x.comment("is dead(B)");
+                    sa!(x, !ty!(Player, b()).is_alive());
+                    x.comment("is alive(B)");
+                    sa!(x, !ty!(Player, b()).is_dead());
+                    x.comment("getPlayersOnHero(C, B)");
+                    sa!(x, on_team().filter(|pl, _| pl.hero().eq(ty!(Hero, c()))));
+                    x.comment("getPlayersOnObjective(B)");
+                    sa!(x, on_team().filter(|pl, _| pl.is_on_objective()));
+                    x.comment("getPlayersNotOnObjective(B)");
+                    sa!(x, on_team().filter(|pl, _| !pl.is_on_objective()));
+                    x.comment("getLivingPlayers(B)");
+                    sa!(x, on_team().filter(|pl, _| pl.is_alive()));
+                    x.comment("getDeadPlayers(B)");
+                    sa!(x, on_team().filter(|pl, _| pl.is_dead()));
+                    x.comment("getNumberOfPlayers(B)");
+                    sa!(x, on_team().len());
+                    x.comment("getNumberOfPlayersOnObjective(B)");
+                    sa!(
+                        x,
+                        players_on_objective_with(GetPlayersOnObjectiveArgs { team: team() }).len()
+                    );
+                    x.comment("getNumberOfHeroes(B, C)");
+                    sa!(
+                        x,
+                        players_on_hero_with(
+                            ty!(Hero, b()),
+                            GetPlayersOnHeroArgs {
+                                team: ty!(Team, c())
+                            }
+                        )
+                        .len()
+                    );
+                    x.comment("getNumberOfLivingPlayers(B)");
+                    sa!(
+                        x,
+                        living_players_with(GetLivingPlayersArgs { team: team() }).len()
+                    );
+                    x.comment("getNumberOfDeadPlayers(B)");
+                    sa!(
+                        x,
+                        dead_players_with(GetDeadPlayersArgs { team: team() }).len()
+                    );
+                });
+            },
+        );
+        ws.rule("default arguments", OngoingGlobal, |r, _| {
+            let hud = |visible: Option<Expr<Players>>| {
+                let mut args = HudArgs::default();
+                if let Some(players) = visible {
+                    args.visible_to = players;
+                }
+                args
+            };
+            r.actions(|x| {
+                x.hud_header_with(1234, hud(None));
+                x.hud_header_with(1234, hud(Some(ty!(Players, a()))));
+                x.hud_header_with(1234, hud(Some(ty!(Players, a()))));
+                x.hud_header_with(
+                    1234,
+                    HudArgs {
+                        location: HudPosition::Left.into(),
+                        sort_order: n(0),
+                        color: Color::White.into(),
+                        reevaluation: HudReeval::VisibilitySortOrderStringAndColor.into(),
+                        spec_visibility: SpecVisibility::Default.into(),
+                        ..hud(Some(ty!(Players, a())))
+                    },
+                );
+                x.wait(0);
+                x.start_facing(ty!(Players, c()), vect(1, 2, 3));
+                x.start_facing_with(
+                    ty!(Players, c()),
+                    vect(1, 2, 3),
+                    StartFacingArgs {
+                        relativity: Relativity::ToPlayer.into(),
+                        ..StartFacingArgs::default()
+                    },
+                );
+                x.set(g.d, ty!(Player, d()).ammo());
+                x.set(g.e, ArrayExt::slice(&ty!(Array<Any>, e()), 5));
+                x.set(g.e, ty!(Array<Any>, e()).slice(5, 7));
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn functions() {
+    // Allowed difference: the reference folds `acosDeg`, `asinDeg` and `atan2Deg` of a literal
+    // to values that are not degrees (0.03, 0.01, 0.04), contradicting its own comments
+    // (about 113.6, 36.9 and 140.1). The real degrees are expected here.
+    check_with(
+        &Functions,
+        include_str!("fixtures/reference/functions.txt"),
+        &[
+            ("0.034597891672104", "113.57817847820183"),
+            ("0.011231213088677", "36.86989764584402"),
+            ("0.042663877670413", "140.05724853255916"),
+        ],
+    );
 }

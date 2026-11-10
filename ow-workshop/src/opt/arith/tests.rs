@@ -1,5 +1,6 @@
 use ow_workshop_data::ValueId;
 
+use crate::ir::{Expr, ExprKind};
 use crate::lower::testutil::num;
 use crate::opt::testutil::*;
 
@@ -209,4 +210,12 @@ fn negate_vectors_and_the_rest() {
     assert_eq!(speed(&neg(v3(1.0, -2.0, 0.0))), "V(-1, 2, 0)");
     assert_eq!(speed(&neg(g(0))), "(-1 * g0)");
     assert_eq!(speed(&neg(modulo(g(0), num(2.0)))), "(-1 * (g0 % 2))");
+}
+
+#[test]
+fn a_component_of_a_vector_is_that_part() {
+    let v = || Expr::new(ExprKind::Vector([g(0), g(1), g(2)]), None);
+    assert_eq!(speed(&val(ValueId::XComponentOf, vec![v()])), "g0");
+    assert_eq!(speed(&val(ValueId::YComponentOf, vec![v()])), "g1");
+    assert_eq!(speed(&val(ValueId::ZComponentOf, vec![v()])), "g2");
 }
