@@ -112,8 +112,11 @@ impl Block {
     ///
     /// Arrays are spelled out with `array_to_string`. With text tags on, the source and the
     /// value are colored.
+    ///
+    /// A debug-only call: a release build leaves it out (see [`Block::debug_only`]).
     #[track_caller]
     pub fn debug_value(&mut self, source: &str, value: impl DebugValue) {
+        let start = self.recorded();
         let text: Expr<Str> = Expr::from_ir(ir::Expr::here(ExprKind::Str(StrExpr::Custom {
             tokens: template(source, self.tags),
             args: vec![value.into_debug().into_ir()],
@@ -123,6 +126,7 @@ impl Block {
             ..HudArgs::default()
         };
         self.hud_subheader_with(text.case_sensitive(), opts);
+        self.mark_debug_only(start);
     }
 }
 

@@ -186,6 +186,9 @@ pub(crate) enum StmtKind {
         /// How many cases precede the default; it may sit anywhere among them.
         default_at: usize,
     },
+    /// Statements that exist only in a debug build: removed by the first lowering pass when
+    /// debug is off (or `keep_debug_calls` is), otherwise replaced by their statements.
+    DebugOnly(Block),
     /// Leaves the innermost loop or switch; removed by lowering.
     Break,
     /// Jumps to the next loop iteration; removed by lowering.
@@ -242,7 +245,8 @@ impl Stmt {
                 .collect(),
             StmtKind::While { body, .. }
             | StmtKind::For { body, .. }
-            | StmtKind::DoWhile { body, .. } => vec![body],
+            | StmtKind::DoWhile { body, .. }
+            | StmtKind::DebugOnly(body) => vec![body],
             StmtKind::Switch { cases, default, .. } => {
                 cases.iter().map(|(_, b)| b).chain(default).collect()
             }

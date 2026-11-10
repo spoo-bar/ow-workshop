@@ -141,6 +141,7 @@ pub(super) fn write_stmt(out: &mut impl Write, cx: Cx<'_>, stmt: &Stmt) -> fmt::
         | StmtKind::Pass
         | StmtKind::Comment(_)
         | StmtKind::Switch { .. }
+        | StmtKind::DebugOnly(_)
         | StmtKind::Continue
         | StmtKind::DoWhile { .. } => Err(fmt::Error),
     }

@@ -12,6 +12,7 @@
 pub(crate) mod checks;
 pub(crate) mod client_args;
 pub(crate) mod compression;
+pub(crate) mod debug_calls;
 pub(crate) mod debug_panels;
 pub(crate) mod dicts;
 pub(crate) mod functions;
@@ -154,6 +155,7 @@ pub(crate) fn noop(_: &mut Program, _: &mut Ctx<'_>) -> Result<(), Diagnostics> 
 
 /// The passes run before emitting, in order.
 pub(crate) const PIPELINE: &[(&str, Pass)] = &[
+    ("debug-only statements", debug_calls::strip),
     ("optimizer variables", crate::opt::declare_variables),
     ("compression variables", compression::declare_variables),
     ("generated rules", generated::add_rules),
