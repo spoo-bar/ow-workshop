@@ -29,5 +29,6 @@ fn the_phrase_is_printed_in_the_output_language() {
 #[test]
 fn language_neutral_phrases_become_custom_strings() {
     let en = Mode.compile(Lang::EnUs).expect("compiles").code;
-    assert!(en.contains("Custom String(\"{0} - {1}\", 1, 2)"), "{en}");
+    // The literal arguments fold into the text.
+    assert!(en.contains("Custom String(\"1 - 2\")"), "{en}");
 }
