@@ -102,6 +102,7 @@ mod control;
 mod count;
 mod current_map;
 mod debug;
+mod debug_log;
 mod dict;
 mod emit;
 mod event;
@@ -158,6 +159,7 @@ pub use compress::{
 };
 pub use control::{ForRange, IfBuilder, IntoForRange, RangeStep, range, rule_condition};
 pub use debug::DebugValue;
+pub use debug_log::{DebugLog, DebugRule, DebugSubroutine, DebugTotals, DebugVariable};
 pub use dict::{Dict, dict};
 pub use event::{
     Ev, EventType, HasDamage, HasDamageOrHealing, HasEventPlayer, HasHealing, OngoingEachPlayer,

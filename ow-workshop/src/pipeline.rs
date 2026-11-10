@@ -27,6 +27,9 @@ pub(crate) fn run(
             let mut warnings = Diagnostics(std::mem::take(&mut output.warnings));
             warnings.finish();
             output.warnings = warnings.0;
+            if let Some(log) = &mut output.debug_log {
+                log.warnings.clone_from(&output.warnings);
+            }
             Ok(output)
         }
         Err(mut found) => {
@@ -204,10 +207,16 @@ fn compile_once(
     if options.debug.resolve().is_some() && !code.is_empty() {
         code.insert_str(0, DEBUG_HEADER);
     }
+    let debug_log = options
+        .debug
+        .resolve()
+        .filter(|debug| debug.log)
+        .map(|_| crate::debug_log::build(&program, &counts));
     Ok(CompileOutput {
         code,
         warnings: diagnostics.0,
         element_count,
         catalog: program.translations.take().map(|t| t.catalog),
+        debug_log,
     })
 }

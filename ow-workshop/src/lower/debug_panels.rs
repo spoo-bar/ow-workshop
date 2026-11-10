@@ -14,6 +14,9 @@ use crate::options::DebugOptions;
 use crate::ty::{Any, Array, Button, Color, HudPosition, HudReeval, Player, SpecVisibility, Str};
 use crate::workshop_debug::{DebugField, Scope};
 
+/// The names of the rules the panels are in.
+pub(crate) const PANEL_RULES: [&str; 2] = ["Debug: globals", "Debug: players"];
+
 /// Sort order of the global panel's fields: `GLOBAL_BASE + index`.
 const GLOBAL_BASE: i32 = -1000;
 /// Sort order of the player panel's fields: `PLAYER_BASE + index`.
@@ -126,7 +129,7 @@ pub(crate) fn rules(program: &Program, options: DebugOptions, plan: PanelPlan) -
         Vec::new()
     };
     if !globals.is_empty() {
-        ws.rule("Debug: globals", OngoingGlobal, |r, _| {
+        ws.rule(PANEL_RULES[0], OngoingGlobal, |r, _| {
             r.actions(|b| {
                 b.hud_text_with(hud(
                     global_audience(options.toggle),
@@ -154,7 +157,7 @@ pub(crate) fn rules(program: &Program, options: DebugOptions, plan: PanelPlan) -
         Vec::new()
     };
     if !players.is_empty() {
-        ws.rule("Debug: players", OngoingEachPlayer, |r, ev| {
+        ws.rule(PANEL_RULES[1], OngoingEachPlayer, |r, ev| {
             let me = ev.event_player();
             let audience = || match options.toggle {
                 None => Expr::<Array<Player>>::from_ir(me.ir().clone()),

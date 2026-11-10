@@ -82,6 +82,9 @@ macro_rules! main {
             };
             match ($mode).compile_with_debug(lang, debug) {
                 ::core::result::Result::Ok(output) => {
+                    if let ::core::option::Option::Some(log) = &output.debug_log {
+                        ::std::eprintln!("{log}");
+                    }
                     for warning in &output.warnings {
                         ::std::eprintln!("{warning}");
                     }

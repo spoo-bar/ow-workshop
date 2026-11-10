@@ -59,3 +59,25 @@ fn custom_settings() {
     assert!(code.contains("Manche {0} sur {1}"), "{code}");
     check("custom_settings", &code);
 }
+
+/// The debug log of a debug build, with the examples' source locations.
+fn log(mode: &impl Workshop) -> String {
+    let out = mode
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::On(DebugOptions::default())))
+        .expect("compiles");
+    // The examples are included from `tests/`, which shows in the paths of their source.
+    out.debug_log
+        .expect("a log")
+        .to_string()
+        .replace("/tests/../", "/")
+}
+
+#[test]
+fn hello_world_debug_log() {
+    insta::assert_snapshot!(log(&hello_world::HelloWorld));
+}
+
+#[test]
+fn zombie_survival_debug_log() {
+    insta::assert_snapshot!(log(&zombie_survival::ZombieSurvival { waves: 5 }));
+}
