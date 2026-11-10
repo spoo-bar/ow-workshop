@@ -76,3 +76,19 @@ fn the_variable_is_internal_so_it_takes_the_highest_index() {
     let code = compile(true);
     assert!(code.contains("127: __compressionAlphabet__"), "{code}");
 }
+
+#[test]
+fn the_alphabet_keeps_its_carriage_return_digit() {
+    // A carriage return is one of the 100 digits; string normalization must not drop it.
+    let code = Mode {
+        alphabet_variable: false,
+    }
+    .compile(Lang::EnUs)
+    .expect("compiles")
+    .code;
+    // The text prints a carriage return as `\r`, between the form feed and shift-out digits.
+    assert!(
+        code.contains("\u{c}\\r\u{e}"),
+        "the alphabet lost its carriage return"
+    );
+}

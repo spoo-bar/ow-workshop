@@ -108,6 +108,7 @@ pub(super) fn write_stmt(out: &mut impl Write, cx: Cx<'_>, stmt: &Stmt) -> fmt::
         StmtKind::AbortIf(cond) => write_with(out, cx, ActionId::AbortIf, &[cond]),
         StmtKind::AbortIfConditionTrue => out.write_str(name(ActionId::AbortIfConditionIsTrue)),
         StmtKind::AbortIfConditionFalse => out.write_str(name(ActionId::AbortIfConditionIsFalse)),
+        StmtKind::Break => out.write_str(name(ActionId::Break)),
         StmtKind::Loop => out.write_str(name(ActionId::Loop)),
         StmtKind::LoopIf(cond) => write_with(out, cx, ActionId::LoopIf, &[cond]),
         StmtKind::LoopIfConditionTrue => out.write_str(name(ActionId::LoopIfConditionIsTrue)),
@@ -140,7 +141,6 @@ pub(super) fn write_stmt(out: &mut impl Write, cx: Cx<'_>, stmt: &Stmt) -> fmt::
         | StmtKind::Pass
         | StmtKind::Comment(_)
         | StmtKind::Switch { .. }
-        | StmtKind::Break
         | StmtKind::Continue
         | StmtKind::DoWhile { .. } => Err(fmt::Error),
     }

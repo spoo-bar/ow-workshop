@@ -10,6 +10,7 @@ pub use crate::compress::{
     CompressError, compress, compressed, decompress_numbers, decompress_vectors,
 };
 pub use crate::control::{ForRange, IfBuilder, RangeStep, range, rule_condition};
+pub use crate::current_map::current_map;
 pub use crate::debug;
 pub use crate::dict::{Dict, dict};
 pub use crate::event::*;

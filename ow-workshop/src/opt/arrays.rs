@@ -45,8 +45,8 @@ pub(super) fn rule(e: &Expr, env: &mut Env<'_, '_>) -> Option<Expr> {
             (V::Len, [a]) => count_of(e, a),
             (V::FilteredArray, [a, cond]) => filtered(e, a, cond, env.scope.size()),
             (V::MappedArray, [a, f]) => is_elem(f).then(|| a.clone()),
-            (V::All, [a, cond]) => all(e, a, cond),
-            (V::Any, [a, cond]) => any(e, a, cond),
+            (V::All, [a, cond]) => fused(e, V::All, a, cond).or_else(|| all(e, a, cond)),
+            (V::Any, [a, cond]) => fused(e, V::Any, a, cond).or_else(|| any(e, a, cond)),
             (V::SortedArray, [a, key]) => sorted(e, a, key),
             _ => None,
         },
@@ -178,7 +178,28 @@ fn exclude(e: &Expr, a: &Expr, v: &Expr, strict: bool) -> Option<Expr> {
     if all_literal {
         return Some(array(kept, e));
     }
-    (kept.len() < items.len()).then(|| value(V::Exclude, vec![array(kept, a), v.clone()], e.loc()))
+    // A literal that no remaining item can equal removes nothing: leave it out of the list.
+    let useful = |m: &&Expr| {
+        !(is_literal(m, strict)
+            && kept
+                .iter()
+                .all(|k| is_literal(k, strict) && !always_equal(k, m)))
+    };
+    let members: Option<Vec<Expr>> =
+        array_items(v).map(|ms| ms.iter().filter(useful).cloned().collect());
+    let trimmed = members.as_ref().is_some_and(|ms| ms.len() < removed.len());
+    if kept.len() == items.len() && !trimmed {
+        return None;
+    }
+    let removed_expr = match members {
+        Some(ms) if trimmed => array(ms, v),
+        _ => v.clone(),
+    };
+    Some(value(
+        V::Exclude,
+        vec![array(kept, a), removed_expr],
+        e.loc(),
+    ))
 }
 
 fn slice(e: &Expr, a: &Expr, start: &Expr, count: &Expr) -> Option<Expr> {
@@ -282,6 +303,19 @@ fn players_filter(e: &Expr, team: &Expr, cond: &Expr) -> Option<Expr> {
     }
 }
 
+/// `All(Mapped Array(a, f), Current Element)` as `All(a, f)`: the same test without the copy.
+fn fused(e: &Expr, id: V, mapped: &Expr, cond: &Expr) -> Option<Expr> {
+    let [inner, f] = call_args(mapped, V::MappedArray)? else {
+        return None;
+    };
+    is_elem(cond).then(|| value(id, vec![inner.clone(), f.clone()], e.loc()))
+}
+
+/// How many elements `a` has, using the dedicated player-count values where they exist.
+fn count(e: &Expr, a: &Expr) -> Expr {
+    count_of(e, a).unwrap_or_else(|| value(V::Len, vec![a.clone()], e.loc()))
+}
+
 fn all(e: &Expr, a: &Expr, cond: &Expr) -> Option<Expr> {
     if array_items(a).is_some_and(<[Expr]>::is_empty) {
         return Some(boolean(true, e));
@@ -292,10 +326,7 @@ fn all(e: &Expr, a: &Expr, cond: &Expr) -> Option<Expr> {
     if definitely_truthy(cond) {
         return Some(boolean(true, e));
     }
-    definitely_falsy(cond).then(|| {
-        let count = value(V::Len, vec![a.clone()], e.loc());
-        Expr::new(ExprKind::Not(count), e.loc())
-    })
+    definitely_falsy(cond).then(|| Expr::new(ExprKind::Not(count(e, a)), e.loc()))
 }
 
 fn any(e: &Expr, a: &Expr, cond: &Expr) -> Option<Expr> {
@@ -312,7 +343,7 @@ fn any(e: &Expr, a: &Expr, cond: &Expr) -> Option<Expr> {
         Expr::new(
             ExprKind::Compare {
                 op: CmpOp::Gt,
-                lhs: value(V::Len, vec![a.clone()], e.loc()),
+                lhs: count(e, a),
                 rhs: num(0.0, e.loc()),
             },
             e.loc(),

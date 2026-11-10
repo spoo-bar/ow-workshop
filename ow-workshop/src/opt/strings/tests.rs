@@ -158,3 +158,24 @@ fn direction_constants_become_vectors_while_optimizing() {
         "V(2, 0, 0)"
     );
 }
+
+#[test]
+fn arguments_that_became_literals_are_folded_into_the_text() {
+    use crate::ir::{StrExpr, StrToken};
+    let template = |args| {
+        Expr::new(
+            ExprKind::Str(StrExpr::Custom {
+                tokens: vec![
+                    StrToken::Text("a ".to_owned()),
+                    StrToken::Arg(0),
+                    StrToken::Text(" ".to_owned()),
+                    StrToken::Arg(1),
+                ],
+                args,
+            }),
+            None,
+        )
+    };
+    let folded = add(num(1.0), num(2.0));
+    assert_eq!(speed(&template(vec![folded, g(0)])), "\"a 3 {0}\"(g0)");
+}

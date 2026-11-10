@@ -170,15 +170,20 @@ fn if_then_else_branches_use_null() {
 
 #[test]
 fn custom_string_arguments_use_null() {
-    let formatted = Expr::new(
-        ExprKind::Str(crate::ir::StrExpr::Custom {
-            tokens: vec![crate::ir::StrToken::Arg(0)],
-            args: vec![num(0.0)],
-        }),
-        None,
-    );
-    let p = sized(vec![set(0, formatted)]);
-    assert_eq!(assigned(&p), "\"{0}\"(Null)");
+    // A zero literal is folded into the text; any other zero-valued argument becomes `Null`.
+    let formatted = |arg| {
+        Expr::new(
+            ExprKind::Str(crate::ir::StrExpr::Custom {
+                tokens: vec![crate::ir::StrToken::Arg(0)],
+                args: vec![arg],
+            }),
+            None,
+        )
+    };
+    let p = sized(vec![set(0, formatted(num(0.0)))]);
+    assert_eq!(assigned(&p), "\"0\"()");
+    let p = sized(vec![set(0, formatted(val(V::Index, vec![g(1), num(0.0)])))]);
+    assert_eq!(assigned(&p), "\"{0}\"(Index(g1, Null))");
 }
 
 #[test]
@@ -258,11 +263,17 @@ fn modify_with_zero_or_one() {
         ModifyOp::Min,
         ModifyOp::RemoveFromArrayByIndex,
     ] {
-        assert_eq!(
-            assigned(&sized(vec![modify(op, num(0.0))])),
-            "false",
-            "{op:?}"
-        );
+        if matches!(op, ModifyOp::Add | ModifyOp::Subtract) {
+            // Adding or subtracting zero is dropped outright.
+            let p = sized(vec![modify(op, num(0.0))]);
+            assert_eq!(p.rules[0].body.stmts.len(), 1, "{op:?}");
+        } else {
+            assert_eq!(
+                assigned(&sized(vec![modify(op, num(0.0))])),
+                "false",
+                "{op:?}"
+            );
+        }
         assert_eq!(
             assigned(&sized(vec![modify(op, num(1.0))])),
             "true",
@@ -375,4 +386,47 @@ fn folded_arithmetic_is_not_replaced() {
     // `1 + 1` folds to 2 before any replacement could turn a 1 into `True`.
     let p = sized(vec![set(0, add(num(1.0), num(1.0)))]);
     assert_eq!(assigned(&p), "2");
+}
+
+#[test]
+fn chase_and_for_use_the_cheaper_values() {
+    let chase = StmtKind::Chase {
+        target: place(0),
+        dest: num(0.0),
+        rate_or_duration: num(1.0),
+        reeval: null(),
+        over_time: false,
+    };
+    let p = sized(vec![chase]);
+    let StmtKind::Chase {
+        dest,
+        rate_or_duration,
+        ..
+    } = &p.rules[0].body.stmts[0].kind
+    else {
+        panic!("not a chase")
+    };
+    assert_eq!(
+        (sh(dest).as_str(), sh(rate_or_duration).as_str()),
+        ("false", "true")
+    );
+
+    let for_loop = StmtKind::For {
+        var: place(0),
+        start: num(1.0),
+        stop: num(0.0),
+        step: num(1.0),
+        body: crate::ir::Block::default(),
+    };
+    let p = sized(vec![for_loop]);
+    let StmtKind::For {
+        start, stop, step, ..
+    } = &p.rules[0].body.stmts[0].kind
+    else {
+        panic!("not a for")
+    };
+    assert_eq!(
+        (sh(start).as_str(), sh(stop).as_str(), sh(step).as_str()),
+        ("1", "false", "true")
+    );
 }

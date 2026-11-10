@@ -131,7 +131,14 @@ fn zero_distance_skips_are_removed_when_optimizing() {
         place(1),
         action(),
     ];
+    // In size mode a distance of one is the cheaper `True`.
     let p = resolve(body.clone(), OptLevel::Size).expect("resolves");
+    let one = StmtKind::Skip(SkipTarget::Dynamic(crate::lower::testutil::boolean(true)));
+    assert_eq!(
+        kinds(&p),
+        [&one, &place(0), &action(), &place(1), &action()]
+    );
+    let p = resolve(body.clone(), OptLevel::Speed).expect("resolves");
     assert_eq!(
         kinds(&p),
         [&dist(1), &place(0), &action(), &place(1), &action()]

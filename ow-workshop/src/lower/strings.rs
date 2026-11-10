@@ -1,7 +1,7 @@
 //! Normalizes string templates: unnumbers placeholders, folds simple arguments into the text and
 //! merges adjacent text. Runs before the optimizer and before splitting.
 
-use crate::fmt::push_text;
+use crate::fmt::merge_text as push_text;
 use crate::ir::{Block, Diagnostics, Expr, ExprKind, Location, Program, StrExpr, StrToken};
 use crate::lower::Ctx;
 use crate::lower::visit::{blocks_mut, map_stmt_roots, rewrite_expr};

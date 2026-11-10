@@ -48,6 +48,25 @@ pub(super) fn rule(e: &Expr, env: &mut Env<'_, '_>) -> Option<Expr> {
         ExprKind::Mod(a, b) => modulo(e, a, b),
         ExprKind::Pow(a, b) => pow(e, a, b),
         ExprKind::Neg(a) => negate(e, a),
+        ExprKind::Value { id, args } => component(*id, args),
+        _ => None,
+    }
+}
+
+/// `X/Y/Z Component Of(Vector(x, y, z))` is just that part.
+fn component(id: ow_workshop_data::ValueId, args: &[Expr]) -> Option<Expr> {
+    use ow_workshop_data::ValueId as V;
+    let axis = match id {
+        V::XComponentOf => 0,
+        V::YComponentOf => 1,
+        V::ZComponentOf => 2,
+        _ => return None,
+    };
+    match args {
+        [v] => match v.kind() {
+            ExprKind::Vector(parts) => Some(parts[axis].clone()),
+            _ => None,
+        },
         _ => None,
     }
 }

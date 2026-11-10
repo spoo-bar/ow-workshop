@@ -238,6 +238,36 @@ fn a_false_else_if_leaves_the_chain() {
 }
 
 #[test]
+fn adding_or_subtracting_zero_is_dropped() {
+    let modify = |op, value| StmtKind::Modify {
+        target: var(0),
+        op,
+        value,
+    };
+    let p = optimized(vec![
+        modify(ModifyOp::Add, num(0.0)),
+        modify(ModifyOp::Subtract, num(0.0)),
+        modify(ModifyOp::Add, num(1.0)),
+        modify(ModifyOp::Multiply, num(0.0)),
+    ]);
+    assert_eq!(shape(&p), ["Add 1", "Multiply 0"]);
+}
+
+#[test]
+fn a_chain_of_dead_branches_folds_completely() {
+    let p = optimized(vec![if_else(
+        boolean(false),
+        vec![marker(0)],
+        vec![
+            (boolean(false), vec![marker(1)]),
+            (boolean(true), vec![marker(2)]),
+        ],
+        None,
+    )]);
+    assert_eq!(shape(&p), ["set 1"]);
+}
+
+#[test]
 fn a_true_if_keeps_its_body() {
     let p = optimized(vec![if_else(
         boolean(true),
