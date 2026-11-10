@@ -12,6 +12,7 @@
 pub(crate) mod checks;
 pub(crate) mod client_args;
 pub(crate) mod compression;
+pub(crate) mod debug_panels;
 pub(crate) mod dicts;
 pub(crate) mod functions;
 pub(crate) mod generated;

@@ -26,6 +26,8 @@ pub(crate) struct Program {
     /// How to show variables in a debug build: the variable structs' fields, then whatever the
     /// mod registered with `Builder::debug`.
     pub(crate) debug_fields: Vec<crate::workshop_debug::DebugField>,
+    /// How much of the debug panels to generate; the pipeline lowers it to fit the element limit.
+    pub(crate) debug_panels: crate::lower::debug_panels::PanelPlan,
 }
 
 impl Program {

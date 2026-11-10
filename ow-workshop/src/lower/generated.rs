@@ -219,6 +219,13 @@ pub(crate) fn add_rules(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), 
     generated.extend(translation_rule(program, ctx));
     generated.extend(global_init_rule(program, ctx));
     generated.extend(player_init_rule(program, ctx));
+    if let Some(debug) = ctx.options.debug.resolve() {
+        generated.extend(super::debug_panels::rules(
+            program,
+            debug,
+            program.debug_panels,
+        ));
+    }
 
     let user_rules = std::mem::take(&mut program.rules);
     let mut rules = generated;
