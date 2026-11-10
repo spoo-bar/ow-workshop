@@ -128,25 +128,6 @@ jobs:
             cargo run -p ow-workshop --example "$(basename "$f" .rs)"
           done
 
-  # Temporary: removed together with the bootstrap data in #108.
-  validate-data:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo xtask validate-data
-      - run: cargo xtask validate-data data/sample
-
-  # Temporary: removed together with xtask codegen in #108.
-  codegen:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo xtask codegen && git diff --exit-code
-
   deny:
     runs-on: ubuntu-latest
     steps:
