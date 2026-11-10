@@ -46,7 +46,10 @@ impl Workshop for Mod {
 }
 
 fn warned(levels: Levels) -> Vec<Diagnostic> {
-    Mod(levels).compile(Lang::EnUs).expect("compiles").warnings
+    Mod(levels)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .warnings
 }
 
 #[test]
@@ -97,7 +100,10 @@ fn suppressing_one_warning_keeps_the_others() {
             });
         }
     }
-    let warnings = Other.compile(Lang::EnUs).expect("compiles").warnings;
+    let warnings = Other
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .warnings;
     assert_eq!(warnings.len(), 1);
 }
 
@@ -121,7 +127,10 @@ impl Workshop for Repeated {
 
 #[test]
 fn identical_warnings_are_reported_once() {
-    let warnings = Repeated.compile(Lang::EnUs).expect("compiles").warnings;
+    let warnings = Repeated
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .warnings;
     assert_eq!(warnings.len(), 1, "{warnings:?}");
 }
 
@@ -151,7 +160,10 @@ impl Workshop for Unordered {
 
 #[test]
 fn warnings_are_ordered_by_location() {
-    let warnings = Unordered.compile(Lang::EnUs).expect("compiles").warnings;
+    let warnings = Unordered
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .warnings;
     let lines: Vec<_> = warnings
         .iter()
         .map(|w| w.location.expect("located").line)

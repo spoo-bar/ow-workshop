@@ -26,7 +26,9 @@ impl Workshop for Mode {
 
 #[test]
 fn compiles_without_errors() {
-    let out = Mode.compile(Lang::EnUs).expect("compiles");
+    let out = Mode
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles");
     assert!(out.code.contains("Mapped Array("), "{}", out.code);
     assert!(
         out.code.contains("Input Binding String(Button(Jump))"),

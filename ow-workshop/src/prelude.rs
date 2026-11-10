@@ -21,7 +21,7 @@ pub use crate::label::Label;
 pub use crate::localized::{localized, localized_en};
 pub use crate::math::{self, ceil, floor, round};
 pub use crate::ops::if_then_else;
-pub use crate::options::{CompileOptions, OptLevel};
+pub use crate::options::{CompileOptions, DebugMode, DebugOptions, OptLevel};
 pub use crate::output::CompileOutput;
 pub use crate::players::{
     PlayerHelperError, PlayerHelpers, RealPlayersArgs, RealRadiusArgs, real_closest_player,

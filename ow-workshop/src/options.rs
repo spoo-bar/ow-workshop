@@ -1,5 +1,7 @@
 //! Compile options.
 
+use ow_workshop_data::Button;
+
 use crate::ir::WarningSet;
 use crate::rule_name::{RuleMeta, default_rule_name};
 
@@ -47,6 +49,75 @@ pub struct Replacements {
     pub empty_string: Option<EmptyString>,
 }
 
+/// What a debug build adds to the output; see [`DebugMode`].
+///
+/// Construct it with `DebugOptions::default()` and set the fields you want to change.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+#[allow(clippy::struct_excessive_bools)]
+pub struct DebugOptions {
+    /// Show a panel with the global variables on screen.
+    pub hud: bool,
+    /// Show a panel with each player's variables to that player.
+    pub player_hud: bool,
+    /// Return a transpile-time log on [`CompileOutput::debug_log`](crate::CompileOutput).
+    pub log: bool,
+    /// Keep the calls that exist only for debugging (`debug!`, `print`); a release build
+    /// strips them.
+    pub keep_debug_calls: bool,
+    /// When set, the panels show only while this button is held.
+    pub toggle: Option<Button>,
+}
+
+impl Default for DebugOptions {
+    fn default() -> Self {
+        Self {
+            hud: true,
+            player_hud: true,
+            log: true,
+            keep_debug_calls: true,
+            toggle: None,
+        }
+    }
+}
+
+/// Whether a build adds debug output.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DebugMode {
+    /// Debug output when the crate is built without optimizations (`cargo run`), none with
+    /// `cargo run --release`. See [`DebugMode::resolve`].
+    #[default]
+    Auto,
+    /// Always add debug output.
+    On(DebugOptions),
+    /// Never add debug output: the output is exactly the release output.
+    Off,
+}
+
+impl DebugMode {
+    /// The options in effect, or `None` when debug is off.
+    ///
+    /// `Auto` follows `cfg!(debug_assertions)` as `ow-workshop` itself was compiled. Dependencies
+    /// are built with the profile of the binary that uses them, so that is the profile of the
+    /// user's `cargo run`: on in a dev build, off with `--release`. A profile that changes
+    /// `debug-assertions` follows that; force a mode with [`DebugMode::On`] or
+    /// [`DebugMode::Off`] if it should not.
+    #[must_use]
+    pub fn resolve(self) -> Option<DebugOptions> {
+        self.resolve_with(cfg!(debug_assertions))
+    }
+
+    /// [`resolve`](Self::resolve) for a given value of `debug_assertions`.
+    pub(crate) fn resolve_with(self, debug_assertions: bool) -> Option<DebugOptions> {
+        match self {
+            Self::Auto => debug_assertions.then(DebugOptions::default),
+            Self::On(options) => Some(options),
+            Self::Off => None,
+        }
+    }
+}
+
 /// Options controlling a compilation.
 #[derive(Clone, Debug)]
 #[non_exhaustive]
@@ -80,6 +151,8 @@ pub struct CompileOptions {
     pub tags: bool,
     /// Builds the final rule name from its name and group prefix.
     pub rule_name_template: fn(&RuleMeta) -> String,
+    /// Debug output; follows the build profile by default.
+    pub debug: DebugMode,
 }
 
 impl Default for CompileOptions {
@@ -98,6 +171,7 @@ impl Default for CompileOptions {
             suppress: WarningSet::default(),
             tags: false,
             rule_name_template: default_rule_name,
+            debug: DebugMode::default(),
         }
     }
 }
@@ -116,8 +190,50 @@ impl PartialEq for CompileOptions {
             && self.player_init_rule_name == other.player_init_rule_name
             && self.suppress == other.suppress
             && self.tags == other.tags
+            && self.debug == other.debug
             && std::ptr::fn_addr_eq(self.rule_name_template, other.rule_name_template)
     }
 }
 
 impl Eq for CompileOptions {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn auto_follows_debug_assertions() {
+        assert_eq!(
+            DebugMode::Auto.resolve_with(true),
+            Some(DebugOptions::default())
+        );
+        assert_eq!(DebugMode::Auto.resolve_with(false), None);
+    }
+
+    #[test]
+    fn auto_resolves_like_the_build_profile() {
+        assert_eq!(DebugMode::Auto.resolve().is_some(), cfg!(debug_assertions));
+    }
+
+    #[test]
+    fn forced_modes_ignore_the_profile() {
+        let custom = DebugOptions {
+            log: false,
+            toggle: Some(Button::Interact),
+            ..DebugOptions::default()
+        };
+        for assertions in [true, false] {
+            assert_eq!(DebugMode::Off.resolve_with(assertions), None);
+            assert_eq!(DebugMode::On(custom).resolve_with(assertions), Some(custom));
+        }
+    }
+
+    #[test]
+    fn defaults() {
+        assert_eq!(DebugMode::default(), DebugMode::Auto);
+        assert_eq!(CompileOptions::default().debug, DebugMode::Auto);
+        let options = DebugOptions::default();
+        assert!(options.hud && options.player_hud && options.log && options.keep_debug_calls);
+        assert_eq!(options.toggle, None);
+    }
+}

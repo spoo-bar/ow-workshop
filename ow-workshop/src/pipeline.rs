@@ -8,6 +8,9 @@ use crate::suppress::Suppression;
 use crate::translations::Translations;
 use ow_workshop_data::Lang;
 
+/// The first line of a debug build, so a pasted debug build is recognizable.
+pub(crate) const DEBUG_HEADER: &str = "// ow-workshop debug build\n";
+
 /// Runs every pass over a recorded program. Diagnostics come back deduplicated and ordered.
 pub(crate) fn run(
     program: Program,
@@ -88,7 +91,7 @@ fn compile(
     }
     let element_count = counts.total;
     let debug = program.options.debug_element_count.then_some(&counts);
-    let Ok(code) = crate::emit::emit(&program, lang, debug) else {
+    let Ok(mut code) = crate::emit::emit(&program, lang, debug) else {
         diagnostics.error(
             ErrorKind::EmitFailed,
             "the program still contains a node that lowering should have removed".to_owned(),
@@ -96,6 +99,9 @@ fn compile(
         );
         return Err(diagnostics);
     };
+    if options.debug.resolve().is_some() && !code.is_empty() {
+        code.insert_str(0, DEBUG_HEADER);
+    }
     Ok(CompileOutput {
         code,
         warnings: diagnostics.0,

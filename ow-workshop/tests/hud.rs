@@ -33,7 +33,10 @@ impl Workshop for Mode {
 }
 
 fn compile(tags: bool) -> String {
-    Mode { tags }.compile(Lang::EnUs).expect("compiles").code
+    Mode { tags }
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code
 }
 
 #[test]

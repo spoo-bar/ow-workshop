@@ -23,7 +23,9 @@ mod zombie_survival;
 mod custom_settings;
 
 fn code(mode: &impl Workshop) -> String {
-    mode.compile(Lang::EnUs).expect("compiles").code
+    mode.compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code
 }
 
 fn check(name: &str, code: &str) {

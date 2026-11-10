@@ -35,7 +35,7 @@ fn compile(translations: Translations, body: fn(&mut Block, &Globals)) -> Compil
         translations: Some(translations),
         body,
     }
-    .compile(Lang::EnUs)
+    .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
     .expect("compiles")
 }
 
@@ -44,7 +44,7 @@ fn error_codes(
     body: fn(&mut Block, &Globals),
 ) -> Vec<&'static str> {
     let err = Mode { translations, body }
-        .compile(Lang::EnUs)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
         .expect_err("fails");
     err.0.iter().map(Diagnostic::code).collect()
 }
@@ -328,7 +328,7 @@ fn detection_rule(mode: PlayerVarMode, optimize: OptLevel) -> String {
         }
     }
     let code = Detecting(mode, optimize)
-        .compile(Lang::EnUs)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
         .expect("compiles")
         .code;
     let start = code

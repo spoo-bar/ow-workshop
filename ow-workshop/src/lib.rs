@@ -150,7 +150,7 @@ pub use builder::Builder;
 pub use cased::{CasedTextArgs, CasedTextError};
 pub use catalog::{Catalog, Entry};
 #[doc(hidden)]
-pub use cli::lang_from_args;
+pub use cli::{args_from, lang_from_args};
 pub use columns::{ColumnPlace, Columns, Table};
 pub use compress::{
     CompressError, Compressible, compress, compressed, decompress_numbers, decompress_vectors,
@@ -175,7 +175,7 @@ pub use label::Label;
 pub use localized::{localized, localized_en};
 pub use math::{ceil, floor, round};
 pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
-pub use options::{CompileOptions, EmptyString, OptLevel, Replacements};
+pub use options::{CompileOptions, DebugMode, DebugOptions, EmptyString, OptLevel, Replacements};
 pub use output::CompileOutput;
 pub use ow_workshop_data::chars;
 pub use ow_workshop_data::{Extension, Gamemode, Lang, LocalizedString, Map, Texture};

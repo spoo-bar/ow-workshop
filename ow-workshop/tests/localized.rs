@@ -20,15 +20,24 @@ impl Workshop for Mode {
 
 #[test]
 fn the_phrase_is_printed_in_the_output_language() {
-    let en = Mode.compile(Lang::EnUs).expect("compiles").code;
+    let en = Mode
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code;
     assert!(en.contains("String(\"Hello\")"), "{en}");
-    let de = Mode.compile(Lang::DeDe).expect("compiles").code;
+    let de = Mode
+        .compile_with_debug(Lang::DeDe, Some(DebugMode::Off))
+        .expect("compiles")
+        .code;
     assert!(de.contains("(\"Hallo\")"), "{de}");
 }
 
 #[test]
 fn language_neutral_phrases_become_custom_strings() {
-    let en = Mode.compile(Lang::EnUs).expect("compiles").code;
+    let en = Mode
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code;
     // The literal arguments fold into the text.
     assert!(en.contains("Custom String(\"1 - 2\")"), "{en}");
 }

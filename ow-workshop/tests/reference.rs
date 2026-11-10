@@ -31,7 +31,9 @@ use wasm_bindgen_test::wasm_bindgen_test;
 /// snapshot file is compared ignoring its header, whitespace-only lines and CRLF.
 macro_rules! check {
     ($name:literal, $mode:expr) => {{
-        let output = $mode.compile(Lang::EnUs).expect("compiles");
+        let output = $mode
+            .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+            .expect("compiles");
         #[cfg(not(target_arch = "wasm32"))]
         insta::assert_snapshot!($name, &output.code);
         #[cfg(target_arch = "wasm32")]
@@ -163,7 +165,9 @@ impl Workshop for Subroutines {
 #[test]
 #[wasm_bindgen_test]
 fn subroutines() {
-    let output = Subroutines.compile(Lang::EnUs).expect("compiles");
+    let output = Subroutines
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles");
     assert!(
         output
             .warnings
@@ -1439,7 +1443,9 @@ impl Workshop for EventVars {
 #[test]
 #[wasm_bindgen_test]
 fn eventvars() {
-    let output = EventVars.compile(Lang::EnUs).expect("compiles");
+    let output = EventVars
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles");
     // `epSub`, `globalSub` and the recursive pair read event values their callers may lack.
     assert!(
         output
