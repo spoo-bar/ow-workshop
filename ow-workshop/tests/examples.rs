@@ -22,8 +22,16 @@ mod zombie_survival;
 #[path = "../examples/custom_settings.rs"]
 mod custom_settings;
 
+/// The release output: debug off, whatever the profile of the test build is.
 fn code(mode: &impl Workshop) -> String {
     mode.compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code
+}
+
+/// The debug build, with the default debug options.
+fn debug_code(mode: &impl Workshop) -> String {
+    mode.compile_with_debug(Lang::EnUs, Some(DebugMode::On(DebugOptions::default())))
         .expect("compiles")
         .code
 }
@@ -51,6 +59,43 @@ fn zombie_survival() {
         "zombie_survival",
         &code(&zombie_survival::ZombieSurvival { waves: 5 }),
     );
+}
+
+/// `zombie_survival` in a debug build: the output of the release build, plus the header comment
+/// and the variable panels.
+#[test]
+fn zombie_survival_debug() {
+    let mode = zombie_survival::ZombieSurvival { waves: 5 };
+    let debug = debug_code(&mode);
+    check("zombie_survival_debug", &debug);
+    assert!(debug.starts_with("// ow-workshop debug build\n"));
+    assert!(debug.contains("rule (\"Debug: globals\")"));
+    assert!(debug.contains("rule (\"Debug: players\")"));
+    // Every rule of the release build is still there, unchanged.
+    let release = code(&mode);
+    for rule in release.split("\nrule (").skip(1) {
+        let rule = rule.trim_end();
+        assert!(
+            debug.contains(rule),
+            "a rule of the release build changed:\n{rule}"
+        );
+    }
+}
+
+/// With no debug mode given, the profile of the build decides: this is what `cargo run` and
+/// `cargo run --release` print. CI runs these tests in both profiles.
+#[test]
+fn zombie_survival_follows_the_build_profile() {
+    let auto = zombie_survival::ZombieSurvival { waves: 5 }
+        .compile(Lang::EnUs)
+        .expect("compiles")
+        .code;
+    let name = if cfg!(debug_assertions) {
+        "zombie_survival_debug"
+    } else {
+        "zombie_survival"
+    };
+    check(name, &auto);
 }
 
 #[test]
