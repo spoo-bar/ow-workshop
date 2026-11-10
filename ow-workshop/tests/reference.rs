@@ -4015,13 +4015,7 @@ impl Workshop for Translated {
     type Players = ();
 
     fn build(&self, ws: &mut Builder, g: &TrGlobals, (): &()) {
-        let (a, b, c, d, e) = (
-            || g.a.get(),
-            || g.b.get(),
-            || g.c.get(),
-            || g.d.get(),
-            || g.e.get(),
-        );
+        let (a, b, c, e) = (|| g.a.get(), || g.b.get(), || g.c.get(), || g.e.get());
         let (y, z) = (|| g.y.get().cast::<Num>(), || g.z.get().cast::<Num>());
         let source = |x: &mut Block, text: &str, value: Expr<Str>| x.debug_value(text, value);
         ws.rule("owo\nuwu", OngoingGlobal, |r, _| {
@@ -4067,13 +4061,8 @@ impl Workshop for Translated {
                 x.set(g.l, t!("653453[]|.<>$= \u{a4}$"));
                 x.set(g.n, "untranslated string");
                 source(x, "_(A)", tr(a()));
-                let header = |text: Expr<Str>| HudArgs {
-                    reevaluation: HudReeval::VisibilityAndString.into(),
-                    ..HudArgs::default()
-                };
-                let _ = header;
                 x.hud_header_with(tr(a()), HudArgs { reevaluation: HudReeval::VisibilityAndString.into(), ..HudArgs::default() });
-                x.hud_header_with(tr(h_of(&g.h)), HudArgs { reevaluation: HudReeval::VisibilityAndString.into(), ..HudArgs::default() });
+                x.hud_header_with(tr(g.h.get()), HudArgs { reevaluation: HudReeval::VisibilityAndString.into(), ..HudArgs::default() });
                 x.hud_header_with(a(), HudArgs { reevaluation: HudReeval::VisibilityAndString.into(), ..HudArgs::default() });
                 x.hud_header_with(tr(g.n.get()), HudArgs { reevaluation: HudReeval::VisibilityAndString.into(), ..HudArgs::default() });
                 let strings = IntoExpr::<Array<Array<Str>>>::into_expr(vec![
@@ -4132,10 +4121,6 @@ impl Workshop for Translated {
         options.tags = true;
         options
     }
-}
-
-fn h_of(var: &Global<Any>) -> Expr<Any> {
-    var.get()
 }
 
 #[test]
