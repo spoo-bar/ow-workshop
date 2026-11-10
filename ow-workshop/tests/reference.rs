@@ -5,6 +5,14 @@
 //! ignored stub (#99); #100 and #101 replace the stubs, and #109 then moves the expected output
 //! into `insta` snapshots and deletes the fixtures.
 
+// The reference mods are literal translations: one-letter variable names (`A`..`K`) and
+// arithmetic on constants (`B * 0`) are the point of the fixtures, and each mod is one long list.
+#![allow(
+    clippy::many_single_char_names,
+    clippy::erasing_op,
+    clippy::too_many_lines
+)]
+
 mod common;
 
 use common::assert_workshop_code_eq;
@@ -39,7 +47,6 @@ stub!(comments, "comments", "#101");
 stub!(compression, "compression", "#101");
 stub!(customgamesettings, "customGameSettings", "#101");
 stub!(dicts, "dicts", "#101");
-stub!(elementsaving, "elementSaving", "#101");
 stub!(enums, "enums", "#101");
 stub!(eventvars, "eventVars", "#101");
 stub!(extensions, "extensions", "#101");
@@ -91,8 +98,13 @@ fn check_with(mode: &impl Workshop, expected: &str, allowed: &[(&str, &str)]) {
 
 /// Like [`check_with`], with label comment lines ignored on both sides.
 #[track_caller]
-fn check_ignoring_labels(mode: &impl Workshop, expected: &str) {
+fn check_ignoring_labels_with(mode: &impl Workshop, expected: &str, allowed: &[(&str, &str)]) {
     let output = mode.compile(Lang::EnUs).expect("compiles");
+    let expected = allowed
+        .iter()
+        .fold(expected.to_owned(), |text, (from, to)| {
+            text.replace(from, to)
+        });
     // Also allowed here: indentation after a label, and `0` rather than `Null` as the table filler.
     let flat = |text: &str| {
         without_labels(text)
@@ -101,7 +113,12 @@ fn check_ignoring_labels(mode: &impl Workshop, expected: &str) {
             .collect::<Vec<_>>()
             .join("\n")
     };
-    assert_workshop_code_eq(&flat(&output.code), &flat(expected));
+    assert_workshop_code_eq(&flat(&output.code), &flat(&expected));
+}
+
+#[track_caller]
+fn check_ignoring_labels(mode: &impl Workshop, expected: &str) {
+    check_ignoring_labels_with(mode, expected, &[]);
 }
 
 /// Compares with the fixture's expected output exactly (up to whitespace-only lines).
@@ -501,6 +518,12 @@ fn conditions() {
     check_with(&Conditions, &expected, &[(goto_part, "")]);
 }
 
+/// Allowed difference: `B == 0` (either way round) becomes `Not(B)`, one element fewer.
+const EQ_ZERO_AS_NOT: [(&str, &str); 2] = [
+    ("Compare(Global.B, ==, Null)", "Not(Global.B)"),
+    ("Compare(Null, ==, Global.B)", "Not(Global.B)"),
+];
+
 /// Keeps only the named rules (and everything before the first rule) of expected output.
 fn only_rules(expected: &str, names: &[&str]) -> String {
     let mut out = Vec::new();
@@ -543,6 +566,7 @@ struct OpGlobals {
 }
 
 #[derive(PlayerVars)]
+#[allow(dead_code)] // declared so the variables block matches the fixture
 struct OpPlayers {
     #[ow(name = "A", index = 0)]
     a: PlayerVar<Num>,
@@ -995,4 +1019,416 @@ fn operators() {
             ("Raise To Power(-1, Global.B)", "Null"),
         ],
     );
+}
+
+// elementSaving: the reference variables are untyped, but `A` is both used as a loop counter and
+// indexed. `A` is a number here; the indexed assignments (`A[0] = B`) are built by a second mod
+// where it is an array, and compared line by line with the fixture.
+#[derive(GlobalVars)]
+struct EsGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Num>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Num>,
+    #[ow(name = "E", index = 4)]
+    e: Global<Num>,
+}
+
+#[derive(PlayerVars)]
+struct EsPlayers {
+    #[ow(name = "A", index = 0)]
+    a: PlayerVar<Num>,
+}
+
+/// Assigns any value to `A`.
+fn set_a<T: ValueType>(x: &mut Block, g: &EsGlobals, value: Expr<T>) {
+    x.set(g.a, value.erase().cast::<Num>());
+}
+
+/// Reads a number variable as another type.
+fn as_<T: ValueType>(e: Expr<Num>) -> Expr<T> {
+    e.erase().cast::<T>()
+}
+
+struct ElementSaving;
+
+impl Workshop for ElementSaving {
+    type Globals = EsGlobals;
+    type Players = EsPlayers;
+
+    fn build(&self, ws: &mut Builder, g: &EsGlobals, p: &EsPlayers) {
+        let (a, b, c) = (|| g.a.get(), || g.b.get(), || g.c.get());
+        let player_b = || as_::<Player>(g.b.get());
+        let any = |v: i32| Expr::<Num>::from(v).erase();
+        let hud = |value: i32| HudArgs {
+            location: HudPosition::Left.into(),
+            sort_order: n(value),
+            color: Color::White.into(),
+            reevaluation: HudReeval::Visibility.into(),
+            spec_visibility: SpecVisibility::Always.into(),
+            ..HudArgs::default()
+        };
+        ws.rule("0 to null", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                set_a(x, g, b().gt(0));
+                set_a(x, g, n(0).gt(b()));
+                set_a(x, g, b().ge(0));
+                set_a(x, g, n(0).ge(b()));
+                set_a(x, g, b().lt(0));
+                set_a(x, g, n(0).lt(b()));
+                set_a(x, g, b().le(0));
+                set_a(x, g, n(0).le(b()));
+                set_a(x, g, ArrayExt::concat(&as_::<Array<Any>>(b()), 0));
+                set_a(x, g, Expr::<Array<Any>>::from(vec![any(0), any(1), any(0)]));
+                set_a(x, g, as_::<Array<Any>>(b()).contains(0));
+                set_a(x, g, b().eq(0));
+                set_a(x, g, n(0).eq(b()));
+                set_a(x, g, b().ne(0));
+                set_a(x, g, n(0).ne(b()));
+                set_a(x, g, ws_fmt!("{}{}{}", 0, 0, 0));
+                set_a(x, g, localized_en("{0}, {1}, and {2}", [0, 0, 0]));
+                x.big_message(0);
+                set_a(x, g, n(0));
+                x.set(player_b().var(p.a), 0);
+                x.small_message(0);
+            });
+        });
+        ws.rule("0 to false", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                set_a(x, g, max(0, b()));
+                set_a(x, g, max(b(), 0));
+                set_a(x, g, min(0, b()));
+                set_a(x, g, min(b(), 0));
+                set_a(x, g, random::int(0, b()));
+                set_a(x, g, random::int(b(), 0));
+                set_a(x, g, n(0) - b());
+                set_a(x, g, vect(0, 0, 0));
+                x.chase_at_rate(g.a, 0, 0, ChaseRateReeval::None);
+                x.chase_over_time(g.a, 0, 0, ChaseTimeReeval::None);
+                x.chase_at_rate(player_b().var(p.a), 0, 0, ChaseRateReeval::None);
+                x.chase_over_time(player_b().var(p.a), 0, 0, ChaseTimeReeval::None);
+                let facing = as_::<Direction>(c());
+                x.create_dummy_with(
+                    Hero::Ana,
+                    Team::Two,
+                    0,
+                    as_::<Position>(b()),
+                    CreateDummyArgs { facing },
+                );
+                x.hud_header_with("123", hud(0));
+                x.for_range(g.a, range(0, 0).step(0), |_| {});
+                x.for_range(player_b().var(p.a), range(0, 0).step(0), |_| {});
+                x.wait(0);
+                x.wait(0.016);
+                x.wait(0);
+            });
+        });
+        ws.rule("1 to true", OngoingGlobal, |r, _| {
+            r.condition(b().gt(1))
+                .comment("should not be changed, inequalities with true/false no longer work");
+            r.condition(n(1).gt(b()));
+            r.condition(b().ge(1));
+            r.condition(n(1).ge(b()));
+            r.condition(b().lt(1));
+            r.condition(n(1).lt(b()));
+            r.condition(b().le(1));
+            r.condition(n(1).le(b()));
+            r.actions(|x| {
+                set_a(x, g, b().gt(1));
+                set_a(x, g, n(1).gt(b()));
+                set_a(x, g, b().ge(1));
+                set_a(x, g, n(1).ge(b()));
+                set_a(x, g, b().lt(1));
+                set_a(x, g, n(1).lt(b()));
+                set_a(x, g, b().le(1));
+                set_a(x, g, n(1).le(b()));
+                set_a(x, g, b() + 1);
+                set_a(x, g, n(1) + b());
+                set_a(x, g, n(1) / b());
+                set_a(x, g, max(1, b()));
+                set_a(x, g, max(b(), 1));
+                set_a(x, g, min(1, b()));
+                set_a(x, g, min(b(), 1));
+                set_a(x, g, random::int(1, b()));
+                set_a(x, g, random::int(b(), 1));
+                set_a(x, g, n(1) - b());
+                set_a(x, g, b() - 1);
+                set_a(x, g, as_::<Array<Any>>(b()).get(1));
+                set_a(x, g, vect(1, 1, 1));
+                x.chase_at_rate(g.a, 1, 1, ChaseRateReeval::None);
+                x.chase_over_time(g.a, 1, 1, ChaseTimeReeval::None);
+                x.chase_at_rate(player_b().var(p.a), 1, 1, ChaseRateReeval::None);
+                x.chase_over_time(player_b().var(p.a), 1, 1, ChaseTimeReeval::None);
+                let facing = as_::<Direction>(c());
+                x.create_dummy_with(
+                    Hero::Ana,
+                    Team::Two,
+                    1,
+                    as_::<Position>(b()),
+                    CreateDummyArgs { facing },
+                );
+                x.hud_header_with("123", hud(1));
+                x.for_range(g.a, range(1, 1).step(1), |_| {});
+                x.for_range(player_b().var(p.a), range(1, 1).step(1), |_| {});
+                x.wait(1);
+            });
+        });
+        ws.rule("null vector to null", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                let facing = as_::<Direction>(vect(0, 0, 0).erase().cast::<Num>());
+                x.create_dummy_with(
+                    Hero::Ana,
+                    Team::Two,
+                    a(),
+                    vect(0, 0, 0),
+                    CreateDummyArgs { facing },
+                );
+            });
+        });
+        ws.rule("empty string", OngoingGlobal, |r, _| {
+            let (bs, cs) = (|| as_::<Str>(b()), || as_::<Str>(c()));
+            let empty = || Expr::<Str>::from("");
+            r.actions(|x| {
+                x.hud_text_with(HudTextArgs {
+                    header: a().erase(),
+                    subheader: empty().erase(),
+                    text: empty().erase(),
+                    ..HudTextArgs::default()
+                });
+                set_a(x, g, empty().find(bs()));
+                set_a(x, g, bs().find(""));
+                set_a(x, g, empty().char_at(b()));
+                set_a(x, g, empty().replace(bs(), cs()));
+                set_a(x, g, bs().replace("", cs()));
+                set_a(x, g, bs().replace(cs(), ""));
+                set_a(x, g, bs().split(""));
+                set_a(x, g, empty().split(bs()));
+                set_a(
+                    x,
+                    g,
+                    empty().slice_with(
+                        b(),
+                        SubstringArgs {
+                            substring_length: c(),
+                        },
+                    ),
+                );
+                set_a(x, g, str_contains("", bs()));
+                set_a(x, g, str_contains(bs(), ""));
+                set_a(x, g, empty());
+            });
+        });
+        ws.rule("if to skip if", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.comment("should be skip if");
+                x.if_(a().eq(b()), |x| x.set(g.d, 4));
+                x.comment("should stay if");
+                x.if_(a().eq(b()), |x| {
+                    x.set(g.d, 4);
+                    x.set(g.e, 5);
+                });
+                x.comment("should be skip if");
+                x.if_(!as_::<Bool>(b()), |x| {
+                    x.set(g.d, 4);
+                    x.set(g.e, 5);
+                });
+                x.if_(a().eq(2), |x| {
+                    x.if_(a().eq(3), |x| x.set(g.b, 4));
+                    x.switch::<Num>(a()).case(b(), |x| x.add_to(g.c, 1));
+                    x.add_to(g.d, 1);
+                    x.add_to(g.e, 1);
+                })
+                .elif(false, |x| x.set(g.b, 3));
+                x.comment("should stay if");
+                x.if_(a().eq(b()), |x| x.set(g.d, 4));
+            });
+        });
+        ws.rule("auto array compression", OngoingGlobal, |r, _| {
+            let items = |v: Vec<Expr<Num>>| Expr::<Array<Num>>::from(v);
+            r.actions(|x| {
+                x.comment("shouldn't be compressed");
+                set_a(
+                    x,
+                    g,
+                    items(vec![b(), b(), b(), b(), b(), b(), b(), b(), c()]),
+                );
+                x.comment("shouldn't be compressed, can't nest mapped arrays");
+                set_a(
+                    x,
+                    g,
+                    as_::<Array<Num>>(b()).map(|e, _| {
+                        e.erase().cast::<Vector>() + items(vec![c(); 7]).erase().cast::<Vector>()
+                    }),
+                );
+                x.comment("should be compressed");
+                set_a(x, g, items(vec![b(); 9]));
+                set_a(
+                    x,
+                    g,
+                    IntoExpr::<Array<Str>>::into_expr(["abc", "def", "ghi"]),
+                );
+                x.comment("shouldn't be compressed");
+                let tail = ws_fmt!("ghi{}", b());
+                set_a(
+                    x,
+                    g,
+                    Expr::<Array<Str>>::from(vec![
+                        Expr::<Str>::from("abc"),
+                        Expr::<Str>::from("def"),
+                        tail,
+                    ]),
+                );
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        let mut options = size();
+        options.aggressive_size = true;
+        options.suppress.insert(Warning::ChasedVarInFor);
+        options
+    }
+}
+
+// elementSaving, indexed assignments: `A` is an array here.
+#[derive(GlobalVars)]
+struct EsIndexGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Array<Any>>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Num>,
+}
+
+#[derive(PlayerVars)]
+struct EsIndexPlayers {
+    #[ow(name = "A", index = 0)]
+    a: PlayerVar<Array<Any>>,
+}
+
+struct ElementSavingIndex;
+
+impl Workshop for ElementSavingIndex {
+    type Globals = EsIndexGlobals;
+    type Players = EsIndexPlayers;
+
+    fn build(&self, ws: &mut Builder, g: &EsIndexGlobals, p: &EsIndexPlayers) {
+        let player_b = || as_::<Player>(g.b.get());
+        for (name, index) in [("0 to null", 0), ("0 to false", 0), ("1 to true", 1)] {
+            ws.rule(name, OngoingGlobal, |r, _| {
+                r.actions(|x| {
+                    if name == "0 to null" {
+                        x.set(g.a.at(g.b.get()), 0);
+                        x.set(player_b().var(p.a).at(g.c.get()), 0);
+                    } else {
+                        x.set(g.a.at(index), g.b.get());
+                        x.set(player_b().var(p.a).at(index), g.c.get());
+                    }
+                });
+            });
+        }
+    }
+
+    fn options(&self) -> CompileOptions {
+        let mut options = size();
+        options.aggressive_size = true;
+        options
+    }
+}
+
+/// The lines of `code` that contain `needle`, trimmed.
+fn lines_containing(code: &str, needle: &str) -> Vec<String> {
+    code.lines()
+        .filter(|line| line.contains(needle))
+        .map(|line| line.trim().to_owned())
+        .collect()
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn elementsaving() {
+    let fixture = include_str!("fixtures/reference/elementSaving.txt");
+    let exact = [
+        "0 to null",
+        "0 to false",
+        "1 to true",
+        "null vector to null",
+        "empty string",
+    ];
+    // The indexed assignments come from the second mod.
+    let without_index = |code: &str| -> String {
+        code.lines()
+            .filter(|line| !line.contains("At Index("))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    let output = ElementSaving.compile(Lang::EnUs).expect("compiles").code;
+    let rewritten = EQ_ZERO_AS_NOT
+        .iter()
+        .fold(without_index(&only_rules(fixture, &exact)), |t, (a, b)| {
+            t.replace(a, b)
+        });
+    assert_workshop_code_eq(&only_rules(&output, &exact), &rewritten);
+
+    let indexed = ElementSavingIndex.compile(Lang::EnUs).expect("compiles");
+    assert_eq!(
+        lines_containing(&indexed.code, "At Index("),
+        lines_containing(fixture, "At Index(")
+    );
+
+    // `if to skip if`: label names differ, and so do two aggressive choices. A skip lands on a
+    // `Pass` of its own (the reference lets it land on the next action), and a lone-statement
+    // `if` at the end of a rule is a `Skip If` here, where the reference keeps the `If`.
+    let skip_rule = ["if to skip if"];
+    let expected = only_rules(fixture, &skip_rule);
+    let mut expected = expected
+        .replace(
+            "//__label_if_2__:\n",
+            "//__label_if_2__:\n\"pass\"\ndisabled Abort;\n",
+        )
+        .replace(
+            "//__label_if_3__:\n",
+            "//__label_if_3__:\n\"pass\"\ndisabled Abort;\n",
+        )
+        .replace(
+            "//__label_if_4__:\n",
+            "//__label_if_4__:\n\"pass\"\ndisabled Abort;\n",
+        );
+    let last_if = "        \"should stay if\"\n        If(Compare(Global.A, ==, Global.B));\n            Set Global Variable(D, 4);\n    }";
+    assert!(expected.contains(last_if));
+    expected = expected.replace(
+        last_if,
+        "        \"should stay if\"\n        Skip If(Compare(Global.A, !=, Global.B), True);\n        Set Global Variable(D, 4);\n        //label_5:\n        \"pass\"\n        disabled Abort;\n    }",
+    );
+    let flat = |text: &str| {
+        without_labels(text)
+            .lines()
+            .map(|line| {
+                line.trim_start()
+                    .replace(", Null,", ", 0,")
+                    .replace("(1, Null)", "(1, 0)")
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    assert_workshop_code_eq(&flat(&only_rules(&output, &skip_rule)), &flat(&expected));
+
+    // `auto array compression`: only the first two statements compress identically. This
+    // optimizer leaves a repeated variable and a three-string array as plain arrays.
+    let compression = ["auto array compression"];
+    let expected = only_rules(fixture, &compression)
+        .replace(
+            "Mapped Array(String Split(Custom String(\"00000000\"), First Of(Null)), Global.B)",
+            "Array(Global.B, Global.B, Global.B, Global.B, Global.B, Global.B, Global.B, Global.B, Global.B)",
+        )
+        .replace(
+            "String Split(Custom String(\"abc0def0ghi\"), First Of(Null))",
+            "Array(Custom String(\"abc\"), Custom String(\"def\"), Custom String(\"ghi\"))",
+        );
+    assert_workshop_code_eq(&only_rules(&output, &compression), &expected);
 }

@@ -252,7 +252,7 @@ fn apply(
                     continue;
                 }
             } else {
-                rewrite_skip(&mut stmt, &plan.distances[o]);
+                rewrite_skip(&mut stmt, &plan.distances[o], rc.opt == OptLevel::Size);
             }
         }
         kept.push(stmt);
@@ -261,7 +261,7 @@ fn apply(
     removed
 }
 
-fn rewrite_skip(stmt: &mut Stmt, distances: &[usize]) {
+fn rewrite_skip(stmt: &mut Stmt, distances: &[usize], size: bool) {
     let loc = stmt.loc;
     let (StmtKind::Skip(target) | StmtKind::SkipIf(_, target)) = &mut stmt.kind else {
         return;
@@ -269,7 +269,13 @@ fn rewrite_skip(stmt: &mut Stmt, distances: &[usize]) {
     match target {
         SkipTarget::Label(_) => {
             let n = distances.first().copied().unwrap_or(0);
-            *target = SkipTarget::Dynamic(distance_expr(n, &Expr::new(ExprKind::Null, loc)));
+            let like = Expr::new(ExprKind::Null, loc);
+            // Skipping one action is `True`, an element cheaper than `1`.
+            *target = SkipTarget::Dynamic(if size && n == 1 {
+                Expr::new(ExprKind::Bool(true), like.loc())
+            } else {
+                distance_expr(n, &like)
+            });
         }
         SkipTarget::Dynamic(e) => {
             if !distances.is_empty() {

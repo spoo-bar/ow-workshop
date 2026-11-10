@@ -382,3 +382,46 @@ fn folded_arithmetic_is_not_replaced() {
     let p = sized(vec![set(0, add(num(1.0), num(1.0)))]);
     assert_eq!(assigned(&p), "2");
 }
+
+#[test]
+fn chase_and_for_use_the_cheaper_values() {
+    let chase = StmtKind::Chase {
+        target: place(0),
+        dest: num(0.0),
+        rate_or_duration: num(1.0),
+        reeval: null(),
+        over_time: false,
+    };
+    let p = sized(vec![chase]);
+    let StmtKind::Chase {
+        dest,
+        rate_or_duration,
+        ..
+    } = &p.rules[0].body.stmts[0].kind
+    else {
+        panic!("not a chase")
+    };
+    assert_eq!(
+        (sh(dest).as_str(), sh(rate_or_duration).as_str()),
+        ("false", "true")
+    );
+
+    let for_loop = StmtKind::For {
+        var: place(0),
+        start: num(1.0),
+        stop: num(0.0),
+        step: num(1.0),
+        body: crate::ir::Block::default(),
+    };
+    let p = sized(vec![for_loop]);
+    let StmtKind::For {
+        start, stop, step, ..
+    } = &p.rules[0].body.stmts[0].kind
+    else {
+        panic!("not a for")
+    };
+    assert_eq!(
+        (sh(start).as_str(), sh(stop).as_str(), sh(step).as_str()),
+        ("1", "false", "true")
+    );
+}

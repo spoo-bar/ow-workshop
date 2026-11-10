@@ -321,6 +321,25 @@ pub(super) fn stmt_rule(mut stmt: Stmt, env: &mut Env<'_, '_>) -> Vec<Stmt> {
             }
             _ => {}
         },
+        StmtKind::Chase {
+            dest,
+            rate_or_duration,
+            ..
+        } => {
+            for arg in [dest, rate_or_duration] {
+                if let Some(new) = truth_value(arg) {
+                    *arg = new;
+                }
+            }
+        }
+        // The loop's start stays a number; its limit and step accept the cheaper values.
+        StmtKind::For { stop, step, .. } => {
+            for arg in [stop, step] {
+                if let Some(new) = truth_value(arg) {
+                    *arg = new;
+                }
+            }
+        }
         _ => {}
     }
     vec![stmt]
