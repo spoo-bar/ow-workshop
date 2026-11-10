@@ -238,6 +238,20 @@ fn a_false_else_if_leaves_the_chain() {
 }
 
 #[test]
+fn a_chain_of_dead_branches_folds_completely() {
+    let p = optimized(vec![if_else(
+        boolean(false),
+        vec![marker(0)],
+        vec![
+            (boolean(false), vec![marker(1)]),
+            (boolean(true), vec![marker(2)]),
+        ],
+        None,
+    )]);
+    assert_eq!(shape(&p), ["set 1"]);
+}
+
+#[test]
 fn a_true_if_keeps_its_body() {
     let p = optimized(vec![if_else(
         boolean(true),

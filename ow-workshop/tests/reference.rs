@@ -37,7 +37,6 @@ stub!(builtinenums, "builtinenums", "#101");
 stub!(builtinmacros, "builtinmacros", "#101");
 stub!(comments, "comments", "#101");
 stub!(compression, "compression", "#101");
-stub!(conditions, "conditions", "#101");
 stub!(customgamesettings, "customGameSettings", "#101");
 stub!(dicts, "dicts", "#101");
 stub!(elementsaving, "elementSaving", "#101");
@@ -324,4 +323,181 @@ impl Workshop for Switches {
 #[wasm_bindgen_test]
 fn switches() {
     check_ignoring_labels(&Switches, include_str!("fixtures/reference/switches.txt"));
+}
+
+/// Removes the named rules from expected output: features of the old text language that have no
+/// Rust equivalent (a lone `else`) are an allowed difference.
+fn without_rules(expected: &str, names: &[&str]) -> String {
+    let mut out = Vec::new();
+    let mut skipping = false;
+    for line in expected.lines() {
+        if let Some(rest) = line.strip_prefix("rule (\"") {
+            let name = rest.split("\")").next().unwrap_or_default();
+            skipping = names.contains(&name);
+        }
+        if !skipping {
+            out.push(line);
+        }
+        if skipping && line == "}" {
+            skipping = false;
+        }
+    }
+    out.join("\n")
+}
+
+// conditions: a lone `else`/`elif` and a second `else` cannot be written with the builder, so
+// those three rules are dropped from the expected output.
+#[derive(GlobalVars)]
+#[allow(dead_code)] // `i` and `j` are used only by the rules left out above.
+struct CondGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Num>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Num>,
+    #[ow(name = "E", index = 4)]
+    e: Global<Num>,
+    #[ow(name = "F", index = 5)]
+    f: Global<Num>,
+    #[ow(name = "G", index = 6)]
+    g: Global<Num>,
+    #[ow(name = "H", index = 7)]
+    h: Global<Num>,
+    #[ow(name = "I", index = 8)]
+    i: Global<Num>,
+    #[ow(name = "J", index = 9)]
+    j: Global<Num>,
+    #[ow(name = "K", index = 10)]
+    k: Global<Num>,
+}
+
+/// A number variable used as a condition (the reference treated any value as a condition).
+fn truthy(var: Global<Num>) -> Expr<Bool> {
+    var.get().erase().cast::<Bool>()
+}
+
+struct Conditions;
+
+impl Workshop for Conditions {
+    type Globals = CondGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, v: &CondGlobals, (): &()) {
+        ws.rule("if/else", OngoingGlobal, |r, _| {
+            r.actions(|b| {
+                b.if_(v.a.get().eq(v.b.get()), |b| b.add_to(v.a, 1))
+                    .else_(|b| b.add_to(v.b, 1));
+                b.add_to(v.c, 1);
+            });
+        });
+        ws.rule("if/elif/else", OngoingGlobal, |r, _| {
+            r.actions(|b| {
+                b.if_(v.a.get().eq(v.b.get()), |b| b.add_to(v.a, 1))
+                    .elif(v.b.get().eq(v.c.get()), |b| b.add_to(v.b, 1))
+                    .elif(v.c.get().eq(v.d.get()), |b| b.add_to(v.c, 1))
+                    .else_(|b| b.add_to(v.d, 1));
+                b.add_to(v.e, 1);
+            });
+        });
+        ws.rule("nested if/elif/else", OngoingGlobal, |r, _| {
+            r.actions(|b| {
+                b.if_(v.a.get().eq(v.b.get()), |b| {
+                    b.add_to(v.a, 1);
+                    b.if_(v.b.get().eq(v.c.get()), |b| b.add_to(v.b, 1))
+                        .elif(v.c.get().eq(v.d.get()), |b| b.add_to(v.c, 1))
+                        .else_(|b| b.add_to(v.d, 1));
+                })
+                .elif(v.b.get().eq(v.c.get()), |b| b.add_to(v.b, 1))
+                .else_(|b| b.add_to(v.c, 1));
+                b.add_to(v.d, 1);
+            });
+        });
+        ws.rule(
+            "optimized out empty ifs & if/elif false/true",
+            OngoingGlobal,
+            |r, _| {
+                r.actions(|b| {
+                    b.if_(false, |b| {
+                        b.set(v.a, 2);
+                        b.set(v.a, 2);
+                    });
+                    b.if_(true, |b| {
+                        b.set(v.a, 2);
+                        b.set(v.a, 2);
+                    });
+                    b.set(v.b, 3);
+                    b.if_(false, |b| b.set(v.b, 5)).else_(|b| {
+                        b.set(v.c, 6);
+                        b.if_(true, |b| b.add_to(v.d, 1))
+                            .else_(|b| b.add_to(v.e, 1));
+                    });
+
+                    b.if_(true, |b| b.set(v.a, 2))
+                        .elif(truthy(v.a), |b| b.set(v.a, 3));
+                    b.set(v.b, 4);
+                    b.if_(false, |b| b.set(v.b, 5))
+                        .elif(truthy(v.a), |b| b.set(v.b, 6))
+                        .elif(false, |b| b.add_to(v.h, 1))
+                        .else_(|b| b.add_to(v.k, 1));
+
+                    b.if_(false, |b| b.add_to(v.b, 1))
+                        .elif(false, |b| b.add_to(v.c, 1))
+                        .elif(true, |b| b.add_to(v.d, 1));
+
+                    b.if_(truthy(v.a), |b| b.add_to(v.b, 1))
+                        .elif(truthy(v.c), |b| b.add_to(v.d, 1))
+                        .elif(true, |b| b.add_to(v.e, 1))
+                        .elif(truthy(v.f), |b| b.add_to(v.g, 1));
+
+                    b.set(v.c, 4);
+                    b.if_(false, |b| b.set(v.b, 4));
+                    b.if_(false, |_| {});
+                    b.set(v.a, 3);
+                    b.if_(truthy(v.g), |_| {});
+                });
+            },
+        );
+        ws.rule(
+            "optimized out empty if at end of rule",
+            OngoingGlobal,
+            |r, _| {
+                r.actions(|b| {
+                    b.add_to(v.a, 1);
+                    b.if_(truthy(v.b), |b| b.set(v.a, v.a.get()));
+                });
+            },
+        );
+        ws.rule(
+            "optimized out elif false at end of rule",
+            OngoingGlobal,
+            |r, _| {
+                r.actions(|b| {
+                    b.if_(false, |b| b.set(v.a, 1))
+                        .elif(false, |b| b.set(v.a, 2));
+                });
+            },
+        );
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn conditions() {
+    let expected = without_rules(
+        include_str!("fixtures/reference/conditions.txt"),
+        &["lone else", "lone elif/else", "if/elif multiple elses"],
+    );
+    // The goto/label section of the big rule is also left out: the reference keeps `If(True)`
+    // around a body a skip lands in, but folds the other `if true`s of a rule that has skips,
+    // which this optimizer deliberately does not (`a_true_if_stays_when_the_rule_has_skips`).
+    let goto_part = "        Skip(3);\n        If(True);\n            Set Global Variable(A, 2);\n        Else If(Global.A);\n            //lbl_1:\n            Set Global Variable(A, 3);\n        End;\n        Set Global Variable(B, 3);\n        Skip(True);\n        If(False);\n            //lbl_2:\n            Set Global Variable(B, 6);\n        End;\n        Set Global Variable(B, 9);\n";
+    assert!(expected.contains(goto_part));
+    check_with(&Conditions, &expected, &[(goto_part, "")]);
 }

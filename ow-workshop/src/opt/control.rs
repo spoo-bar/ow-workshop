@@ -177,16 +177,20 @@ fn dead_if(stmt: Stmt, env: &Env<'_, '_>) -> Vec<Stmt> {
     let skipless = !env.has_skips;
     if definitely_falsy(cond) && !has_target(then, &env.targeted) {
         if let Some((first, rest)) = elifs.split_first() {
-            return keep(Stmt {
-                kind: StmtKind::If {
-                    cond: first.0.clone(),
-                    then: first.1.clone(),
-                    elifs: rest.to_vec(),
-                    else_: else_.clone(),
+            // Each step removes a branch, so this ends; it folds chains of dead branches.
+            return dead_if(
+                Stmt {
+                    kind: StmtKind::If {
+                        cond: first.0.clone(),
+                        then: first.1.clone(),
+                        elifs: rest.to_vec(),
+                        else_: else_.clone(),
+                    },
+                    loc,
+                    ..stmt
                 },
-                loc,
-                ..stmt
-            });
+                env,
+            );
         }
         return match else_ {
             Some(body) => splice(body.clone()).unwrap_or_else(|| keep(stmt)),
@@ -215,7 +219,7 @@ fn dead_if(stmt: Stmt, env: &Env<'_, '_>) -> Vec<Stmt> {
             *new_else = Some(elifs[at].1.clone());
             new_elifs.truncate(at);
         }
-        return keep(next);
+        return dead_if(next, env);
     }
     if then.stmts.is_empty() && elifs.is_empty() && else_.is_none() {
         return Vec::new();
