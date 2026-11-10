@@ -1,7 +1,5 @@
-//! Generated code (`cargo xtask codegen`).
+//! Game data tables for the compiler (hand-maintained).
 
-// Formatted by the generator (prettyplease), not rustfmt.
-#[rustfmt::skip]
 #[allow(
     clippy::too_many_arguments,
     clippy::too_many_lines,
@@ -14,7 +12,6 @@
 )]
 mod values;
 
-#[rustfmt::skip]
 #[allow(
     clippy::too_many_arguments,
     clippy::too_many_lines,
@@ -27,7 +24,6 @@ mod values;
 )]
 mod actions;
 
-#[rustfmt::skip]
 #[allow(missing_docs)]
 pub(crate) mod settings;
 

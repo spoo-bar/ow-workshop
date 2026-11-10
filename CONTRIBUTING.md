@@ -25,4 +25,10 @@
 - PR titles follow [Conventional Commits](https://www.conventionalcommits.org/) (checked by `lint-pr.yml`).
 - Keep PRs under ~1000 changed lines.
 - Before pushing: `cargo fmt`, `cargo clippy --workspace --all-targets`, `cargo test --workspace`.
-- Regenerate data tables with `cargo xtask codegen`.
+
+## Game data
+The Rust tables are the source of truth; edit them directly when the game updates.
+- Hero: add a variant and its entry in `ow-workshop-data/src/generated/heroes.rs`, plus any hero settings in `hero_settings.rs`.
+- Map: add it in `ow-workshop-data/src/generated/maps.rs` (and `gamemodes.rs` if it belongs to a mode).
+- Action: add it in `ow-workshop-data/src/generated/actions.rs`, then the typed builder in `ow-workshop/src/generated/actions.rs`.
+- Add a test in the matching `ow-workshop-data/tests/` file, then run `cargo fmt`, `cargo clippy --workspace --all-targets` and `cargo test --workspace`.

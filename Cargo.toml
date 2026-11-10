@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["ow-workshop", "ow-workshop-macros", "ow-workshop-data", "xtask", "wasm-smoke"]
+members = ["ow-workshop", "ow-workshop-macros", "ow-workshop-data", "wasm-smoke"]
 
 [workspace.package]
 version = "0.1.0"
