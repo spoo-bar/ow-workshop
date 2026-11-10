@@ -79,5 +79,17 @@ pub(crate) fn push_text(tokens: &mut Vec<StrToken>, text: &str) {
     }
 }
 
+/// Appends text that is already part of a template: it keeps every character (a carriage
+/// return can be a digit of generated text) and merges with the text before it.
+pub(crate) fn merge_text(tokens: &mut Vec<StrToken>, text: &str) {
+    if text.is_empty() {
+        return;
+    }
+    match tokens.last_mut() {
+        Some(StrToken::Text(prev)) => prev.push_str(text),
+        _ => tokens.push(StrToken::Text(text.to_owned())),
+    }
+}
+
 #[cfg(test)]
 mod tests;

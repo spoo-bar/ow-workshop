@@ -185,11 +185,65 @@ fn builtin_color(e: &Expr, args: &[Expr]) -> Option<Expr> {
     ))
 }
 
+/// Largest magnitude of a number literal folded into a string's text.
+const MAX_FOLDED: f64 = 10_000_000.0;
+
+/// Folds arguments that became literals (a constant sum, a language-neutral phrase's text) into
+/// the template, as the normalization pass does for arguments that start out literal.
+fn fold_args(e: &Expr, tokens: &[StrToken], args: &[Expr]) -> Option<Expr> {
+    let folded = |arg: &Expr| -> Option<String> {
+        match arg.kind() {
+            ExprKind::Str(StrExpr::Custom { tokens, args: a }) if a.is_empty() => tokens
+                .iter()
+                .map(|t| match t {
+                    StrToken::Text(text) => Some(text.as_str()),
+                    StrToken::Arg(_) => None,
+                })
+                .collect(),
+            _ => num_of(arg)
+                .filter(|n| n.abs() <= MAX_FOLDED)
+                .map(crate::lower::strings::to_fixed_2),
+        }
+    };
+    if !tokens
+        .iter()
+        .any(|t| matches!(t, StrToken::Arg(i) if args.get(*i).and_then(folded).is_some()))
+    {
+        return None;
+    }
+    let mut out = Vec::new();
+    let mut out_args: Vec<Expr> = Vec::new();
+    for token in tokens {
+        match token {
+            StrToken::Text(text) => crate::fmt::merge_text(&mut out, text),
+            // A placeholder without an argument prints nothing.
+            StrToken::Arg(i) => {
+                if let Some(arg) = args.get(*i) {
+                    if let Some(text) = folded(arg) {
+                        crate::fmt::merge_text(&mut out, &text);
+                    } else {
+                        out.push(StrToken::Arg(out_args.len()));
+                        out_args.push(arg.clone());
+                    }
+                }
+            }
+        }
+    }
+    Some(Expr::new(
+        ExprKind::Str(StrExpr::Custom {
+            tokens: out,
+            args: out_args,
+        }),
+        e.loc(),
+    ))
+}
+
 /// String, team, color and direction rewrites.
 pub(super) fn rule(e: &Expr, env: &mut Env<'_, '_>) -> Option<Expr> {
     let strict = env.scope.strict();
     match e.kind() {
         ExprKind::Str(StrExpr::Localized(phrase)) => neutral(e, *phrase, &[]),
+        ExprKind::Str(StrExpr::Custom { tokens, args }) => fold_args(e, tokens, args),
         ExprKind::Value { id, args } => match (*id, args.as_slice()) {
             (V::GetOppositeTeam, [team]) => opposite_team(e, team),
             (V::Rgb, _) if !strict => builtin_color(e, args),

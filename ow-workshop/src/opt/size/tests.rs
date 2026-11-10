@@ -170,15 +170,20 @@ fn if_then_else_branches_use_null() {
 
 #[test]
 fn custom_string_arguments_use_null() {
-    let formatted = Expr::new(
-        ExprKind::Str(crate::ir::StrExpr::Custom {
-            tokens: vec![crate::ir::StrToken::Arg(0)],
-            args: vec![num(0.0)],
-        }),
-        None,
-    );
-    let p = sized(vec![set(0, formatted)]);
-    assert_eq!(assigned(&p), "\"{0}\"(Null)");
+    // A zero literal is folded into the text; any other zero-valued argument becomes `Null`.
+    let formatted = |arg| {
+        Expr::new(
+            ExprKind::Str(crate::ir::StrExpr::Custom {
+                tokens: vec![crate::ir::StrToken::Arg(0)],
+                args: vec![arg],
+            }),
+            None,
+        )
+    };
+    let p = sized(vec![set(0, formatted(num(0.0)))]);
+    assert_eq!(assigned(&p), "\"0\"()");
+    let p = sized(vec![set(0, formatted(val(V::Index, vec![g(1), num(0.0)])))]);
+    assert_eq!(assigned(&p), "\"{0}\"(Index(g1, Null))");
 }
 
 #[test]

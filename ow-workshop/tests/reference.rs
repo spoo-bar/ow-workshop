@@ -16,6 +16,7 @@
 mod common;
 
 use common::assert_workshop_code_eq;
+use ow_workshop::__private::{Piece, template};
 use ow_workshop::Kind;
 use ow_workshop::prelude::*;
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -40,14 +41,10 @@ macro_rules! stub {
     };
 }
 
-stub!(compression, "compression", "#101");
 stub!(customgamesettings, "customGameSettings", "#101");
 stub!(enums, "enums", "#101");
 stub!(extensions, "extensions", "#101");
-stub!(lowercase, "lowercase", "#101");
 stub!(shionsettings, "shionSettings", "#101");
-stub!(strings, "strings", "#101");
-stub!(strings_args, "strings_args", "#101");
 stub!(translations, "translations", "#101");
 stub!(translations2, "translations2", "#101");
 stub!(workshopsettings, "workshopSettings", "#101");
@@ -2924,4 +2921,604 @@ fn ruleprefix() {
         &RulePrefix,
         include_str!("fixtures/reference/rulePrefix.txt"),
     );
+}
+
+// strings
+#[derive(GlobalVars)]
+struct StringGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Num>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Num>,
+    #[ow(name = "E", index = 4)]
+    e: Global<Num>,
+    #[ow(name = "F", index = 5)]
+    f: Global<Num>,
+    #[ow(name = "G", index = 6)]
+    g: Global<Num>,
+    #[ow(name = "H", index = 7)]
+    h: Global<Num>,
+    #[ow(name = "owo", index = 8)]
+    owo: Global<Num>,
+}
+
+/// `Add` of two strings, as the reference allows.
+fn str_add(a: Expr<Str>, b: Expr<Str>) -> Expr<Num> {
+    a.erase().cast::<Num>() + b.erase().cast::<Num>()
+}
+
+const CHARS_120: &str = "|_____________________________________________________________________________________________________________120 chars|";
+
+struct Strings;
+
+impl Workshop for Strings {
+    type Globals = StringGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &StringGlobals, (): &()) {
+        let (a, b, c, d, e) = (
+            || g.a.get(),
+            || g.b.get(),
+            || g.c.get(),
+            || g.d.get(),
+            || g.e.get(),
+        );
+        let (f, gg, h) = (|| g.f.get(), || g.g.get(), || g.h.get());
+        let no_args = || Vec::<Expr<Any>>::new();
+        ws.rule("strings", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.print("custom 'string'");
+                x.print("new\nline");
+                x.print("qu\"o\"tes");
+                x.print("zero width space: |\u{AD}|");
+                x.print("");
+                x.print("");
+                x.print("single '\"quotes\"");
+                x.print(Expr::<Str>::from("fullwidth string").fullwidth());
+                x.print(Expr::<Str>::from("big letters string").big());
+                put(x, g.a, localized_en("Hello", no_args()));
+                x.print(localized_en("{0} {1}", ["localized", "string"]));
+                x.print(localized_en("{0}, {1}, and {2}", [0, 1, 2]));
+
+                put(x, g.a, Expr::<Str>::from("no tags: {{0}} {{}} <tx{{}}>"));
+                put(x, g.a, ws_fmt!("uwu {}", c()).fullwidth());
+                put(x, g.a, ws_fmt!("owo {}", n(1) + 2));
+                put(x, g.b, ws_fmt!("123145{} {} {}", c(), a() + b(), 0).big());
+                put(x, g.b, ws_fmt!("fullwidth a{}f", a() + b()).fullwidth());
+                put(x, g.b, ws_fmt!("lowercase a{}f", g.owo.get()).case_sensitive());
+                put(x, g.b, ws_fmt!("consecutivestrings{}owo", n(1) + 2));
+                put(x, g.a, str_add(Expr::<Str>::from("owo"), Expr::<Str>::from("uwu")));
+
+                put(
+                    x,
+                    g.a,
+                    ws_fmt!(
+                        "{0}{0}{0}{0}",
+                        ws_fmt!(
+                            "{0}{0}{0}{0}",
+                            ws_fmt!("{0}{0}{0}{0}", ws_fmt!("{0}{0}{0}{0}", a()))
+                        )
+                    ),
+                );
+                put(x, g.a, ws_fmt!("A, B, B, C, D {}{}{}{}{}", a(), b(), b(), c(), d()));
+                put(x, g.a, ws_fmt!("A, B, C, D {}{}{}{}", a(), b(), c(), d()));
+                put(x, g.a, ws_fmt!("A, A, B, B {}{}{}{}", a(), a(), b(), b()));
+                put(x, g.a, ws_fmt!("A, B, C, B, A {}{}{}{}{}", a(), b(), c(), b(), a()));
+                put(x, g.a, ws_fmt!("A, B, C, D, A, B {}{}{}{}{}{}", a(), b(), c(), d(), a(), b()));
+
+                put(x, g.a, ws_fmt!("{} {} {} {}", a(), b(), c(), c()));
+                put(x, g.a, ws_fmt!("{} {} {} {}", a(), b(), b(), c()));
+                put(x, g.a, ws_fmt!("{} {} {} {} {}", a(), b(), b(), c(), d()));
+                put(x, g.a, ws_fmt!("{} {} {} {} {}", a(), b(), b(), c(), c()));
+                put(x, g.a, ws_fmt!("{} {} {} {} {}", a(), b(), c(), d(), d()));
+                put(x, g.a, ws_fmt!("{} {} {} {} {}", a(), b(), c(), c(), d()));
+
+                x.print(ws_fmt!(
+                    "Multiple fields {} {} {} {} {} {} {} {}",
+                    a(),
+                    b(),
+                    c(),
+                    d(),
+                    e(),
+                    f(),
+                    gg(),
+                    h()
+                ));
+                x.print(ws_fmt!("Numbered fields {0} {1} {2} {1} {3}", a(), b(), c(), d()));
+                x.print(ws_fmt!("Numbered fields 2 {1}{0}{2}{1}", a(), b(), c()));
+                // `ws_fmt!` rejects arguments no placeholder uses, so the unused ones are not passed.
+                x.print(ws_fmt!("Missing field: {0} {1}", a(), c()));
+                x.print(ws_fmt!("Missing field 2: {0} {1}", b(), c()));
+                x.print(ws_fmt!("Null fields: {0} {1} {2}", null::<Any>(), null::<Any>(), null::<Any>()));
+                x.print(Expr::<Str>::from(
+                    "Very long string that will need to be splitted along several strings, as it is fullwidth and takes more than 128 characters which is the limit",
+                ).fullwidth());
+                x.print("String with entities: a\u{25A0}b\u{3000}c");
+                x.print("String with \u{1} hex escape and \u{2000} unicode escape");
+                x.print(Expr::<Str>::from("Case-sensitive string").case_sensitive());
+                x.print("multiline\nstring");
+                x.print(ws_fmt!("{} <fgFF00FFFF>texture test</fg> {} <txC0000000002DD21> {}", a(), b(), c()));
+                x.print(ws_fmt!("{1} <fgFF00FFFF>texture test</fg> {2} <txC0000000002DD21> {0}", a(), b(), c()));
+                x.print(ws_fmt!("<txC0000000002DD21>"));
+                x.print(ws_fmt!("<txc12345> <tx{}>", 3));
+                x.print(ws_fmt!("<tx{}>", a()));
+                x.print(ws_fmt!("Optimized strings: {1} {0}{2} {3}", 123, 123.455, "|string|", a()));
+                x.print(ws_fmt!(
+                    "Optimized strings 2: {} {} {}{} {} {}",
+                    a(),
+                    0.125,
+                    0.1,
+                    Texture::MouseCursor,
+                    b(),
+                    ws_fmt!("other string {0}{0}", c())
+                ));
+                x.print(ws_fmt!("Optimized strings 3: {}", ws_fmt!("|str1|{}|str2|", a())));
+
+                put(x, g.a, Expr::<Array<Str>>::from(vec![Expr::<Str>::from("a"); 450]));
+
+                put(x, g.a, Expr::<Str>::from("a,b,c").split(","));
+                put(x, g.a, Expr::<Str>::from("abc").find("b"));
+                put(x, g.a, Expr::<Str>::from("a,b,c").replace(",", ";"));
+                put(x, g.a, Expr::<Str>::from("abc").char_at(1));
+
+                let chars = || Expr::<Str>::from(CHARS_120);
+                put(x, g.a, ws_fmt!("{}{}{}", chars(), chars(), chars()));
+                put(x, g.a, ws_fmt!("{}{}{}{}{}", a(), b(), c(), chars(), d()));
+                x.comment("should not be split");
+                put(x, g.a, ws_fmt!("{}12345678", chars()));
+                x.comment("should be split");
+                put(x, g.a, ws_fmt!("{}123456789", chars()));
+                x.comment("should not be split");
+                put(x, g.a, ws_fmt!("{}12345{}", chars(), a()));
+                put(x, g.a, ws_fmt!("{}1234{}5", chars(), a()));
+                put(x, g.a, ws_fmt!("{}123{}56", chars(), a()));
+                put(x, g.a, ws_fmt!("{}12{}456", chars(), a()));
+                put(x, g.a, ws_fmt!("{}12{}{}", chars(), a(), b()));
+                put(x, g.a, ws_fmt!("{}1{}{}2", chars(), a(), b()));
+                put(x, g.a, ws_fmt!("{}{}1{}2", chars(), a(), b()));
+                x.comment("should be split");
+                put(x, g.a, ws_fmt!("{}123456{}", chars(), a()));
+                put(x, g.a, ws_fmt!("{}12345{}6", chars(), a()));
+                put(x, g.a, ws_fmt!("{}1234{}56", chars(), a()));
+                put(x, g.a, ws_fmt!("{}123{}456", chars(), a()));
+                put(x, g.a, ws_fmt!("{}123{}{}4", chars(), a(), b()));
+                put(x, g.a, ws_fmt!("{}123{}4{}", chars(), a(), b()));
+                put(x, g.a, ws_fmt!("{}12{}34{}", chars(), a(), b()));
+                put(x, g.a, ws_fmt!("{}12{}3{}4", chars(), a(), b()));
+                put(x, g.a, ws_fmt!("{}1{}2{}34", chars(), a(), b()));
+                put(x, g.a, ws_fmt!("{}{}{}{}", chars(), a(), b(), c()));
+
+                put(
+                    x,
+                    g.a,
+                    ws_fmt!(
+                        "[{1}] LEAVE EDIT MODE\n{2} CREATE BOT\n{3} GRAB BOT\n[{4}] REMOVE BOT\n[{0}] + [{4}] REMOVE ALL BOTS\n[{5}] PLACE RESET MARKER\n[{0}] + [{5}] REMOVE RESET MARKER\n[{6}] INCREASE PLACEMENT DISTANCE\n[{0}] + [{6}] DECREASE PLACEMENT DISTANCE",
+                        a(), b(), c(), d(), e(), f(), gg()
+                    ),
+                );
+                put(
+                    x,
+                    g.a,
+                    ws_fmt!(
+                        "{1} CREATE BOT {2}\n{3} GRAB BOT\n[{4}] REMOVE BOT\n[{0}] + [{4}] REMOVE ALL BOTS\n[{4}] PLACE RESET MARKER\n[{0}] + [{4}] REMOVE RESET MARKER\n[{5}] INCREASE PLACEMENT DISTANCE\n[{0}] + [{5}] DECREASE PLACEMENT DISTANCE",
+                        a(), b(), c(), d(), e(), f()
+                    ),
+                );
+                put(
+                    x,
+                    g.a,
+                    ws_fmt!("{0}fgFFFFFFF0>{1}{1}{1}{1}", a(), ws_fmt!("{0}TX C0000000002DD21>", a())),
+                );
+            });
+        });
+        ws.rule("optimizations", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                let lit = Expr::<Str>::from;
+                x.comment("3");
+                put(x, g.a, str_len("owo"));
+                put(x, g.a, str_len(ws_fmt!("owo{}", a())));
+                x.comment("true");
+                put(x, g.a, str_contains("owo", "wo"));
+                put(x, g.a, str_contains(ws_fmt!("owo{}", a()), "uwu"));
+                x.comment("uwu");
+                put(x, g.a, lit("owo").replace("o", "u"));
+                put(x, g.a, lit("owo").replace("o", ws_fmt!("u{}", a())));
+                x.comment("\"d\"");
+                put(x, g.b, lit("abcdef").char_at(3));
+                x.comment("\"\"");
+                put(x, g.c, lit("abcdef").char_at(6));
+                x.comment("\"a\"");
+                put(x, g.d, lit("abcdef").char_at(-1));
+                x.comment("\"def\"");
+                put(
+                    x,
+                    g.e,
+                    lit("abcdef").slice_with(
+                        3,
+                        SubstringArgs {
+                            substring_length: n(9999),
+                        },
+                    ),
+                );
+                x.comment("\"abcd\"");
+                put(
+                    x,
+                    g.f,
+                    lit("abcdef").slice_with(
+                        -1,
+                        SubstringArgs {
+                            substring_length: n(4),
+                        },
+                    ),
+                );
+                x.comment("\"\"");
+                put(
+                    x,
+                    g.g,
+                    lit("abcdef").slice_with(
+                        2,
+                        SubstringArgs {
+                            substring_length: n(-1),
+                        },
+                    ),
+                );
+                x.comment("should not be optimized");
+                put(x, g.a, lit("ab|cd|ef").split("|"));
+
+                x.comment(".split(null[0])");
+                put(x, g.a, Expr::<Array<Str>>::from(vec![lit("a"), lit("b")]));
+                x.comment(".split(Vector.LEFT[0])");
+                put(
+                    x,
+                    g.a,
+                    Expr::<Array<Str>>::from(vec![lit("0"), lit("1"), lit("2")]),
+                );
+                x.comment(".split(\"\\uEC51\")");
+                put(
+                    x,
+                    g.a,
+                    Expr::<Array<Str>>::from(vec![lit("0(1.00, 0.00, 0.00)"), lit("123")]),
+                );
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        let mut options = size();
+        options.aggressive_size = true;
+        options.tags = true;
+        options
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn strings() {
+    // Allowed differences:
+    // - the generated tag setup rule is named `<tx> / <fg> setup code` here, without the two
+    //   credit comments, and the size header comes before it;
+    // - small string arrays stay arrays: this optimizer splits a string only when that is
+    //   cheaper by its own cost model, where the reference always splits (the 450-item array
+    //   is left out of the comparison for the same reason).
+    let output = Strings.compile(Lang::EnUs).expect("compiles").code;
+    let drop_array = |code: &str| {
+        code.lines()
+            .filter(|line| {
+                !line.contains("Custom String(\"a\"), Custom String(\"a\"), Custom String(\"a\")")
+                    && !line.contains("Custom String(\"a0a0a0a0a0a0")
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    let setup = "OverPy <\u{AD}tx> / <\u{AD}fg> setup code";
+    let expected = include_str!("fixtures/reference/strings.txt")
+        .replace(
+            &format!("rule (\"{setup}\")"),
+            "//Optimize for size enabled\nrule (\"<\u{AD}tx> / <\u{AD}fg> setup code\")",
+        )
+        .replace("        \"By Zezombye\"\n", "")
+        .replace(
+            "        \"More info: https://workshop.codes/wiki/articles/tx-reference-sheet\"\n",
+            "",
+        )
+        .replacen("//Optimize for size enabled\nrule (\"strings\")", "rule (\"strings\")", 1)
+        .replace("        //Optimize for size enabled\n", "")
+        .replace(
+            "String Split(Custom String(\"a0b\"), First Of(Null))",
+            "Array(Custom String(\"a\"), Custom String(\"b\"))",
+        )
+        .replace(
+            "String Split(Custom String(\"0(1.00, 0.00, 0.00)1(1.00, 0.00, 0.00)2\"), First Of(Left))",
+            "Array(Custom String(\"0\"), Custom String(\"1\"), Custom String(\"2\"))",
+        )
+        .replace(
+            "String Split(Custom String(\"0(1.00, 0.00, 0.00)\u{EC51}123\"), Custom String(\"\u{EC51}\"))",
+            "Array(Custom String(\"0(1.00, 0.00, 0.00)\"), Custom String(\"123\"))",
+        );
+    assert_workshop_code_eq(&drop_array(&output), &drop_array(&expected));
+}
+
+// strings_args: every way to repeat up to six variables over 1 to 7 placeholders, in the order
+// the reference's generator wrote them (restricted growth strings).
+#[derive(GlobalVars)]
+struct ArgsGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Num>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Num>,
+    #[ow(name = "E", index = 4)]
+    e: Global<Num>,
+    #[ow(name = "F", index = 5)]
+    f: Global<Num>,
+}
+
+/// The patterns of `len` placeholders: each is a variable index that is at most one more than
+/// the largest before it, with six variables at most.
+fn arg_patterns(len: usize) -> Vec<Vec<usize>> {
+    fn grow(prefix: &mut Vec<usize>, len: usize, out: &mut Vec<Vec<usize>>) {
+        if prefix.len() == len {
+            out.push(prefix.clone());
+            return;
+        }
+        let next = prefix.iter().max().map_or(0, |m| m + 1);
+        for value in 0..=next.min(5) {
+            prefix.push(value);
+            grow(prefix, len, out);
+            prefix.pop();
+        }
+    }
+    let mut out = Vec::new();
+    grow(&mut Vec::new(), len, &mut out);
+    out
+}
+
+struct StringsArgs;
+
+impl Workshop for StringsArgs {
+    type Globals = ArgsGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &ArgsGlobals, (): &()) {
+        let vars = [g.a, g.b, g.c, g.d, g.e, g.f];
+        for len in 1..=7 {
+            let name = if len == 1 {
+                "1 arg".to_owned()
+            } else {
+                format!("{len} args")
+            };
+            ws.rule(name, OngoingGlobal, |r, _| {
+                r.actions(|x| {
+                    for (i, pattern) in arg_patterns(len).iter().enumerate() {
+                        let letters: Vec<String> = pattern
+                            .iter()
+                            .map(|v| char::from(b'A' + u8::try_from(*v).unwrap_or(0)).to_string())
+                            .collect();
+                        let mut pieces = vec![Piece::Text(Box::leak(
+                            format!("{len}-{i} ({}): ", letters.join(",")).into_boxed_str(),
+                        ))];
+                        for (at, v) in pattern.iter().enumerate() {
+                            if at > 0 {
+                                pieces.push(Piece::Text(" "));
+                            }
+                            pieces.push(Piece::Arg(*v));
+                        }
+                        let args = (0..=*pattern.iter().max().unwrap_or(&0))
+                            .map(|v| vars[v].get().erase())
+                            .collect();
+                        put(x, g.a, template(&pieces, args));
+                    }
+                });
+            });
+        }
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn strings_args() {
+    check(
+        &StringsArgs,
+        include_str!("fixtures/reference/strings_args.txt"),
+    );
+}
+
+// lowercase: `createCasedProgressBarIwt` is `cased_progress_bar_text_with`.
+#[derive(GlobalVars)]
+struct LowerGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+}
+
+struct Lowercase;
+
+impl Workshop for Lowercase {
+    type Globals = LowerGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &LowerGlobals, (): &()) {
+        ws.rule("", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.set(g.a, 1234);
+                x.cased_progress_bar_text_with(
+                    3,
+                    Expr::<Str>::from("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n<fg00FFFFFF><txb667> BREAKTHROUGH UPDATE 8.3.0 FOR OVERPY!</fg>\n\nFor the FIRST TIME EVER, you can use lowercase text\nin the Overwatch Workshop! No more shouting—just pure,\nclean typography exactly how you want it. But that’s not all...\n\n<fgFF00FFFF><txb666> DELVE INTO A NEW ERA OF OVERWATCH WORKSHOP TEXT</fg>\n\nFor the <fgFF0000FF>first time in history</fg>, the tapestry of text in Overwatch\nWorkshop expands beyond the rigid confines of ALL CAPS.\nWith the latest OverPy update, you can now weave\nlowercase letters seamlessly into your creations,\nunlocking a realm of expression never before possible.\n\n<fg80FF00FF><tx248B> FULL SUPPORT FOR COLOR TAGS & TEXTURES!</fg>\n\nCustomize your text like <fg00FF00FF>NEVER BEFORE</fg> with\nvibrant colors and eye-catching textures. Whether you’re\ndesigning a sleek UI, creating immersive story elements,\nor just flexing your creativity, this update changes everything.\n\n<fgFF8000FF><tx1f70d> The future of Workshop text starts NOW!</fg>\n\nThe ultimate workshop update: <fgFF0000FF>lowercase text</fg>."),
+                    null::<PlayerOrPosition>(),
+                    CasedTextArgs {
+                        scale: Expr::from(1.5),
+                        clipping: Clip::None.into(),
+                        text_color: Color::White.into(),
+                        reevaluation: ProgressWorldTextReeval::VisibilityPositionValuesAndColor
+                            .into(),
+                        spec_visibility: SpecVisibility::Always.into(),
+                        ..CasedTextArgs::default()
+                    },
+                )
+                .expect("a literal text");
+                x.set(g.b, 567);
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        let mut options = CompileOptions::default();
+        options.tags = true;
+        options
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn lowercase() {
+    // Allowed differences: the tag setup rule has its own name and no credit comments here (as
+    // in `strings`), and the letters are dealt out to the overlaid progress-bar texts by this
+    // implementation's own rule (and numbered 1 to 3, where the reference counts 0 to 2), so
+    // the three texts are not compared text for text; `tests/cased.rs` covers them.
+    let setup = "OverPy <\u{AD}tx> / <\u{AD}fg> setup code";
+    let expected = include_str!("fixtures/reference/lowercase.txt")
+        .replace(
+            &format!("rule (\"{setup}\")"),
+            "rule (\"<\u{AD}tx> / <\u{AD}fg> setup code\")",
+        )
+        .replace("        \"By Zezombye\"\n", "")
+        .replace(
+            "        \"More info: https://workshop.codes/wiki/articles/tx-reference-sheet\"\n",
+            "",
+        );
+    let output = Lowercase.compile(Lang::EnUs).expect("compiles").code;
+    let is_text = |line: &&str| line.contains("Create Progress Bar In-World Text(");
+    let without = |code: &str| {
+        code.lines()
+            .filter(|line| !is_text(line))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    assert_workshop_code_eq(&without(&output), &without(&expected));
+    assert_eq!(output.lines().filter(is_text).count(), 3);
+    assert_eq!(expected.lines().filter(is_text).count(), 3);
+}
+
+// compression
+#[derive(GlobalVars)]
+struct CompressGlobals {
+    #[ow(name = "B", index = 1)]
+    b: Global<Array<Any>>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Array<Any>>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Array<Any>>,
+    #[ow(name = "E", index = 4)]
+    e: Global<Array<Any>>,
+    #[ow(name = "F", index = 5)]
+    f: Global<Array<Any>>,
+    #[ow(name = "G", index = 6)]
+    g: Global<Array<Any>>,
+    #[ow(name = "H", index = 7)]
+    h: Global<Array<Any>>,
+}
+
+struct Compression;
+
+impl Workshop for Compression {
+    type Globals = CompressGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &CompressGlobals, (): &()) {
+        let packed = |v: Global<Array<Any>>| v.get().erase().cast::<Str>();
+        // The reference variables are untyped; these hold a packed string, then an array.
+        let store = |x: &mut Block, v: Global<Array<Any>>, value: Expr<Any>| {
+            x.set(v, value.cast::<Array<Any>>());
+        };
+        ws.rule("compression", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                let numbers = || vec![1.0, 2.53, 3.0, -543.0];
+                let vectors = || {
+                    vec![
+                        vect(1, 0, 3),
+                        vect(-5, -7.342, 0),
+                        vect(-53, 4998.999, -4998.999),
+                    ]
+                };
+                store(x, g.b, (compress::<Num>(numbers()).expect("fits")).erase());
+                store(x, g.b, (decompress_numbers(packed(g.b))).erase());
+                store(
+                    x,
+                    g.c,
+                    (compressed::<Num>(numbers()).expect("fits")).erase(),
+                );
+                store(
+                    x,
+                    g.d,
+                    (compress::<Vector>(vectors()).expect("fits")).erase(),
+                );
+                store(x, g.d, (decompress_vectors(packed(g.d))).erase());
+                store(
+                    x,
+                    g.e,
+                    (compressed::<Vector>(vec![vect(1, 2, 3), vect(43, 65, 9)]).expect("fits"))
+                        .erase(),
+                );
+                store(
+                    x,
+                    g.f,
+                    (compress::<Num>(vec![123.0]).expect("fits")).erase(),
+                );
+                store(x, g.f, (decompress_numbers(packed(g.f))).erase());
+                store(
+                    x,
+                    g.g,
+                    (compress::<Vector>(vec![vect(0, 0, 0)]).expect("fits")).erase(),
+                );
+                store(x, g.g, (decompress_vectors(packed(g.g))).erase());
+                store(
+                    x,
+                    g.h,
+                    (compressed::<Vector>(vec![
+                        vect(1, 2, 3),
+                        vect(-5, 0, 0),
+                        vect(-53, 4998.999, -4998.999),
+                    ])
+                    .expect("fits"))
+                    .erase(),
+                );
+                for (name, var) in [
+                    ("B", g.b),
+                    ("C", g.c),
+                    ("D", g.d),
+                    ("E", g.e),
+                    ("F", g.f),
+                    ("G", g.g),
+                    ("H", g.h),
+                ] {
+                    x.debug_value(name, var.get());
+                }
+            });
+        });
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn compression() {
+    // Allowed differences: `debug` pads its box with 170 ordinary spaces where the reference
+    // used em spaces (split over the same two pieces here), and the optimizer reads
+    // `x == []` as `Not(x)`, as in `arrays`.
+    let em = |n: usize| "\u{2003}".repeat(n);
+    let expected = include_str!("fixtures/reference/compression.txt")
+        .replace(&em(118), &" ".repeat(118))
+        .replace(&em(52), &" ".repeat(52))
+        .replace(
+            "And(Compare(Current Array Element, ==, Empty Array)",
+            "And(Not(Current Array Element)",
+        );
+    check(&Compression, &expected);
 }
