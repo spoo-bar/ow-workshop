@@ -1,0 +1,33 @@
+---
+source: ow-workshop/tests/settings.rs
+assertion_line: 79
+expression: settings_of(settings)
+---
+settings
+{
+	lobby
+	{
+		Max Team 1 Players: 0
+		Max Team 2 Players: 0
+	}
+	modes
+	{
+		Team Deathmatch
+		{
+			enabled maps
+			{
+				Workshop Chamber
+				Workshop Expanse
+				Workshop Green Screen
+				Workshop Island
+			}
+		}
+	}
+	extensions
+	{
+		Beam Effects
+		Beam Sounds
+		Buff and Debuff Sounds
+		Spawn More Dummy Bots
+	}
+}

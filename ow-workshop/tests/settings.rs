@@ -1,13 +1,7 @@
-//! The settings block, end to end, against the reference fixtures.
+//! The settings block, end to end. Native only: `insta` snapshots need a filesystem.
 
-mod common;
-
-use common::assert_workshop_code_eq;
 use ow_workshop::prelude::*;
 use ow_workshop_data::{Extension, Gamemode, Map};
-
-const SHION: &str = include_str!("fixtures/reference/shionSettings.txt");
-const EXTENSIONS: &str = include_str!("fixtures/reference/extensions.txt");
 
 #[derive(GlobalVars)]
 struct Globals {
@@ -42,7 +36,7 @@ fn settings_of(settings: Settings) -> String {
 }
 
 #[test]
-fn shion_settings_match_the_reference() {
+fn shion_settings() {
     let shion = Values::new()
         .with("secondaryFireCooldown%", SettingValue::Percent(113.0))
         .with("ability1Cooldown%", SettingValue::Percent(81.0))
@@ -58,11 +52,11 @@ fn shion_settings_match_the_reference() {
             HeroTeam::AllTeams,
             HeroSettings::default().hero(Hero::Shion, shion),
         );
-    assert_workshop_code_eq(&settings_of(settings), SHION);
+    insta::assert_snapshot!("shion", settings_of(settings));
 }
 
 #[test]
-fn extensions_settings_match_the_reference() {
+fn extensions_settings() {
     let settings = Settings::default()
         .with_lobby(Lobby::default().team1_slots(0).team2_slots(0))
         .with_mode(
@@ -82,8 +76,7 @@ fn extensions_settings_match_the_reference() {
         .with_extension(Extension::BeamSounds)
         .with_extension(Extension::BuffAndDebuffSounds)
         .with_extension(Extension::SpawnMoreDummyBots);
-    let expected = &EXTENSIONS[..EXTENSIONS.find("variables {").expect("variables block")];
-    assert_workshop_code_eq(&settings_of(settings), expected);
+    insta::assert_snapshot!("extensions", settings_of(settings));
 }
 
 #[test]

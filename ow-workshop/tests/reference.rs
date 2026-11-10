@@ -1,9 +1,10 @@
-//! Ports of the reference fixtures (`tests/fixtures/reference/`) to `Workshop` impls.
+//! Ports of the `OverPy` reference mods to `Workshop` impls.
 //!
-//! Each test builds the equivalent mod in Rust and compares its output to the fixture's expected
-//! `.txt`, ignoring whitespace-only lines and CRLF. Until a fixture is ported its test is an
-//! ignored stub (#99); #100 and #101 replace the stubs, and #109 then moves the expected output
-//! into `insta` snapshots and deletes the fixtures.
+//! Each test builds the mod in Rust and snapshots its output under `tests/snapshots/`
+//! (`reference__<name>.snap`). Every snapshot was accepted only after it matched the `OverPy`
+//! v9.7.20 output the mod was ported from; the differences that are allowed (numbers printed
+//! from `f64`, label comment names, features of the old text language) are noted in each test.
+//! The translation catalogs the two translation mods read are in `tests/translations/`.
 
 // The reference mods are literal translations: one-letter variable names (`A`..`K`) and
 // arithmetic on constants (`B * 0`) are the point of the fixtures, and each mod is one long list.
@@ -13,9 +14,10 @@
     clippy::too_many_lines
 )]
 
+// `insta` reads and writes files, which WASM does not have, so there the snapshot files are
+// compiled in and compared with the helper the other tests share.
+#[cfg(target_arch = "wasm32")]
 mod common;
-
-use common::assert_workshop_code_eq;
 use ow_workshop::__private::{Piece, template};
 use ow_workshop::Catalog;
 use ow_workshop::Kind;
@@ -23,89 +25,30 @@ use ow_workshop::prelude::*;
 use ow_workshop_data::Extension;
 use wasm_bindgen_test::wasm_bindgen_test;
 
-/// An ignored placeholder for a fixture that is not ported yet.
-macro_rules! stub {
-    ($name:ident, $file:literal, $issue:literal) => {
-        #[test]
-        #[wasm_bindgen_test]
-        #[ignore]
-        fn $name() {
-            // Keeps the expected output compiled in, so a missing fixture breaks the build.
-            let _expected = include_str!(concat!("fixtures/reference/", $file, ".txt"));
-            todo!(concat!(
-                "port ",
-                $file,
-                ".md to a Workshop impl (",
-                $issue,
-                ")"
-            ));
+/// Compiles a mod for en-US and compares its code with `tests/snapshots/reference__<name>.snap`.
+///
+/// Natively this is an `insta` snapshot (`cargo insta review` accepts changes). On WASM the
+/// snapshot file is compared ignoring its header, whitespace-only lines and CRLF.
+macro_rules! check {
+    ($name:literal, $mode:expr) => {{
+        let output = $mode.compile(Lang::EnUs).expect("compiles");
+        #[cfg(not(target_arch = "wasm32"))]
+        insta::assert_snapshot!($name, &output.code);
+        #[cfg(target_arch = "wasm32")]
+        {
+            let snap = include_str!(concat!("snapshots/reference__", $name, ".snap"));
+            let body = snap.strip_prefix("---\n").expect("a snapshot header");
+            let body = &body[body.find("---\n").expect("the end of the header") + 4..];
+            common::assert_workshop_code_eq(&output.code, body);
         }
-    };
+    }};
 }
-
-stub!(enums, "enums", "#101");
 
 /// Size mode, as every fixture in #100 uses.
 fn size() -> CompileOptions {
     let mut options = CompileOptions::default();
     options.optimize = OptLevel::Size;
     options
-}
-
-/// Drops `//__label_..__:` lines: label comment names are an allowed difference.
-fn without_labels(code: &str) -> String {
-    let kept: Vec<_> = code
-        .lines()
-        .filter(|line| {
-            !line.trim_start().starts_with("//__label_")
-                && !line.trim_start().starts_with("//label_")
-        })
-        .collect();
-    kept.join("\n")
-}
-
-/// Compiles `mode` for en-US and compares with the fixture's expected output, after rewriting
-/// the expected text with `allowed` (`(from, to)` pairs for documented differences).
-#[track_caller]
-fn check_with(mode: &impl Workshop, expected: &str, allowed: &[(&str, &str)]) {
-    let output = mode.compile(Lang::EnUs).expect("compiles");
-    let expected = allowed
-        .iter()
-        .fold(expected.to_owned(), |text, (from, to)| {
-            text.replace(from, to)
-        });
-    assert_workshop_code_eq(&output.code, &expected);
-}
-
-/// Like [`check_with`], with label comment lines ignored on both sides.
-#[track_caller]
-fn check_ignoring_labels_with(mode: &impl Workshop, expected: &str, allowed: &[(&str, &str)]) {
-    let output = mode.compile(Lang::EnUs).expect("compiles");
-    let expected = allowed
-        .iter()
-        .fold(expected.to_owned(), |text, (from, to)| {
-            text.replace(from, to)
-        });
-    // Also allowed here: indentation after a label, and `0` rather than `Null` as the table filler.
-    let flat = |text: &str| {
-        without_labels(text)
-            .lines()
-            .map(|line| line.trim_start().replace(", Null,", ", 0,"))
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
-    assert_workshop_code_eq(&flat(&output.code), &flat(&expected));
-}
-
-#[track_caller]
-fn check_ignoring_labels(mode: &impl Workshop, expected: &str) {
-    check_ignoring_labels_with(mode, expected, &[]);
-}
-
-/// Compares with the fixture's expected output exactly (up to whitespace-only lines).
-#[track_caller]
-fn check(mode: &impl Workshop, expected: &str) {
-    check_with(mode, expected, &[]);
 }
 
 // variables: the reference printed `1e10` from source text; we print the f64 (#47).
@@ -163,11 +106,8 @@ impl Workshop for Variables {
 #[test]
 #[wasm_bindgen_test]
 fn variables() {
-    check_with(
-        &Variables,
-        include_str!("fixtures/reference/variables.txt"),
-        &[("1e10", "10000000000")],
-    );
+    // `1e10` prints as the f64, `10000000000`, not the source spelling (#47).
+    check!("variables", Variables);
 }
 
 // subroutines
@@ -232,10 +172,7 @@ fn subroutines() {
         "{:?}",
         output.warnings
     );
-    check(
-        &Subroutines,
-        include_str!("fixtures/reference/subroutines.txt"),
-    );
+    check!("subroutines", Subroutines);
 }
 
 // switches: label comment names differ.
@@ -319,33 +256,13 @@ impl Workshop for Switches {
 #[test]
 #[wasm_bindgen_test]
 fn switches() {
-    check_ignoring_labels(&Switches, include_str!("fixtures/reference/switches.txt"));
-}
-
-/// Removes the named rules from expected output: features of the old text language that have no
-/// Rust equivalent (a lone `else`) are an allowed difference.
-fn without_rules(expected: &str, names: &[&str]) -> String {
-    let mut out = Vec::new();
-    let mut skipping = false;
-    for line in expected.lines() {
-        if let Some(rest) = line.strip_prefix("rule (\"") {
-            let name = rest.split("\")").next().unwrap_or_default();
-            skipping = names.contains(&name);
-        }
-        if !skipping {
-            out.push(line);
-        }
-        if skipping && line == "}" {
-            skipping = false;
-        }
-    }
-    out.join("\n")
+    // Label comment names differ from the reference.
+    check!("switches", Switches);
 }
 
 // conditions: a lone `else`/`elif` and a second `else` cannot be written with the builder, so
 // those three rules are dropped from the expected output.
 #[derive(GlobalVars)]
-#[allow(dead_code)] // `i` and `j` are used only by the rules left out above.
 struct CondGlobals {
     #[ow(name = "A", index = 0)]
     a: Global<Num>,
@@ -363,10 +280,6 @@ struct CondGlobals {
     g: Global<Num>,
     #[ow(name = "H", index = 7)]
     h: Global<Num>,
-    #[ow(name = "I", index = 8)]
-    i: Global<Num>,
-    #[ow(name = "J", index = 9)]
-    j: Global<Num>,
     #[ow(name = "K", index = 10)]
     k: Global<Num>,
 }
@@ -487,38 +400,11 @@ impl Workshop for Conditions {
 #[test]
 #[wasm_bindgen_test]
 fn conditions() {
-    let expected = without_rules(
-        include_str!("fixtures/reference/conditions.txt"),
-        &["lone else", "lone elif/else", "if/elif multiple elses"],
-    );
-    // The goto/label section of the big rule is also left out: the reference keeps `If(True)`
-    // around a body a skip lands in, but folds the other `if true`s of a rule that has skips,
-    // which this optimizer deliberately does not (`a_true_if_stays_when_the_rule_has_skips`).
-    let goto_part = "        Skip(3);\n        If(True);\n            Set Global Variable(A, 2);\n        Else If(Global.A);\n            //lbl_1:\n            Set Global Variable(A, 3);\n        End;\n        Set Global Variable(B, 3);\n        Skip(True);\n        If(False);\n            //lbl_2:\n            Set Global Variable(B, 6);\n        End;\n        Set Global Variable(B, 9);\n";
-    assert!(expected.contains(goto_part));
-    check_with(&Conditions, &expected, &[(goto_part, "")]);
-}
-
-/// Allowed difference: `B == 0` (either way round) becomes `Not(B)`, one element fewer.
-const EQ_ZERO_AS_NOT: [(&str, &str); 2] = [
-    ("Compare(Global.B, ==, Null)", "Not(Global.B)"),
-    ("Compare(Null, ==, Global.B)", "Not(Global.B)"),
-];
-
-/// Keeps only the named rules (and everything before the first rule) of expected output.
-fn only_rules(expected: &str, names: &[&str]) -> String {
-    let mut out = Vec::new();
-    let mut keeping = true;
-    for line in expected.lines() {
-        if let Some(rest) = line.strip_prefix("rule (\"") {
-            let name = rest.split("\")").next().unwrap_or_default();
-            keeping = names.contains(&name);
-        }
-        if keeping {
-            out.push(line);
-        }
-    }
-    out.join("\n")
+    // Not expressible with the builder: a lone `else`/`elif` and a second `else`. The goto/label
+    // section of the big rule differs too: the reference keeps `If(True)` around a body a skip
+    // lands in, but folds the other `if true`s of a rule that has skips, which this optimizer
+    // deliberately does not (`a_true_if_stays_when_the_rule_has_skips`).
+    check!("conditions", Conditions);
 }
 
 /// Assigns any value to a number variable: the reference variables are untyped.
@@ -546,20 +432,13 @@ struct OpGlobals {
     d: Global<Num>,
 }
 
-#[derive(PlayerVars)]
-#[allow(dead_code)] // declared so the variables block matches the fixture
-struct OpPlayers {
-    #[ow(name = "A", index = 0)]
-    a: PlayerVar<Num>,
-}
-
 struct OperatorsStrict;
 
 impl Workshop for OperatorsStrict {
     type Globals = OpGlobals;
-    type Players = OpPlayers;
+    type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &OpGlobals, _: &OpPlayers) {
+    fn build(&self, ws: &mut Builder, g: &OpGlobals, (): &()) {
         let b = || g.b.get();
         ws.rule("strict optimizations", OngoingGlobal, |r, _| {
             r.actions(|bl| {
@@ -608,9 +487,9 @@ struct Operators;
 
 impl Workshop for Operators {
     type Globals = OpGlobals;
-    type Players = OpPlayers;
+    type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &OpGlobals, _: &OpPlayers) {
+    fn build(&self, ws: &mut Builder, g: &OpGlobals, (): &()) {
         let (a, b, c, d) = (|| g.a.get(), || g.b.get(), || g.c.get(), || g.d.get());
         let hero = || IntoExpr::<Heroes>::into_expr(Hero::Ana).erase();
         ws.rule("comparison", OngoingGlobal, |r, _| {
@@ -861,40 +740,10 @@ impl Workshop for Operators {
 #[test]
 #[wasm_bindgen_test]
 fn operators_strict() {
-    let expected = only_rules(
-        include_str!("fixtures/reference/operators.txt"),
-        &["strict optimizations"],
-    );
     // The strict header is printed before the rule (strict is a whole-mod option here) rather
     // than inside its actions.
-    check_with(
-        &OperatorsStrict,
-        &expected,
-        &[
-            ("        //Strict optimizations enabled\n", ""),
-            (
-                "//Optimize for size enabled\n",
-                "//Optimize for size enabled\n//Strict optimizations enabled\n",
-            ),
-        ],
-    );
+    check!("operators_strict", OperatorsStrict);
 }
-
-const OPERATOR_RULES: &[&str] = &[
-    "comparison",
-    "add",
-    "subtract",
-    "negate",
-    "multiply",
-    "divide",
-    "modulo",
-    "power",
-    "and",
-    "or",
-    "not",
-    "in",
-    "ternaries",
-];
 
 // operators, assignment: `A` is indexed here, so it is an array variable in this mod.
 #[derive(GlobalVars)]
@@ -966,40 +815,17 @@ impl Workshop for OperatorsAssign {
 #[test]
 #[wasm_bindgen_test]
 fn operators_assign() {
-    let expected = only_rules(
-        include_str!("fixtures/reference/operators.txt"),
-        &["assignment", "handling random values"],
-    );
-    // This mod never declares C and D, which the full fixture lists.
-    check_with(
-        &OperatorsAssign,
-        &expected,
-        &[("        2: C\n        3: D\n", "")],
-    );
+    // This mod never declares C and D, which the reference lists.
+    check!("operators_assign", OperatorsAssign);
 }
 
 #[test]
 #[wasm_bindgen_test]
 fn operators() {
-    let expected = only_rules(
-        include_str!("fixtures/reference/operators.txt"),
-        OPERATOR_RULES,
-    );
     // Allowed differences, all in the optimizer: `B == 0` becomes `Not(B)` (one element
     // fewer than comparing with `Null`), `-vect(1, ..)` keeps its literal `1` instead of
     // `True`, and `(-1) ** B` folds to `0` (a negative base gives 0 in the workshop).
-    check_with(
-        &Operators,
-        &expected,
-        &[
-            ("Compare(Global.B, ==, Null)", "Not(Global.B)"),
-            (
-                "Multiply(-1, Vector(True, Global.B, -2))",
-                "Multiply(-1, Vector(1, Global.B, -2))",
-            ),
-            ("Raise To Power(-1, Global.B)", "Null"),
-        ],
-    );
+    check!("operators", Operators);
 }
 
 // elementSaving: the reference variables are untyped, but `A` is both used as a loop counter and
@@ -1322,96 +1148,21 @@ impl Workshop for ElementSavingIndex {
     }
 }
 
-/// The lines of `code` that contain `needle`, trimmed.
-fn lines_containing(code: &str, needle: &str) -> Vec<String> {
-    code.lines()
-        .filter(|line| line.contains(needle))
-        .map(|line| line.trim().to_owned())
-        .collect()
-}
-
 #[test]
 #[wasm_bindgen_test]
 fn elementsaving() {
-    let fixture = include_str!("fixtures/reference/elementSaving.txt");
-    let exact = [
-        "0 to null",
-        "0 to false",
-        "1 to true",
-        "null vector to null",
-        "empty string",
-    ];
-    // The indexed assignments come from the second mod.
-    let without_index = |code: &str| -> String {
-        code.lines()
-            .filter(|line| !line.contains("At Index("))
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
-    let output = ElementSaving.compile(Lang::EnUs).expect("compiles").code;
-    let rewritten = EQ_ZERO_AS_NOT
-        .iter()
-        .fold(without_index(&only_rules(fixture, &exact)), |t, (a, b)| {
-            t.replace(a, b)
-        });
-    assert_workshop_code_eq(&only_rules(&output, &exact), &rewritten);
-
-    let indexed = ElementSavingIndex.compile(Lang::EnUs).expect("compiles");
-    assert_eq!(
-        lines_containing(&indexed.code, "At Index("),
-        lines_containing(fixture, "At Index(")
-    );
-
+    // `A` is a number in `ElementSaving`; the indexed assignments (`A[0] = B`) come from a
+    // second mod, where it is an array. `B == 0` becomes `Not(B)` (one element fewer than
+    // comparing with `Null`).
+    //
     // `if to skip if`: label names differ, and so do two aggressive choices. A skip lands on a
     // `Pass` of its own (the reference lets it land on the next action), and a lone-statement
     // `if` at the end of a rule is a `Skip If` here, where the reference keeps the `If`.
-    let skip_rule = ["if to skip if"];
-    let expected = only_rules(fixture, &skip_rule);
-    let mut expected = expected
-        .replace(
-            "//__label_if_2__:\n",
-            "//__label_if_2__:\n\"pass\"\ndisabled Abort;\n",
-        )
-        .replace(
-            "//__label_if_3__:\n",
-            "//__label_if_3__:\n\"pass\"\ndisabled Abort;\n",
-        )
-        .replace(
-            "//__label_if_4__:\n",
-            "//__label_if_4__:\n\"pass\"\ndisabled Abort;\n",
-        );
-    let last_if = "        \"should stay if\"\n        If(Compare(Global.A, ==, Global.B));\n            Set Global Variable(D, 4);\n    }";
-    assert!(expected.contains(last_if));
-    expected = expected.replace(
-        last_if,
-        "        \"should stay if\"\n        Skip If(Compare(Global.A, !=, Global.B), True);\n        Set Global Variable(D, 4);\n        //label_5:\n        \"pass\"\n        disabled Abort;\n    }",
-    );
-    let flat = |text: &str| {
-        without_labels(text)
-            .lines()
-            .map(|line| {
-                line.trim_start()
-                    .replace(", Null,", ", 0,")
-                    .replace("(1, Null)", "(1, 0)")
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
-    assert_workshop_code_eq(&flat(&only_rules(&output, &skip_rule)), &flat(&expected));
-
+    //
     // `auto array compression`: only the first two statements compress identically. This
     // optimizer leaves a repeated variable and a three-string array as plain arrays.
-    let compression = ["auto array compression"];
-    let expected = only_rules(fixture, &compression)
-        .replace(
-            "Mapped Array(String Split(Custom String(\"00000000\"), First Of(Null)), Global.B)",
-            "Array(Global.B, Global.B, Global.B, Global.B, Global.B, Global.B, Global.B, Global.B, Global.B)",
-        )
-        .replace(
-            "String Split(Custom String(\"abc0def0ghi\"), First Of(Null))",
-            "Array(Custom String(\"abc\"), Custom String(\"def\"), Custom String(\"ghi\"))",
-        );
-    assert_workshop_code_eq(&only_rules(&output, &compression), &expected);
+    check!("elementsaving", ElementSaving);
+    check!("elementsaving_index", ElementSavingIndex);
 }
 
 // dicts
@@ -1455,7 +1206,7 @@ impl Workshop for Dicts {
 #[test]
 #[wasm_bindgen_test]
 fn dicts() {
-    check(&Dicts, include_str!("fixtures/reference/dicts.txt"));
+    check!("dicts", Dicts);
 }
 
 // builtinenums: `Math.FUCKTON_OF_SPACES` is `math::LOTS_OF_SPACES`.
@@ -1534,10 +1285,7 @@ impl Workshop for BuiltinEnums {
 #[test]
 #[wasm_bindgen_test]
 fn builtinenums() {
-    check(
-        &BuiltinEnums,
-        include_str!("fixtures/reference/builtinenums.txt"),
-    );
+    check!("builtinenums", BuiltinEnums);
 }
 
 // builtinmacros: `splitDictArray` and `tabular` are both `columns`.
@@ -1580,10 +1328,7 @@ impl Workshop for BuiltinMacros {
 #[test]
 #[wasm_bindgen_test]
 fn builtinmacros() {
-    check(
-        &BuiltinMacros,
-        include_str!("fixtures/reference/builtinmacros.txt"),
-    );
+    check!("builtinmacros", BuiltinMacros);
 }
 
 // getCurrentMap
@@ -1634,30 +1379,7 @@ fn getcurrentmap() {
     // with `Append To Array`. Every use of `Current Map` is rewritten once a bugged map is
     // referenced, including a comparison with a map that is not bugged. A comparison keeps its
     // operand order.
-    let fixed = "First Of(Filtered Array(Append To Array(Array(Map(Samoa), Map(Colosseo)), Current Map), Compare(Custom String(\"{0}\", Current Map), ==, String Split(Current Array Element, Empty Array))))";
-    let colosseo = "Compare(Custom String(\"{0}\", Current Map), ==, Custom String(\"{0}\", Map(Colosseo))));\n    }";
-    check_with(
-        &GetCurrentMap,
-        include_str!("fixtures/reference/getCurrentMap.txt"),
-        &[
-            (
-                "First Of(Filtered Array(Array(Map(Colosseo), Map(Samoa), Current Map), Compare(Custom String(\"{0}\", Current Map), ==, String Split(Current Array Element, Empty Array))))",
-                fixed,
-            ),
-            (
-                "Compare(Current Map, ==, Map(King's Row))",
-                &format!("Compare({fixed}, ==, Map(King's Row))"),
-            ),
-            (
-                "Compare(Map(King's Row), ==, Current Map)",
-                &format!("Compare(Map(King's Row), ==, {fixed})"),
-            ),
-            (
-                colosseo,
-                "Compare(Custom String(\"{0}\", Map(Colosseo)), ==, Custom String(\"{0}\", Current Map)));\n    }",
-            ),
-        ],
-    );
+    check!("getcurrentmap", GetCurrentMap);
 }
 
 // eventVars: subroutines are indexed in declaration order.
@@ -1729,14 +1451,7 @@ fn eventvars() {
     );
     // `A = eventWasCriticalHit` is left out: `Ongoing - Each Player` has no such event value,
     // and the typed events reject reading it there.
-    check_with(
-        &EventVars,
-        include_str!("fixtures/reference/eventVars.txt"),
-        &[(
-            "        Set Global Variable(A, Event Was Critical Hit);\n",
-            "",
-        )],
-    );
+    check!("eventvars", EventVars);
 }
 
 // arrays: the reference variables are untyped; `A` is an array and the rest hold anything.
@@ -2031,33 +1746,10 @@ impl Workshop for Arrays {
 #[test]
 #[wasm_bindgen_test]
 fn arrays() {
-    let fixture = include_str!("fixtures/reference/arrays.txt");
-    let output = Arrays.compile(Lang::EnUs).expect("compiles").code;
-    let rules = [
-        "array literals",
-        "last",
-        "filtered array",
-        "mapped array",
-        "index",
-        "slice",
-        "in",
-        "exclude",
-        "concat",
-        "other array functions",
-        "member array functions",
-    ];
-    assert_workshop_code_eq(&only_rules(&output, &rules), &only_rules(fixture, &rules));
-
-    // `array to string`: `array_to_string` is its own formula, not the reference's, so the
-    // rule is not compared text for text. Each of the 11 calls prints one `Create HUD Text`.
-    let printed = |code: &str| {
-        only_rules(code, &["array to string"])
-            .lines()
-            .filter(|line| line.contains("Create HUD Text("))
-            .count()
-    };
-    assert_eq!(printed(&output), 11);
-    assert_eq!(printed(fixture), 11);
+    // `array to string`: `array_to_string` is its own formula, not the reference's, and each of
+    // the 11 calls prints one `Create HUD Text`. `Mapped Array(..)` over `x == []` reads
+    // `Not(x)`, as in `compression`.
+    check!("arrays", Arrays);
 }
 
 // functions: `A` is an array (it is appended to), `B` a number (it is chased), the rest hold
@@ -2484,16 +2176,8 @@ impl Workshop for Functions {
 fn functions() {
     // Allowed difference: the reference folds `acosDeg`, `asinDeg` and `atan2Deg` of a literal
     // to values that are not degrees (0.03, 0.01, 0.04), contradicting its own comments
-    // (about 113.6, 36.9 and 140.1). The real degrees are expected here.
-    check_with(
-        &Functions,
-        include_str!("fixtures/reference/functions.txt"),
-        &[
-            ("0.034597891672104", "113.57817847820183"),
-            ("0.011231213088677", "36.86989764584402"),
-            ("0.042663877670413", "140.05724853255916"),
-        ],
-    );
+    // (about 113.6, 36.9 and 140.1). The real degrees are printed here.
+    check!("functions", Functions);
 }
 
 // comments: a multi-line comment and `#` comments become `comment` calls.
@@ -2538,7 +2222,7 @@ impl Workshop for Comments {
 #[test]
 #[wasm_bindgen_test]
 fn comments() {
-    check(&Comments, include_str!("fixtures/reference/comments.txt"));
+    check!("comments", Comments);
 }
 
 // gotos
@@ -2598,50 +2282,8 @@ fn gotos() {
     // distances are smaller (`Skip(True)`); this optimizer keeps dead branches that hold a
     // label (a skip lands inside them), so the distances count the code it keeps. A skip counted
     // at runtime (`goto loc+A`) is left out: it stops this optimizer from removing anything in
-    // its rule. The expected output below is the verified result of this compiler.
-    let expected = r#"
-variables {
-    global:
-        0: A
-}
-//Optimize for size enabled
-rule ("gotos") {
-    event {
-        Ongoing - Global;
-    }
-    actions {
-        "skip 3"
-        Skip(3);
-        If(False);
-            "skip 5"
-            Skip(5);
-            Set Global Variable(A, 1);
-            Set Global Variable(A, 2);
-        End;
-        If(False);
-            Set Global Variable(A, 1);
-            Set Global Variable(A, 2);
-        End;
-        "skip 3"
-        Skip(2);
-        "skip 0"
-        If(False);
-            Set Global Variable(A, 1);
-            Set Global Variable(A, 2);
-    }
-}
-"#;
-    let flat = |text: &str| {
-        without_labels(text)
-            .lines()
-            .map(|line| line.trim_start().to_owned())
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
-    let output = Gotos.compile(Lang::EnUs).expect("compiles");
-    assert_workshop_code_eq(&flat(&output.code), &flat(expected));
-    // The fixture itself still lists the same rule.
-    assert!(include_str!("fixtures/reference/gotos.txt").contains("rule (\"gotos\")"));
+    // its rule.
+    check!("gotos", Gotos);
 }
 
 // loops
@@ -2747,11 +2389,7 @@ impl Workshop for Loops {
 fn loops() {
     // `nested do/while` has no equivalent: a `do_while` must be the first statement of its
     // rule, so one cannot start another loop's body.
-    let expected = without_rules(
-        include_str!("fixtures/reference/loops.txt"),
-        &["nested do/while"],
-    );
-    check_ignoring_labels(&Loops, &expected);
+    check!("loops", Loops);
 }
 
 // rules
@@ -2859,18 +2497,7 @@ fn rules() {
     // the condition `A`) is optimized away here, since it assigns `A` to itself. The
     // `condition that is always false` rule is not ported: the reference output drops it, as it
     // can never run.
-    let expected = without_rules(
-        include_str!("fixtures/reference/rules.txt"),
-        &["rule condition test 3"],
-    );
-    check_with(
-        &Rules,
-        &expected,
-        &[(
-            "((Global.A) && (Global.B) && (Global.C) && (Compare(Global.D, ==, 2)))",
-            "And(Global.A, And(And(Global.B, Global.C), Compare(Global.D, ==, 2)))",
-        )],
-    );
+    check!("rules", Rules);
 }
 
 // rulePrefix: the reference prefixes rules with their source file; the groups below spell
@@ -2913,10 +2540,7 @@ impl Workshop for RulePrefix {
 #[test]
 #[wasm_bindgen_test]
 fn ruleprefix() {
-    check(
-        &RulePrefix,
-        include_str!("fixtures/reference/rulePrefix.txt"),
-    );
+    check!("ruleprefix", RulePrefix);
 }
 
 // strings
@@ -3198,44 +2822,8 @@ fn strings() {
     // - the generated tag setup rule is named `<tx> / <fg> setup code` here, without the two
     //   credit comments, and the size header comes before it;
     // - small string arrays stay arrays: this optimizer splits a string only when that is
-    //   cheaper by its own cost model, where the reference always splits (the 450-item array
-    //   is left out of the comparison for the same reason).
-    let output = Strings.compile(Lang::EnUs).expect("compiles").code;
-    let drop_array = |code: &str| {
-        code.lines()
-            .filter(|line| {
-                !line.contains("Custom String(\"a\"), Custom String(\"a\"), Custom String(\"a\")")
-                    && !line.contains("Custom String(\"a0a0a0a0a0a0")
-            })
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
-    let setup = "OverPy <\u{AD}tx> / <\u{AD}fg> setup code";
-    let expected = include_str!("fixtures/reference/strings.txt")
-        .replace(
-            &format!("rule (\"{setup}\")"),
-            "//Optimize for size enabled\nrule (\"<\u{AD}tx> / <\u{AD}fg> setup code\")",
-        )
-        .replace("        \"By Zezombye\"\n", "")
-        .replace(
-            "        \"More info: https://workshop.codes/wiki/articles/tx-reference-sheet\"\n",
-            "",
-        )
-        .replacen("//Optimize for size enabled\nrule (\"strings\")", "rule (\"strings\")", 1)
-        .replace("        //Optimize for size enabled\n", "")
-        .replace(
-            "String Split(Custom String(\"a0b\"), First Of(Null))",
-            "Array(Custom String(\"a\"), Custom String(\"b\"))",
-        )
-        .replace(
-            "String Split(Custom String(\"0(1.00, 0.00, 0.00)1(1.00, 0.00, 0.00)2\"), First Of(Left))",
-            "Array(Custom String(\"0\"), Custom String(\"1\"), Custom String(\"2\"))",
-        )
-        .replace(
-            "String Split(Custom String(\"0(1.00, 0.00, 0.00)\u{EC51}123\"), Custom String(\"\u{EC51}\"))",
-            "Array(Custom String(\"0(1.00, 0.00, 0.00)\"), Custom String(\"123\"))",
-        );
-    assert_workshop_code_eq(&drop_array(&output), &drop_array(&expected));
+    //   cheaper by its own cost model, where the reference always splits.
+    check!("strings", Strings);
 }
 
 // strings_args: every way to repeat up to six variables over 1 to 7 placeholders, in the order
@@ -3320,10 +2908,7 @@ impl Workshop for StringsArgs {
 #[test]
 #[wasm_bindgen_test]
 fn strings_args() {
-    check(
-        &StringsArgs,
-        include_str!("fixtures/reference/strings_args.txt"),
-    );
+    check!("strings_args", StringsArgs);
 }
 
 // lowercase: `createCasedProgressBarIwt` is `cased_progress_bar_text_with`.
@@ -3377,30 +2962,9 @@ impl Workshop for Lowercase {
 fn lowercase() {
     // Allowed differences: the tag setup rule has its own name and no credit comments here (as
     // in `strings`), and the letters are dealt out to the overlaid progress-bar texts by this
-    // implementation's own rule (and numbered 1 to 3, where the reference counts 0 to 2), so
-    // the three texts are not compared text for text; `tests/cased.rs` covers them.
-    let setup = "OverPy <\u{AD}tx> / <\u{AD}fg> setup code";
-    let expected = include_str!("fixtures/reference/lowercase.txt")
-        .replace(
-            &format!("rule (\"{setup}\")"),
-            "rule (\"<\u{AD}tx> / <\u{AD}fg> setup code\")",
-        )
-        .replace("        \"By Zezombye\"\n", "")
-        .replace(
-            "        \"More info: https://workshop.codes/wiki/articles/tx-reference-sheet\"\n",
-            "",
-        );
-    let output = Lowercase.compile(Lang::EnUs).expect("compiles").code;
-    let is_text = |line: &&str| line.contains("Create Progress Bar In-World Text(");
-    let without = |code: &str| {
-        code.lines()
-            .filter(|line| !is_text(line))
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
-    assert_workshop_code_eq(&without(&output), &without(&expected));
-    assert_eq!(output.lines().filter(is_text).count(), 3);
-    assert_eq!(expected.lines().filter(is_text).count(), 3);
+    // implementation's own rule (and numbered 1 to 3, where the reference counts 0 to 2);
+    // `tests/cased.rs` covers them.
+    check!("lowercase", Lowercase);
 }
 
 // compression
@@ -3508,15 +3072,7 @@ fn compression() {
     // Allowed differences: `debug` pads its box with 170 ordinary spaces where the reference
     // used em spaces (split over the same two pieces here), and the optimizer reads
     // `x == []` as `Not(x)`, as in `arrays`.
-    let em = |n: usize| "\u{2003}".repeat(n);
-    let expected = include_str!("fixtures/reference/compression.txt")
-        .replace(&em(118), &" ".repeat(118))
-        .replace(&em(52), &" ".repeat(52))
-        .replace(
-            "And(Compare(Current Array Element, ==, Empty Array)",
-            "And(Not(Current Array Element)",
-        );
-    check(&Compression, &expected);
+    check!("compression", Compression);
 }
 
 // shionSettings: a mod with settings and no rules.
@@ -3550,10 +3106,7 @@ impl Workshop for ShionSettings {
 #[test]
 #[wasm_bindgen_test]
 fn shionsettings() {
-    check(
-        &ShionSettings,
-        include_str!("fixtures/reference/shionSettings.txt"),
-    );
+    check!("shionsettings", ShionSettings);
 }
 
 // extensions
@@ -3631,10 +3184,7 @@ impl Workshop for Extensions {
 #[test]
 #[wasm_bindgen_test]
 fn extensions() {
-    check(
-        &Extensions,
-        include_str!("fixtures/reference/extensions.txt"),
-    );
+    check!("extensions", Extensions);
 }
 
 // workshopSettings: `A` takes any value, so it is untyped.
@@ -3776,18 +3326,7 @@ fn workshopsettings() {
     // Allowed differences: a second hero setting with the same name gets a hidden suffix so the
     // two stay distinct, where the reference printed the name twice; and an integer range is
     // `i32`, so an open end is `i32::MAX` or `i32::MIN` rather than 13 nines.
-    check_with(
-        &WorkshopSettings,
-        include_str!("fixtures/reference/workshopSettings.txt"),
-        &[
-            ("3, 6, 9999999999999, 0", "3, 6, 2147483647, 0"),
-            ("3, -9999999999999, 6, 0", "3, -2147483648, 6, 0"),
-            (
-                "Custom String(\"hero\"), Custom String(\"hero\"), Wrecking Ball",
-                "Custom String(\"hero\"), Custom String(\"hero\u{1}\"), Wrecking Ball",
-            ),
-        ],
-    );
+    check!("workshopsettings", WorkshopSettings);
 }
 
 // customGameSettings: the settings are the whole mod. The `unknown gamemode` entry has no
@@ -3945,21 +3484,10 @@ impl Workshop for CustomGameSettings {
 #[test]
 #[wasm_bindgen_test]
 fn customgamesettings() {
-    // `unknown gamemode` (between Assault and Escort) is not expressible.
-    let fixture = include_str!("fixtures/reference/customGameSettings.txt");
-    let start = fixture
-        .find("\t\tunknown gamemode\n")
-        .expect("the unknown mode");
-    let end = start + fixture[start..].find("\t\tEscort").expect("Escort follows");
-    let expected = format!("{}{}", &fixture[..start], &fixture[end..]);
-    // Allowed difference: Domina's `ability1KB%` (written with a capital B) is printed where it
-    // was written, first, rather than after the keys spelled exactly like the schema.
-    let knockback = "\t\t\t\tSonic Repulsors Knockback Scalar: 125%\n";
-    let heal = "\t\t\t\tReconstruction Heal Scalar: 125%\n";
-    let expected = expected
-        .replace(knockback, "")
-        .replace(heal, &format!("{knockback}{heal}"));
-    check(&CustomGameSettings, &expected);
+    // `unknown gamemode` (between Assault and Escort) is not expressible. Allowed difference:
+    // Domina's `ability1KB%` (written with a capital B) is printed where it was written, first,
+    // rather than after the keys spelled exactly like the schema.
+    check!("customgamesettings", CustomGameSettings);
 }
 
 // translations
@@ -4091,15 +3619,15 @@ impl Workshop for Translated {
         for (lang, po) in [
             (
                 TranslationLang::Fr,
-                include_str!("fixtures/reference/translations.fr.po"),
+                include_str!("translations/translations.fr.po"),
             ),
             (
                 TranslationLang::Es,
-                include_str!("fixtures/reference/translations.es.po"),
+                include_str!("translations/translations.es.po"),
             ),
             (
                 TranslationLang::ZhCn,
-                include_str!("fixtures/reference/translations.zh_cn.po"),
+                include_str!("translations/translations.zh_cn.po"),
             ),
         ] {
             catalog.merge_po(lang, po).expect("parses");
@@ -4132,33 +3660,8 @@ fn translations() {
     // - `debug` pads with ordinary spaces where the reference used em spaces (as in
     //   `compression`);
     // - the formatter test `{0} {1} {2} {4}` is written `{0} {1} {2} {3}` here (an argument
-    //   no placeholder uses is an error), which is a different translation key, so the one
-    //   message line that uses it is not compared.
-    let setup = "OverPy <\u{AD}tx> / <\u{AD}fg> setup code";
-    let expected = include_str!("fixtures/reference/translations.txt")
-        .replace(
-            &format!("rule (\"{setup}\")"),
-            "rule (\"<\u{AD}tx> / <\u{AD}fg> setup code\")",
-        )
-        .replace("        \"By Zezombye\"\n", "")
-        .replace(
-            "        \"More info: https://workshop.codes/wiki/articles/tx-reference-sheet\"\n",
-            "",
-        )
-        .replace(
-            "        126: __holygrail__\n        127: __overpyTranslationHelper__\n",
-            "        126: __overpyTranslationHelper__\n        127: __holygrail__\n",
-        )
-        .replace('\u{2003}', " ");
-    let output = Translated.compile(Lang::EnUs).expect("compiles").code;
-    let four = "String Replace(String Replace(String Replace(String Replace(";
-    let without = |code: &str| {
-        code.lines()
-            .filter(|line| !line.contains(four))
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
-    assert_workshop_code_eq(&without(&output), &without(&expected));
+    //   no placeholder uses is an error), which is a different translation key.
+    check!("translations", Translated);
 }
 
 // translations2: the language is kept in a player variable.
@@ -4205,21 +3708,18 @@ impl Workshop for Translated2 {
         use TranslationLang::{De, En, EsEs, Fr, It, Ja, Ko, Pl, Pt, Ru, Th, Tr, Zh};
         let mut catalog = Catalog::default();
         for (lang, po) in [
-            (En, include_str!("fixtures/reference/translations2.en.po")),
-            (
-                EsEs,
-                include_str!("fixtures/reference/translations2.es_es.po"),
-            ),
-            (Fr, include_str!("fixtures/reference/translations2.fr.po")),
-            (It, include_str!("fixtures/reference/translations2.it.po")),
-            (Ja, include_str!("fixtures/reference/translations2.ja.po")),
-            (Ko, include_str!("fixtures/reference/translations2.ko.po")),
-            (Pl, include_str!("fixtures/reference/translations2.pl.po")),
-            (Pt, include_str!("fixtures/reference/translations2.pt.po")),
-            (Ru, include_str!("fixtures/reference/translations2.ru.po")),
-            (Th, include_str!("fixtures/reference/translations2.th.po")),
-            (Tr, include_str!("fixtures/reference/translations2.tr.po")),
-            (Zh, include_str!("fixtures/reference/translations2.zh.po")),
+            (En, include_str!("translations/translations2.en.po")),
+            (EsEs, include_str!("translations/translations2.es_es.po")),
+            (Fr, include_str!("translations/translations2.fr.po")),
+            (It, include_str!("translations/translations2.it.po")),
+            (Ja, include_str!("translations/translations2.ja.po")),
+            (Ko, include_str!("translations/translations2.ko.po")),
+            (Pl, include_str!("translations/translations2.pl.po")),
+            (Pt, include_str!("translations/translations2.pt.po")),
+            (Ru, include_str!("translations/translations2.ru.po")),
+            (Th, include_str!("translations/translations2.th.po")),
+            (Tr, include_str!("translations/translations2.tr.po")),
+            (Zh, include_str!("translations/translations2.zh.po")),
         ] {
             catalog.merge_po(lang, po).expect("parses");
         }
@@ -4243,29 +3743,79 @@ fn translations2() {
     // Allowed differences, as in `translations`: the tag setup rule's name and comments, the
     // order of the two internal variables, and `debug`'s padding; also the name of the rule
     // that detects the player's language, and one comment inside it.
-    let setup = "OverPy <\u{AD}tx> / <\u{AD}fg> setup code";
-    let expected = include_str!("fixtures/reference/translations2.txt")
-        .replace(
-            &format!("rule (\"{setup}\")"),
-            "rule (\"<\u{AD}tx> / <\u{AD}fg> setup code\")",
-        )
-        .replace("        \"By Zezombye\"\n", "")
-        .replace(
-            "        \"More info: https://workshop.codes/wiki/articles/tx-reference-sheet\"\n",
-            "",
-        )
-        .replace(
-            "126: __holygrail__\n        127: __overpyTranslationHelper__\n",
-            "126: __overpyTranslationHelper__\n        127: __holygrail__\n",
-        )
-        .replace(
-            "OverPy translation setup - Determine the player's language",
-            "Translation setup - detect player language",
-        )
-        .replace(
-            "        \"Have a tolerance of 1/100 of a degree to account for precision errors\"\n",
-            "",
-        )
-        .replace('\u{2003}', " ");
-    check(&Translated2, &expected);
+    check!("translations2", Translated2);
+}
+
+// enums: OverPy's user enums are plain Rust constants here; there is no enum feature to port.
+// The reference variables are untyped, so they are `Any`.
+#[derive(GlobalVars)]
+struct UserEnumGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Any>,
+    #[ow(name = "E", index = 4)]
+    e: Global<Any>,
+    #[ow(name = "F", index = 5)]
+    f: Global<Any>,
+    #[ow(name = "G", index = 6)]
+    g: Global<Any>,
+    #[ow(name = "L", index = 11)]
+    l: Global<Any>,
+}
+
+struct UserEnums;
+
+impl Workshop for UserEnums {
+    type Globals = UserEnumGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &UserEnumGlobals, (): &()) {
+        ws.rule("", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                // GameStatus: AA = 1, BB = 2, CC = 6, DD = 7, EE = "psqdoj\"fidqs", FF = A.
+                x.comment("1");
+                x.set(g.a, 1);
+                x.comment("2");
+                x.set(g.a, 2);
+                x.comment("7");
+                x.set(g.a, 7);
+                x.comment("Team 1");
+                x.set(g.a, Expr::<Team>::from(Team::One).erase());
+                x.comment("Team 1");
+                x.set(g.a, Expr::<Team>::from(Team::One).erase());
+                x.comment("6");
+                x.set(g.l, 6);
+                x.comment("[1, 2, 6, 7, \"psqdoj\\\"fidqs\", Global.A]");
+                x.set(
+                    g.e,
+                    Expr::<Array<Any>>::from(vec![
+                        n(1).erase(),
+                        n(2).erase(),
+                        n(6).erase(),
+                        n(7).erase(),
+                        Expr::<Str>::from("psqdoj\"fidqs").erase(),
+                        g.a.get(),
+                    ]),
+                );
+                x.set(g.f, rgb(255, 250, 250));
+                x.set(g.g, rgb(255, 112, 122));
+                x.create_effect(
+                    all_players(),
+                    Effect::BadAura,
+                    Color::Red,
+                    null::<PlayerOrPosition>(),
+                    2,
+                );
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn enums() {
+    check!("enums", UserEnums);
 }

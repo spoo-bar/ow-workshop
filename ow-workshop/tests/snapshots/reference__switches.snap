@@ -1,0 +1,75 @@
+---
+source: ow-workshop/tests/reference.rs
+expression: "& output.code"
+---
+variables {
+    global:
+        0: A
+        1: B
+        2: C
+        3: D
+        4: E
+}
+
+//Optimize for size enabled
+rule ("switches") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        If(True);
+            Skip(Value In Array(Array(4, 0, 2), Add(True, Index Of Array Value(Array(1, 2), Global.A))));
+            //label_1:
+            Modify Global Variable(B, Add, True);
+        Else;
+            //label_2:
+            Modify Global Variable(C, Add, True);
+        Else;
+            //label_0:
+        End;
+        If(True);
+            Skip(Value In Array(Array(2, 0, 1, 1, 2), Add(True, Index Of Array Value(Array(1, 2, 3, Hero(Brigitte)), Global.B))));
+            //label_4:
+            Modify Global Variable(B, Add, True);
+            //label_5:
+            //label_6:
+            Modify Global Variable(C, Add, True);
+            //label_3:
+            //label_7:
+            Modify Global Variable(D, Add, True);
+        End;
+    }
+}
+
+rule ("nested switches") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        If(Global.A);
+            If(True);
+                Skip(Value In Array(Array(12, 0, 2, 4), Add(True, Index Of Array Value(Array(1, 2, 3), Global.B))));
+                //label_12:
+                Modify Global Variable(C, Add, True);
+            Else;
+                //label_13:
+                Modify Global Variable(D, Add, True);
+            Else;
+                //label_14:
+                If(True);
+                    Skip(Value In Array(Array(4, 0, 3), Add(True, Index Of Array Value(Array(1, 2), Global.C))));
+                    //label_9:
+                    Modify Global Variable(A, Add, True);
+                    Modify Global Variable(B, Add, True);
+                Else;
+                    //label_10:
+                    Modify Global Variable(C, Add, True);
+                    //label_8:
+                    Modify Global Variable(D, Add, True);
+                End;
+                //label_11:
+            End;
+        Else;
+            Modify Global Variable(E, Add, True);
+    }
+}

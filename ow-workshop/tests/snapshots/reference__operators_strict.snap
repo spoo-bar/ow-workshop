@@ -1,0 +1,38 @@
+---
+source: ow-workshop/tests/reference.rs
+expression: "& output.code"
+---
+variables {
+    global:
+        0: A
+        1: B
+        2: C
+        3: D
+}
+
+//Optimize for size enabled
+//Strict optimizations enabled
+rule ("strict optimizations") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        "Unless specified otherwise, none of these should be optimized"
+        Set Global Variable(A, Compare(Custom String("am"), ==, Custom String("**")));
+        Set Global Variable(A, Add(Global.B, 0));
+        Set Global Variable(A, Add(Global.B, Add(Left, Right)));
+        Set Global Variable(A, Multiply(Global.B, 0));
+        Set Global Variable(A, Multiply(Global.B, 0));
+        "0"
+        Set Global Variable(A, Null);
+        Set Global Variable(A, Multiply(Global.B, 1));
+        Set Global Variable(A, Divide(Global.B, 1));
+        Set Global Variable(A, Divide(0, Global.B));
+        Set Global Variable(A, And(Global.B, False));
+        Set Global Variable(A, And(Global.B, True));
+        Set Global Variable(A, And(Global.B, Not(Global.B)));
+        Set Global Variable(A, Or(Global.B, False));
+        Set Global Variable(A, Or(Global.B, True));
+        Set Global Variable(A, Or(Global.B, Not(Global.B)));
+    }
+}
