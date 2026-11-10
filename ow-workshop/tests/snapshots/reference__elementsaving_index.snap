@@ -1,0 +1,43 @@
+---
+source: ow-workshop/tests/reference.rs
+expression: "& output.code"
+---
+variables {
+    global:
+        0: A
+        1: B
+        2: C
+    player:
+        0: A
+}
+
+//Optimize for size enabled
+rule ("0 to null") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Set Global Variable At Index(A, Global.B, Null);
+        Set Player Variable At Index(Global.B, A, Global.C, Null);
+    }
+}
+
+rule ("0 to false") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Set Global Variable At Index(A, False, Global.B);
+        Set Player Variable At Index(Global.B, A, False, Global.C);
+    }
+}
+
+rule ("1 to true") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Set Global Variable At Index(A, True, Global.B);
+        Set Player Variable At Index(Global.B, A, True, Global.C);
+    }
+}

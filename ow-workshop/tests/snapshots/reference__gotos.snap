@@ -1,0 +1,39 @@
+---
+source: ow-workshop/tests/reference.rs
+expression: "& output.code"
+---
+variables {
+    global:
+        0: A
+}
+
+//Optimize for size enabled
+rule ("gotos") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        "skip 3"
+        Skip(3);
+        If(False);
+            "skip 5"
+            Skip(5);
+            Set Global Variable(A, 1);
+            //label_0:
+            Set Global Variable(A, 2);
+        End;
+        If(False);
+            Set Global Variable(A, 1);
+            //label_1:
+            Set Global Variable(A, 2);
+        End;
+        "skip 3"
+        Skip(2);
+        "skip 0"
+        //label_3:
+        If(False);
+            Set Global Variable(A, 1);
+            //label_2:
+            Set Global Variable(A, 2);
+    }
+}

@@ -1,0 +1,25 @@
+---
+source: ow-workshop/tests/reference.rs
+expression: "& output.code"
+---
+variables {
+    global:
+        0: A
+        1: B
+        2: C
+}
+
+//Optimize for size enabled
+rule ("test current map workaround for colosseo/esperança/samoa") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Set Global Variable(A, First Of(Filtered Array(Append To Array(Array(Map(Samoa), Map(Colosseo)), Current Map), Compare(Custom String("{0}", Current Map), ==, String Split(Current Array Element, Empty Array)))));
+        Set Global Variable(B, Compare(Global.A, ==, Map(Samoa)));
+        Set Global Variable(C, Compare(First Of(Filtered Array(Append To Array(Array(Map(Samoa), Map(Colosseo)), Current Map), Compare(Custom String("{0}", Current Map), ==, String Split(Current Array Element, Empty Array)))), ==, Map(King's Row)));
+        Set Global Variable(C, Compare(Map(King's Row), ==, First Of(Filtered Array(Append To Array(Array(Map(Samoa), Map(Colosseo)), Current Map), Compare(Custom String("{0}", Current Map), ==, String Split(Current Array Element, Empty Array))))));
+        Set Global Variable(C, Compare(Custom String("{0}", Current Map), ==, Custom String("{0}", Map(Colosseo))));
+        Set Global Variable(C, Compare(Custom String("{0}", Map(Colosseo)), ==, Custom String("{0}", Current Map)));
+    }
+}
