@@ -86,8 +86,9 @@ fn the_alphabet_keeps_its_carriage_return_digit() {
     .compile(Lang::EnUs)
     .expect("compiles")
     .code;
+    // The text prints a carriage return as `\r`, between the form feed and shift-out digits.
     assert!(
-        code.contains("\n\r !"),
+        code.contains("\u{c}\\r\u{e}"),
         "the alphabet lost its carriage return"
     );
 }
