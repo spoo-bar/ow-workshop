@@ -2,7 +2,7 @@ use ow_workshop_data::ValueId as V;
 
 use crate::ir::CmpOp::{Eq, Ne};
 use crate::ir::{Expr, ExprKind};
-use crate::lower::testutil::{konst, null, num};
+use crate::lower::testutil::{boolean, konst, null, num};
 use crate::opt::testutil::*;
 
 fn a(items: &[f64]) -> Expr {
@@ -341,4 +341,29 @@ fn the_dict_fixture_lookup_resolves() {
 #[test]
 fn nothing_changes_with_the_optimizer_off() {
     assert_eq!(off(&val(V::Len, vec![a(&[1.0])])), "Len([1])");
+}
+
+#[test]
+fn all_and_any_of_a_mapped_array_test_the_source_directly() {
+    let mapped = val(V::MappedArray, vec![g(0), cmp(Eq, elem(), num(2.0))]);
+    assert_eq!(
+        s(&val(V::All, vec![mapped.clone(), elem()])),
+        "All(g0, (@ == 2))"
+    );
+    assert_eq!(s(&val(V::Any, vec![mapped, elem()])), "Any(g0, (@ == 2))");
+}
+
+#[test]
+fn all_false_counts_players_with_the_dedicated_value() {
+    let e = val(V::All, vec![players(), boolean(false)]);
+    assert_eq!(s(&e), "!GetNumberOfPlayers(Team.ALL)");
+}
+
+#[test]
+fn excluding_a_literal_nothing_can_equal_drops_it_from_the_list() {
+    let e = val(
+        V::Exclude,
+        vec![a(&[1.0, 2.0, 3.0]), arr(vec![num(1.0), g(0)])],
+    );
+    assert_eq!(s(&e), "Exclude([2, 3], [g0])");
 }

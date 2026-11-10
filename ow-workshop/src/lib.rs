@@ -100,6 +100,7 @@ mod columns;
 mod compress;
 mod control;
 mod count;
+mod current_map;
 mod debug;
 mod dict;
 mod emit;

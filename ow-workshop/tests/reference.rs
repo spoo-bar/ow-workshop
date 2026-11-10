@@ -40,18 +40,12 @@ macro_rules! stub {
     };
 }
 
-stub!(arrays, "arrays", "#101");
-stub!(builtinenums, "builtinenums", "#101");
-stub!(builtinmacros, "builtinmacros", "#101");
 stub!(comments, "comments", "#101");
 stub!(compression, "compression", "#101");
 stub!(customgamesettings, "customGameSettings", "#101");
-stub!(dicts, "dicts", "#101");
 stub!(enums, "enums", "#101");
-stub!(eventvars, "eventVars", "#101");
 stub!(extensions, "extensions", "#101");
 stub!(functions, "functions", "#101");
-stub!(getcurrentmap, "getCurrentMap", "#101");
 stub!(gotos, "gotos", "#101");
 stub!(loops, "loops", "#101");
 stub!(lowercase, "lowercase", "#101");
@@ -1431,4 +1425,650 @@ fn elementsaving() {
             "Array(Custom String(\"abc\"), Custom String(\"def\"), Custom String(\"ghi\"))",
         );
     assert_workshop_code_eq(&only_rules(&output, &compression), &expected);
+}
+
+// dicts
+#[derive(GlobalVars)]
+struct DictGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+}
+
+struct Dicts;
+
+impl Workshop for Dicts {
+    type Globals = DictGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &DictGlobals, (): &()) {
+        ws.rule("dicts", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                let table = || {
+                    dict::<Any, Num, _, _>([
+                        (Expr::<Hero>::from(Hero::Pharah).erase(), 2),
+                        (Expr::<Hero>::from(Hero::Brigitte).erase(), 3),
+                    ])
+                };
+                x.set(g.a, table().get(g.b.get().erase()));
+                x.comment("null");
+                x.set(g.a, table().get(1));
+                x.comment("2");
+                x.set(g.a, table().get(Expr::<Hero>::from(Hero::Pharah).erase()));
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn dicts() {
+    check(&Dicts, include_str!("fixtures/reference/dicts.txt"));
+}
+
+// builtinenums: `Math.FUCKTON_OF_SPACES` is `math::LOTS_OF_SPACES`.
+#[derive(GlobalVars)]
+struct EnumGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Num>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Num>,
+    #[ow(name = "E", index = 4)]
+    e: Global<Num>,
+    #[ow(name = "F", index = 5)]
+    f: Global<Num>,
+    #[ow(name = "G", index = 6)]
+    g: Global<Num>,
+    #[ow(name = "H", index = 7)]
+    h: Global<Num>,
+    #[ow(name = "I", index = 8)]
+    i: Global<Num>,
+    #[ow(name = "J", index = 9)]
+    j: Global<Num>,
+    #[ow(name = "K", index = 10)]
+    k: Global<Num>,
+    #[ow(name = "S", index = 18)]
+    s: Global<Num>,
+}
+
+struct BuiltinEnums;
+
+impl Workshop for BuiltinEnums {
+    type Globals = EnumGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &EnumGlobals, (): &()) {
+        ws.rule("enums", OngoingEachPlayer, |r, ev| {
+            let me = ev.event_player();
+            r.condition(me.is_holding_button(Button::Interact));
+            r.condition(truth(g.a.get()));
+            r.actions(|x| {
+                let all_a = || as_::<Array<Any>>(g.a.get());
+                put(x, g.a, Expr::<Team>::from(Team::All));
+                put(x, g.b, Expr::<Hero>::from(Hero::Brigitte));
+                put(x, g.c, Expr::<Map>::from(Map::BlackForestWinter));
+                put(x, g.d, current_gamemode().eq(Gamemode::Assault));
+                put(x, g.e, Expr::<Button>::from(Button::Interact));
+                put(x, g.f, me.is_holding_button(Button::Interact));
+                x.start_forcing_button(me.clone(), Button::Melee);
+                x.start_forcing_hero(me.clone(), Hero::Ana);
+                x.wait_with(0.016, Wait::AbortWhenFalse);
+                put(x, g.g, vector_backward());
+                put(
+                    x,
+                    g.h,
+                    random::int(1, 2)
+                        + random::choice(all_a()).erase().cast::<Num>()
+                        + random::real(1.2, 3.4)
+                        + random::shuffle(all_a()).erase().cast::<Num>(),
+                );
+                put(x, g.i, Expr::<Num>::from(math::E));
+                put(x, g.j, Expr::<Num>::from(math::PI));
+                put(x, g.k, Expr::<Color>::from(Color::Blue));
+                put(x, g.s, Expr::<Str>::from(math::LOTS_OF_SPACES));
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn builtinenums() {
+    check(
+        &BuiltinEnums,
+        include_str!("fixtures/reference/builtinenums.txt"),
+    );
+}
+
+// builtinmacros: `splitDictArray` and `tabular` are both `columns`.
+#[derive(GlobalVars)]
+struct MacroGlobals {
+    #[ow(name = "waveHeroes", index = 0)]
+    wave_heroes: Global<Array<Hero>>,
+    #[ow(name = "waveLengths", index = 1)]
+    wave_lengths: Global<Array<Num>>,
+}
+
+struct BuiltinMacros;
+
+impl Workshop for BuiltinMacros {
+    type Globals = MacroGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &MacroGlobals, (): &()) {
+        for name in ["splitDictArray", "tabular"] {
+            ws.rule(name, OngoingGlobal, |r, _| {
+                r.actions(|x| {
+                    x.columns(
+                        (g.wave_heroes, g.wave_lengths),
+                        [
+                            (Hero::Ana, Some(3)),
+                            (Hero::Soldier, Some(8)),
+                            (Hero::WreckingBall, None),
+                        ],
+                    );
+                });
+            });
+        }
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn builtinmacros() {
+    check(
+        &BuiltinMacros,
+        include_str!("fixtures/reference/builtinmacros.txt"),
+    );
+}
+
+// getCurrentMap
+#[derive(GlobalVars)]
+struct MapGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Map>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Bool>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Bool>,
+}
+
+struct GetCurrentMap;
+
+impl Workshop for GetCurrentMap {
+    type Globals = MapGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &MapGlobals, (): &()) {
+        let map = |m: Map| Expr::<Map>::from(m);
+        ws.rule(
+            "test current map workaround for colosseo/esperança/samoa",
+            OngoingGlobal,
+            |r, _| {
+                r.actions(|x| {
+                    x.set(g.a, current_map());
+                    x.set(g.b, g.a.get().eq(map(Map::Samoa)));
+                    x.set(g.c, current_map().eq(map(Map::KingsRow)));
+                    x.set(g.c, map(Map::KingsRow).eq(current_map()));
+                    x.set(g.c, current_map().eq(map(Map::Colosseo)));
+                    x.set(g.c, map(Map::Colosseo).eq(current_map()));
+                });
+            },
+        );
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn getcurrentmap() {
+    // Allowed differences, all in how `Current Map` is rewritten. The bugged maps are listed in
+    // the order the mod mentions them (Samoa, then Colosseo) and appended to `Current Map`
+    // with `Append To Array`. Every use of `Current Map` is rewritten once a bugged map is
+    // referenced, including a comparison with a map that is not bugged. A comparison keeps its
+    // operand order.
+    let fixed = "First Of(Filtered Array(Append To Array(Array(Map(Samoa), Map(Colosseo)), Current Map), Compare(Custom String(\"{0}\", Current Map), ==, String Split(Current Array Element, Empty Array))))";
+    let colosseo = "Compare(Custom String(\"{0}\", Current Map), ==, Custom String(\"{0}\", Map(Colosseo))));\n    }";
+    check_with(
+        &GetCurrentMap,
+        include_str!("fixtures/reference/getCurrentMap.txt"),
+        &[
+            (
+                "First Of(Filtered Array(Array(Map(Colosseo), Map(Samoa), Current Map), Compare(Custom String(\"{0}\", Current Map), ==, String Split(Current Array Element, Empty Array))))",
+                fixed,
+            ),
+            (
+                "Compare(Current Map, ==, Map(King's Row))",
+                &format!("Compare({fixed}, ==, Map(King's Row))"),
+            ),
+            (
+                "Compare(Map(King's Row), ==, Current Map)",
+                &format!("Compare(Map(King's Row), ==, {fixed})"),
+            ),
+            (
+                colosseo,
+                "Compare(Custom String(\"{0}\", Map(Colosseo)), ==, Custom String(\"{0}\", Current Map)));\n    }",
+            ),
+        ],
+    );
+}
+
+// eventVars: subroutines are indexed in declaration order.
+#[derive(GlobalVars)]
+struct EventGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+}
+
+struct EventVars;
+
+impl Workshop for EventVars {
+    type Globals = EventGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &EventGlobals, (): &()) {
+        let ep_sub2 = ws.declare_subroutine("epSub2");
+        let ep_sub = ws.declare_subroutine("epSub");
+        let global_sub = ws.declare_subroutine("globalSub");
+        let actually_ep_sub = ws.declare_subroutine("actuallyEpSub");
+        let recursion2 = ws.declare_subroutine("recursion2");
+        let recursion1 = ws.declare_subroutine("recursion1");
+
+        ws.define(ep_sub2, |b, ev| put(b, g.a, ev.event_player()));
+        ws.define(ep_sub, |b, ev| put(b, g.a, ev.event_player()));
+        ws.define(global_sub, |b, _| b.call(ep_sub2));
+        ws.define(actually_ep_sub, |b, _| b.call(ep_sub2));
+        ws.define(recursion1, |b, _| b.call(recursion2));
+        ws.define(recursion2, |b, ev| {
+            put(b, g.a, ev.event_damage());
+            b.call(recursion1);
+        });
+        ws.rule("global", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.comment("should throw warning");
+                x.call(ep_sub);
+                x.comment("should also throw warning");
+                x.call(global_sub);
+            });
+        });
+        ws.rule("ep", OngoingEachPlayer, |r, _| {
+            r.actions(|x| {
+                x.comment("should not throw warning");
+                x.call(actually_ep_sub);
+                x.comment("should throw warning");
+                x.call(recursion1);
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        // The source has no `#!optimizeForSize`.
+        CompileOptions::default()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn eventvars() {
+    let output = EventVars.compile(Lang::EnUs).expect("compiles");
+    // `epSub`, `globalSub` and the recursive pair read event values their callers may lack.
+    assert!(
+        output
+            .warnings
+            .iter()
+            .any(|w| matches!(w.kind, Kind::Warning(Warning::MismatchedSubroutineEvent))),
+        "{:?}",
+        output.warnings
+    );
+    // `A = eventWasCriticalHit` is left out: `Ongoing - Each Player` has no such event value,
+    // and the typed events reject reading it there.
+    check_with(
+        &EventVars,
+        include_str!("fixtures/reference/eventVars.txt"),
+        &[(
+            "        Set Global Variable(A, Event Was Critical Hit);\n",
+            "",
+        )],
+    );
+}
+
+// arrays: the reference variables are untyped; `A` is an array and the rest hold anything.
+#[derive(GlobalVars)]
+struct ArrayGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Array<Any>>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Any>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Any>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Any>,
+    #[ow(name = "E", index = 4)]
+    e: Global<Any>,
+    #[ow(name = "X", index = 23)]
+    x: Global<Any>,
+    #[ow(name = "Y", index = 24)]
+    y: Global<Any>,
+    #[ow(name = "Z", index = 25)]
+    z: Global<Any>,
+}
+
+#[derive(PlayerVars)]
+struct ArrayPlayers {
+    #[ow(name = "A", index = 0)]
+    a: PlayerVar<Any>,
+}
+
+/// An array of anything.
+fn items(values: Vec<Expr<Any>>) -> Expr<Array<Any>> {
+    IntoExpr::<Array<Any>>::into_expr(values)
+}
+
+/// An array of numbers.
+fn numbers(values: &[i32]) -> Expr<Array<Any>> {
+    IntoExpr::<Array<Any>>::into_expr(values.to_vec())
+}
+
+/// A value read as an array.
+fn as_array(e: Expr<Any>) -> Expr<Array<Any>> {
+    e.cast::<Array<Any>>()
+}
+
+struct Arrays;
+
+impl Workshop for Arrays {
+    type Globals = ArrayGlobals;
+    type Players = ArrayPlayers;
+
+    fn build(&self, ws: &mut Builder, g: &ArrayGlobals, p: &ArrayPlayers) {
+        let (a, b, c, d, e) = (
+            || g.a.get().erase(),
+            || g.b.get(),
+            || g.c.get(),
+            || g.d.get(),
+            || g.e.get(),
+        );
+        let set_a = |x: &mut Block, value: Expr<Array<Any>>| x.set(g.a, value);
+        // Stores any value in `A`.
+        macro_rules! sa {
+            ($x:expr, $v:expr) => {
+                $x.set(g.a, $v.erase().cast::<Array<Any>>())
+            };
+        }
+        let any = |v: i32| Expr::<Num>::from(v).erase();
+        let num = |e: Expr<Any>| e.cast::<Num>();
+        let players = all_players;
+        let health_is_two = |pl: Expr<Player>, _: Expr<Num>| pl.var(p.a).get().eq(2);
+        ws.rule("array literals", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.comment("empty array");
+                set_a(x, items(vec![]));
+                set_a(x, numbers(&[1, 2, 3]));
+                sa!(x, as_array(a()).get(num(b())));
+                x.comment("first of(B)");
+                sa!(x, as_array(b()).get(0));
+                for (index, note) in [
+                    (0.0, "B"),
+                    (1.0, "C"),
+                    (3.0, "0"),
+                    (1.3, "C"),
+                    (1.5, "D"),
+                    (1.7, "D"),
+                    (2.6, "0"),
+                ] {
+                    x.comment(note);
+                    sa!(x, items(vec![b(), c(), d()]).get(index));
+                }
+                set_a(
+                    x,
+                    items(vec![numbers(&[1, 2]).erase(), numbers(&[3, 4]).erase()]),
+                );
+                x.set(g.a.at(0), as_array(b()).get(0));
+            });
+        });
+        ws.rule("last", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                sa!(x, as_array(b()).last());
+                x.comment("D");
+                sa!(x, items(vec![b(), c(), d()]).last());
+            });
+        });
+        ws.rule("filtered array", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                sa!(x, players().filter(health_is_two));
+                sa!(
+                    x,
+                    players().filter(|pl, _| pl.clone().erase().ne(b().eq(pl.erase())))
+                );
+                x.comment("getAllPlayers.remove(B)");
+                sa!(x, players().filter(|pl, _| pl.erase().ne(b())));
+                x.comment("getAllPlayers() if A == B else []");
+                sa!(x, players().filter(|_, _| a().eq(b())));
+                x.comment("getAllPlayers()");
+                sa!(x, players().filter(|_, _| true.into()));
+                sa!(x, players().filter(|pl, i| pl.erase().ne(i)));
+                sa!(x, players().filter(health_is_two).map(|pl, _| pl.health()));
+                x.comment("mapped array()");
+                sa!(
+                    x,
+                    players()
+                        .filter(|_, _| true.into())
+                        .map(|pl, _| pl.health())
+                );
+            });
+        });
+        ws.rule("mapped array", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                sa!(x, players().map(|pl, _| pl.health()));
+                x.comment("getAllPlayers()");
+                sa!(x, players().map(|pl, _| pl));
+            });
+        });
+        ws.rule("index", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                sa!(x, as_array(b()).index_of(3));
+                x.comment("[A,B].index(B)");
+                sa!(x, items(vec![a(), b(), c()]).index_of(b()));
+                x.comment("-1");
+                sa!(x, items(vec![]).index_of(b()));
+                x.comment("2");
+                sa!(x, items(vec![any(1), any(2), any(3), b()]).index_of(3));
+                x.comment("should not be optimized");
+                sa!(x, items(vec![any(1), any(2), b(), any(3)]).index_of(3));
+                x.comment("-1");
+                sa!(x, numbers(&[1, 2, 3]).index_of(123));
+                x.comment("should not be optimized");
+                sa!(x, items(vec![any(1), any(2), any(3), b()]).index_of(123));
+            });
+        });
+        ws.rule("slice", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                sa!(x, as_array(b()).slice(1, 3));
+                for (start, count, note) in [
+                    (3.0, 1.0, "[4]"),
+                    (3.0, 5.0, "[4,5]"),
+                    (3.0, -2.0, "[]"),
+                    (5.0, 2.0, "[]"),
+                    (-2.0, 3.0, "[1]"),
+                    (0.4, 2.5, "[1,2,3]"),
+                ] {
+                    x.comment(note);
+                    sa!(x, numbers(&[1, 2, 3, 4, 5]).slice(start, count));
+                }
+            });
+        });
+        ws.rule("in", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.comment("true");
+                sa!(x, items(vec![any(432), c(), any(123), b()]).contains(123));
+                x.comment("true");
+                sa!(x, items(vec![any(432), c(), any(123), b()]).contains(b()));
+                x.comment("false");
+                sa!(x, items(vec![]).contains(b()));
+                x.comment("false");
+                sa!(x, numbers(&[432, 643, 124]).contains(123));
+                x.comment("123 == B");
+                sa!(
+                    x,
+                    items(vec![any(432), any(643), b(), any(124)]).contains(123)
+                );
+            });
+        });
+        ws.rule("exclude", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                sa!(x, as_array(b()).without(3));
+                x.comment("should not be optimized");
+                sa!(x, items(vec![b(), c(), d()]).without(c()));
+                x.comment("[1,3]");
+                sa!(x, numbers(&[1, 2, 3]).without(2));
+                x.comment("[1,D].exclude(2)");
+                sa!(x, items(vec![any(1), any(2), d()]).without(2));
+                x.comment("[2]");
+                sa!(x, numbers(&[1, 2, 3]).exclude(numbers(&[1, 3])));
+                x.comment("[2,3].exclude([D])");
+                sa!(x, numbers(&[1, 2, 3]).exclude(items(vec![any(1), d()])));
+            });
+        });
+        ws.rule("concat", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                sa!(x, as_array(b()).with(2));
+                x.comment("[B,C,123]");
+                sa!(x, items(vec![b(), c()]).with(123));
+                x.comment("should not be optimized");
+                sa!(x, items(vec![b(), c()]).concat(g.a.get()));
+                x.comment("[B,C,D,E]");
+                sa!(x, items(vec![b(), c()]).concat(items(vec![d(), e()])));
+            });
+        });
+        ws.rule("other array functions", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                sa!(x, players().map(health_is_two).all_true());
+                sa!(x, players().map(health_is_two).any_true());
+                sa!(
+                    x,
+                    a().and(b())
+                        .erase()
+                        .cast::<Array<Any>>()
+                        .map(|i, _| as_array(c()).contains(i))
+                        .any_true()
+                );
+                sa!(
+                    x,
+                    if_then_else(b().cast::<Bool>(), as_array(a()), as_array(c()))
+                        .map(|i, _| i.eq(2))
+                        .any_true()
+                );
+                sa!(x, players().all_true());
+                sa!(x, g.a.get().sorted_by(|e, _| num(e) + 2));
+                sa!(x, g.a.get().sorted_by(|e, _| num(e)));
+                x.remove_index(g.a, 1);
+                x.append(g.a, 3);
+                x.remove_value(g.a, 3);
+                x.comment("Z,Y,X");
+                sa!(x, items(vec![g.x.get(), g.y.get(), g.z.get()]).reversed());
+                sa!(x, as_array(b()).reversed());
+            });
+        });
+        ws.rule("member array functions", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                let empty = || items(vec![]);
+                sa!(x, players().all(health_is_two));
+                sa!(x, players().all_true());
+                x.comment("true");
+                sa!(x, players().all(|_, _| true.into()));
+                x.comment("len(getAllPlayers()) == 0    =>    not len(getAllPlayers())");
+                sa!(x, players().all(|_, _| false.into()));
+                x.comment("true");
+                sa!(x, empty().all(|_, _| false.into()));
+                x.comment("true");
+                sa!(x, empty().all(|e, _| num(e).gt(2)));
+
+                sa!(x, players().any(health_is_two));
+                sa!(x, players().any_true());
+                x.comment("false");
+                sa!(x, players().any(|_, _| false.into()));
+                x.comment("len(getAllPlayers()) > 0");
+                sa!(x, players().any(|_, _| true.into()));
+                x.comment("false");
+                sa!(x, empty().any(|_, _| true.into()));
+                x.comment("false");
+                sa!(x, empty().any(|e, _| num(e).gt(2)));
+
+                sa!(x, players().filter(health_is_two));
+                sa!(x, players().map(|pl, _| pl.health()));
+                sa!(x, g.a.get().filter(|e, i| e.erase().ne(i)));
+                sa!(x, g.a.get().map(|e, i| num(e.erase()) + i));
+                sa!(x, players().all(|pl, _| num(pl.var(p.a).get()).gt(0)));
+                sa!(x, players().any(|pl, i| pl.var(p.a).get().eq(i.erase())));
+                sa!(x, players().filter(health_is_two).map(|pl, _| pl.health()));
+            });
+        });
+        ws.rule("array to string", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                set_a(x, numbers(&[10, 20, 30]));
+                x.set(g.b, numbers(&[100]));
+                for max in 0..=4 {
+                    x.print(array_to_string(g.a.get(), max));
+                }
+                for max in 0..=2 {
+                    x.print(array_to_string(items(vec![]), max));
+                }
+                for max in 0..=2 {
+                    x.print(array_to_string(as_array(b()), max));
+                }
+            });
+        });
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn arrays() {
+    let fixture = include_str!("fixtures/reference/arrays.txt");
+    let output = Arrays.compile(Lang::EnUs).expect("compiles").code;
+    let rules = [
+        "array literals",
+        "last",
+        "filtered array",
+        "mapped array",
+        "index",
+        "slice",
+        "in",
+        "exclude",
+        "concat",
+        "other array functions",
+        "member array functions",
+    ];
+    assert_workshop_code_eq(&only_rules(&output, &rules), &only_rules(fixture, &rules));
+
+    // `array to string`: `array_to_string` is its own formula, not the reference's, so the
+    // rule is not compared text for text. Each of the 11 calls prints one `Create HUD Text`.
+    let printed = |code: &str| {
+        only_rules(code, &["array to string"])
+            .lines()
+            .filter(|line| line.contains("Create HUD Text("))
+            .count()
+    };
+    assert_eq!(printed(&output), 11);
+    assert_eq!(printed(fixture), 11);
 }
