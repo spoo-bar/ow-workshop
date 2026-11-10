@@ -48,7 +48,6 @@ stub!(getcurrentmap, "getCurrentMap", "#101");
 stub!(gotos, "gotos", "#101");
 stub!(loops, "loops", "#101");
 stub!(lowercase, "lowercase", "#101");
-stub!(operators, "operators", "#101");
 stub!(ruleprefix, "rulePrefix", "#101");
 stub!(rules, "rules", "#101");
 stub!(shionsettings, "shionSettings", "#101");
@@ -500,4 +499,500 @@ fn conditions() {
     let goto_part = "        Skip(3);\n        If(True);\n            Set Global Variable(A, 2);\n        Else If(Global.A);\n            //lbl_1:\n            Set Global Variable(A, 3);\n        End;\n        Set Global Variable(B, 3);\n        Skip(True);\n        If(False);\n            //lbl_2:\n            Set Global Variable(B, 6);\n        End;\n        Set Global Variable(B, 9);\n";
     assert!(expected.contains(goto_part));
     check_with(&Conditions, &expected, &[(goto_part, "")]);
+}
+
+/// Keeps only the named rules (and everything before the first rule) of expected output.
+fn only_rules(expected: &str, names: &[&str]) -> String {
+    let mut out = Vec::new();
+    let mut keeping = true;
+    for line in expected.lines() {
+        if let Some(rest) = line.strip_prefix("rule (\"") {
+            let name = rest.split("\")").next().unwrap_or_default();
+            keeping = names.contains(&name);
+        }
+        if keeping {
+            out.push(line);
+        }
+    }
+    out.join("\n")
+}
+
+/// Assigns any value to a number variable: the reference variables are untyped.
+fn put<T: ValueType>(b: &mut Block, var: Global<Num>, value: Expr<T>) {
+    b.set(var, value.erase().cast::<Num>());
+}
+
+/// `put` with the source line's trailing comment printed above it.
+fn put_c<T: ValueType>(b: &mut Block, var: Global<Num>, note: &str, value: Expr<T>) {
+    b.comment(note);
+    put(b, var, value);
+}
+
+// operators: the rule `strict optimizations` needs strict mode, so it compiles on its own; the
+// per-rule `#!optimizeStrict` override has no public equivalent. Numbers print from `f64`.
+#[derive(GlobalVars)]
+struct OpGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Num>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Num>,
+}
+
+#[derive(PlayerVars)]
+struct OpPlayers {
+    #[ow(name = "A", index = 0)]
+    a: PlayerVar<Num>,
+}
+
+struct OperatorsStrict;
+
+impl Workshop for OperatorsStrict {
+    type Globals = OpGlobals;
+    type Players = OpPlayers;
+
+    fn build(&self, ws: &mut Builder, g: &OpGlobals, _: &OpPlayers) {
+        let b = || g.b.get();
+        ws.rule("strict optimizations", OngoingGlobal, |r, _| {
+            r.actions(|bl| {
+                bl.comment("Unless specified otherwise, none of these should be optimized");
+                put(bl, g.a, Expr::<Str>::from("am").eq("**"));
+                put(bl, g.a, b() + 0);
+                put(bl, g.a, b().erase().cast::<Vector>() + vect(0, 0, 0));
+                put(bl, g.a, b() - b());
+                put(bl, g.a, b() * 0);
+                put_c(bl, g.a, "0", len(b().erase().cast::<Array<Any>>()) * 0);
+                put(bl, g.a, b() * 1);
+                put(bl, g.a, b() / 1);
+                put(bl, g.a, Expr::<Num>::from(0) / b());
+                put(bl, g.a, b().and(false));
+                put(bl, g.a, b().and(true));
+                put(bl, g.a, b().and(!b().erase().cast::<Bool>()));
+                put(bl, g.a, b().or(false));
+                put(bl, g.a, b().or(true));
+                put(bl, g.a, b().or(!b().erase().cast::<Bool>()));
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        let mut options = size();
+        options.strict = true;
+        options
+    }
+}
+
+/// A number as a condition.
+fn truth(e: Expr<Num>) -> Expr<Bool> {
+    e.erase().cast::<Bool>()
+}
+
+/// A number as a vector.
+fn as_vec(e: Expr<Num>) -> Expr<Vector> {
+    e.erase().cast::<Vector>()
+}
+
+fn n(x: i32) -> Expr<Num> {
+    Expr::from(x)
+}
+
+struct Operators;
+
+impl Workshop for Operators {
+    type Globals = OpGlobals;
+    type Players = OpPlayers;
+
+    fn build(&self, ws: &mut Builder, g: &OpGlobals, _: &OpPlayers) {
+        let (a, b, c, d) = (|| g.a.get(), || g.b.get(), || g.c.get(), || g.d.get());
+        let hero = || IntoExpr::<Heroes>::into_expr(Hero::Ana).erase();
+        ws.rule("comparison", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, b().eq(c()));
+                put_c(x, g.a, "false", n(1).eq(0));
+                put_c(x, g.a, "true", b().eq(b()));
+                put_c(x, g.a, "not B", b().eq(0));
+                put_c(x, g.a, "isGameInProgress()", is_game_in_progress().eq(true));
+                put_c(
+                    x,
+                    g.a,
+                    "false",
+                    hero().eq(Expr::<Map>::from(Map::KingsRow).erase()),
+                );
+                put_c(
+                    x,
+                    g.a,
+                    "should not be optimized",
+                    hero().eq(ws_fmt!("azer{}", a()).erase()),
+                );
+
+                put(x, g.a, b().ne(c()));
+                put_c(x, g.a, "true", n(1).ne(0));
+                put_c(x, g.a, "false", b().ne(b()));
+                put(x, g.a, b().ne(0));
+                put_c(x, g.a, "not B", !b().ne(0));
+                put_c(
+                    x,
+                    g.a,
+                    "not isGameInProgress()",
+                    is_game_in_progress().ne(true),
+                );
+                put_c(
+                    x,
+                    g.a,
+                    "true",
+                    hero().ne(Expr::<Map>::from(Map::KingsRow).erase()),
+                );
+                put_c(
+                    x,
+                    g.a,
+                    "should not be optimized",
+                    hero().ne(ws_fmt!("azer{}", a()).erase()),
+                );
+
+                put(x, g.a, b().ge(c()));
+                put_c(x, g.a, "true", n(1).ge(0));
+                put_c(x, g.a, "true", b().ge(b()));
+                put(x, g.a, b().le(c()));
+                put_c(x, g.a, "false", n(1).le(0));
+                put_c(x, g.a, "true", b().le(b()));
+                put(x, g.a, b().gt(c()));
+                put_c(x, g.a, "true", n(1).gt(0));
+                put_c(x, g.a, "false", b().gt(b()));
+                put(x, g.a, b().lt(c()));
+                put_c(x, g.a, "false", n(1).lt(0));
+                put_c(x, g.a, "false", b().lt(b()));
+            });
+        });
+        ws.rule("add", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, b() + c());
+                put_c(x, g.a, "B", b() + 0);
+                put_c(x, g.a, "B*2", b() + b());
+                put_c(x, g.a, "3", n(1) + 2);
+                put_c(x, g.a, "B", as_vec(b()) + vect(0, 0, 0));
+                put_c(x, g.a, "B", vect(0, 0, 0) + as_vec(b()));
+                put(x, g.a, vect(b(), c(), d()) + vect(1, 2, 3));
+                put_c(x, g.a, "vect(5,7,9)", vect(1, 2, 3) + vect(4, 5, 6));
+                put_c(x, g.a, "left + right", vect(0, 0, 0));
+                put_c(x, g.a, "up", vect(0, 1, 0));
+                put_c(
+                    x,
+                    g.b,
+                    "vect(1, -1, -1)",
+                    vector_left() + vector_down() + vector_backward(),
+                );
+                put_c(
+                    x,
+                    g.c,
+                    "vect(-1, 1, 1)",
+                    vector_right() + vector_up() + vector_forward(),
+                );
+            });
+        });
+        ws.rule("subtract", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, b() - c());
+                put(x, g.a, b() - c() - d());
+                put_c(x, g.a, "B", b() - 0);
+                put_c(x, g.a, "0", b() - b());
+                put_c(x, g.a, "-1", n(1) - 2);
+                put_c(x, g.a, "B", as_vec(b()) - vect(0, 0, 0));
+                put(x, g.a, vect(b(), c(), d()) - vect(1, 2, 3));
+                put_c(x, g.a, "vect(-3,-3,-3)", vect(1, 2, 3) - vect(4, 5, 6));
+            });
+        });
+        ws.rule("negate", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, -b());
+                put(x, g.a, -b() % c());
+                put(x, g.a, -vect(1, b(), -2));
+                put_c(x, g.a, "vect(-1,-2,3)", -vect(1, 2, -3));
+                put(x, g.a, n(-1));
+                put(x, g.a, n(-1) * b());
+                put_c(x, g.a, "B", -(-b()));
+                put_c(x, g.a, "1", -(-n(1)));
+                put_c(x, g.a, "B", -(-b()));
+                put_c(x, g.a, "-1", -(-(-n(1))));
+                put_c(x, g.a, "-B", -(-(-b())));
+                put_c(x, g.a, "0.01", -(-Expr::<Num>::from(0.01)));
+                put(x, g.a, b() + -c());
+                put(x, g.a, !truth(-c()));
+                put(x, g.a, b() * -c());
+            });
+        });
+        ws.rule("multiply", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, b() * c());
+                put_c(x, g.a, "B", b() * 1);
+                put_c(x, g.a, "B**2", b() * b());
+                put_c(x, g.a, "0", b() * 0);
+                put_c(x, g.a, "6", n(2) * 3);
+                put_c(x, g.a, "vect(6,8,10)", n(2) * vect(3, 4, 5));
+                put_c(x, g.a, "vect(6,8,10)", vect(3, 4, 5) * 2);
+                put_c(x, g.a, "vect(4,10,18)", vect(1, 2, 3) * vect(4, 5, 6));
+            });
+        });
+        ws.rule("divide", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, b() / c());
+                put_c(x, g.a, "B", b() / 1);
+                put_c(x, g.a, "0", b() / 0);
+                put_c(x, g.a, "0", n(0) / b());
+                put_c(x, g.a, "0.5", n(1) / 2);
+                put(x, g.a, n(-3) / b());
+                put_c(x, g.a, "vect(3,1.5,1)", vect(3, 3, 3) / vect(1, 2, 3));
+                put_c(x, g.a, "vect(0.5,1,1.5)", vect(1, 2, 3) / 2);
+            });
+        });
+        ws.rule("modulo", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, b() % c());
+                put_c(x, g.a, "0", b() % 0);
+                put_c(x, g.a, "0", n(0) % b());
+                put_c(x, g.a, "0", b() % b());
+                put_c(x, g.a, "1", n(7) % 3);
+                put_c(x, g.a, "-1", n(-7) % 3);
+                put_c(x, g.a, "-1", n(-7) % -3);
+                put_c(x, g.a, "1", n(7) % -3);
+            });
+        });
+        ws.rule("power", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, b().pow(c()));
+                put(x, g.a, b().pow(c().pow(d())));
+                put_c(x, g.a, "B", b().pow(1));
+                put_c(x, g.a, "0", n(0).pow(b()));
+                put_c(x, g.a, "1", n(1).pow(b()));
+                put_c(x, g.a, "0", n(-1).pow(b()));
+                put_c(x, g.a, "8", n(2).pow(3));
+                put_c(x, g.a, "0", n(-2).pow(3));
+            });
+        });
+        ws.rule("and", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, a().and(b()));
+                put_c(x, g.a, "B", b().and(true));
+                put_c(x, g.a, "false", b().and(false));
+                put_c(x, g.a, "B", b().and(b()));
+                put_c(x, g.a, "false", b().and(!truth(b())));
+                put_c(x, g.a, "not (B or C)", (!truth(b())).and(!truth(c())));
+            });
+        });
+        ws.rule("or", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, a().or(b()));
+                put_c(x, g.a, "B", b().or(b()));
+                put_c(x, g.a, "true", a().or(true));
+                put_c(x, g.a, "B", b().or(false));
+                put_c(x, g.a, "true", b().or(!truth(b())));
+                put_c(x, g.a, "not (B and C)", (!truth(b())).or(!truth(c())));
+            });
+        });
+        ws.rule("not", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, !truth(b()));
+                put_c(x, g.a, "not not B", !!truth(b()));
+                put_c(x, g.a, "B == C", !!b().eq(c()));
+                put_c(x, g.a, "false", !Expr::<Bool>::from(true));
+                put_c(x, g.a, "true", !Expr::<Bool>::from(false));
+                put(x, g.a, n(3) * (!truth(b())).erase().cast::<Num>());
+                put_c(x, g.a, "B != C", !b().eq(c()));
+                put_c(x, g.a, "B == C", !b().ne(c()));
+                put_c(x, g.a, "B > C", !b().le(c()));
+                put_c(x, g.a, "B < C", !b().ge(c()));
+                put_c(x, g.a, "B >= C", !b().lt(c()));
+                put_c(x, g.a, "B <= C", !b().gt(c()));
+            });
+        });
+        ws.rule("in", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, b().erase().cast::<Array<Any>>().contains(a()));
+                put_c(
+                    x,
+                    g.a,
+                    "true",
+                    Expr::<Array<Any>>::from(vec![n(1).erase(), a().erase(), n(3).erase()])
+                        .contains(3),
+                );
+                put(
+                    x,
+                    g.a,
+                    Expr::<Array<Any>>::from(vec![a().erase(), n(5).erase(), n(6).erase()])
+                        .contains(3),
+                );
+                put(x, g.a, !c().erase().cast::<Array<Any>>().contains(b()));
+            });
+        });
+        ws.rule("ternaries", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                put(x, g.a, if_then_else(truth(c()), b(), d()));
+                put_c(x, g.a, "B", if_then_else(true, b(), d()));
+                put_c(x, g.a, "D", if_then_else(false, b(), d()));
+                put_c(x, g.a, "B", if_then_else(truth(c()), b(), b()));
+                put_c(
+                    x,
+                    g.a,
+                    "if-then-else(C, D, B)",
+                    if_then_else(!truth(c()), b(), d()),
+                );
+                put_c(
+                    x,
+                    g.a,
+                    "D",
+                    if_then_else(false, b(), if_then_else(false, c(), d())),
+                );
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn operators_strict() {
+    let expected = only_rules(
+        include_str!("fixtures/reference/operators.txt"),
+        &["strict optimizations"],
+    );
+    // The strict header is printed before the rule (strict is a whole-mod option here) rather
+    // than inside its actions.
+    check_with(
+        &OperatorsStrict,
+        &expected,
+        &[
+            ("        //Strict optimizations enabled\n", ""),
+            (
+                "//Optimize for size enabled\n",
+                "//Optimize for size enabled\n//Strict optimizations enabled\n",
+            ),
+        ],
+    );
+}
+
+const OPERATOR_RULES: &[&str] = &[
+    "comparison",
+    "add",
+    "subtract",
+    "negate",
+    "multiply",
+    "divide",
+    "modulo",
+    "power",
+    "and",
+    "or",
+    "not",
+    "in",
+    "ternaries",
+];
+
+// operators, assignment: `A` is indexed here, so it is an array variable in this mod.
+#[derive(GlobalVars)]
+struct AssignGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Array<Num>>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+}
+
+#[derive(PlayerVars)]
+struct AssignPlayers {
+    #[ow(name = "A", index = 0)]
+    a: PlayerVar<Array<Num>>,
+}
+
+/// A number where the variable is typed as an array.
+fn arr(e: Expr<Num>) -> Expr<Array<Num>> {
+    e.erase().cast::<Array<Num>>()
+}
+
+struct OperatorsAssign;
+
+impl Workshop for OperatorsAssign {
+    type Globals = AssignGlobals;
+    type Players = AssignPlayers;
+
+    fn build(&self, ws: &mut Builder, g: &AssignGlobals, p: &AssignPlayers) {
+        let b = || arr(g.b.get());
+        ws.rule("assignment", OngoingEachPlayer, |r, ev| {
+            r.actions(|x| {
+                let me = ev.event_player();
+                x.set(g.a, b());
+                x.set(g.a.at(0), g.b.get());
+                x.set(me.var(p.a), b());
+                x.set(me.var(p.a).at(0), g.b.get());
+                x.set(g.a, g.a.get());
+                x.add_to(g.a, b());
+                x.add_to(me.var(p.a), b());
+                x.add_to(g.a, arr(n(0)));
+                x.sub_from(g.a, b());
+                x.mul_by(g.a, b());
+                x.div_by(g.a, b());
+                x.mod_by(g.a, b());
+                x.pow_by(g.a, b());
+                x.max_with(g.a, b());
+                x.min_with(g.a, b());
+                x.add_to(g.a, arr(n(1)));
+                x.sub_from(g.a, arr(n(1)));
+            });
+        });
+        ws.rule("handling random values", OngoingGlobal, |r, _| {
+            let pick = || random::choice(all_players()).erase().cast::<Player>();
+            r.actions(|x| {
+                x.add_to(pick().var(p.a), arr(n(0)));
+                x.add_to(pick().var(p.a), arr(n(1)));
+                let current = pick().var(p.a).get().erase().cast::<Num>();
+                x.set(pick().var(p.a), arr(current + 1));
+                x.max_with(pick().var(p.a), b());
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn operators_assign() {
+    let expected = only_rules(
+        include_str!("fixtures/reference/operators.txt"),
+        &["assignment", "handling random values"],
+    );
+    // This mod never declares C and D, which the full fixture lists.
+    check_with(
+        &OperatorsAssign,
+        &expected,
+        &[("        2: C\n        3: D\n", "")],
+    );
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn operators() {
+    let expected = only_rules(
+        include_str!("fixtures/reference/operators.txt"),
+        OPERATOR_RULES,
+    );
+    // Allowed differences, all in the optimizer: `B == 0` becomes `Not(B)` (one element
+    // fewer than comparing with `Null`), `-vect(1, ..)` keeps its literal `1` instead of
+    // `True`, and `(-1) ** B` folds to `0` (a negative base gives 0 in the workshop).
+    check_with(
+        &Operators,
+        &expected,
+        &[
+            ("Compare(Global.B, ==, Null)", "Not(Global.B)"),
+            (
+                "Multiply(-1, Vector(True, Global.B, -2))",
+                "Multiply(-1, Vector(1, Global.B, -2))",
+            ),
+            ("Raise To Power(-1, Global.B)", "Null"),
+        ],
+    );
 }

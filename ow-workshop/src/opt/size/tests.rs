@@ -258,11 +258,17 @@ fn modify_with_zero_or_one() {
         ModifyOp::Min,
         ModifyOp::RemoveFromArrayByIndex,
     ] {
-        assert_eq!(
-            assigned(&sized(vec![modify(op, num(0.0))])),
-            "false",
-            "{op:?}"
-        );
+        if matches!(op, ModifyOp::Add | ModifyOp::Subtract) {
+            // Adding or subtracting zero is dropped outright.
+            let p = sized(vec![modify(op, num(0.0))]);
+            assert_eq!(p.rules[0].body.stmts.len(), 1, "{op:?}");
+        } else {
+            assert_eq!(
+                assigned(&sized(vec![modify(op, num(0.0))])),
+                "false",
+                "{op:?}"
+            );
+        }
         assert_eq!(
             assigned(&sized(vec![modify(op, num(1.0))])),
             "true",

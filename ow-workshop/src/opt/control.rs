@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use ow_workshop_data::{ActionId, ValueId as V};
 
 use super::Env;
-use super::build::call_args;
+use super::build::{call_args, is_num, is_zero_vec};
 use super::helpers::{always_equal, definitely_falsy, definitely_truthy};
 use crate::ir::{
     Block, Expr, ExprKind, LabelId, ModifyOp, Place, Rule, Stmt, StmtKind, StrExpr, StrToken, SubId,
@@ -145,6 +145,24 @@ fn assignment(mut stmt: Stmt, env: &Env<'_, '_>) -> Vec<Stmt> {
         };
     }
     vec![stmt]
+}
+
+/// `X += 0` and `X -= 0` change nothing, unless strict mode keeps the type coercion they cause.
+fn modify_noop(stmt: Stmt, env: &Env<'_, '_>) -> Vec<Stmt> {
+    let StmtKind::Modify {
+        op: ModifyOp::Add | ModifyOp::Subtract,
+        value,
+        ..
+    } = &stmt.kind
+    else {
+        return vec![stmt];
+    };
+    let zero = is_num(value, 0.0) || is_zero_vec(value);
+    if zero && !env.scope.strict() && !env.dynamic_skips {
+        Vec::new()
+    } else {
+        vec![stmt]
+    }
 }
 
 // ---- dead code --------------------------------------------------------------------------
@@ -318,6 +336,7 @@ pub(super) fn rule(stmt: Stmt, env: &mut Env<'_, '_>) -> Vec<Stmt> {
     // Assignments only ever turn into a cheaper statement or vanish.
     match stmt.kind {
         StmtKind::Set { .. } => assignment(stmt, env),
+        StmtKind::Modify { .. } => modify_noop(stmt, env),
         StmtKind::If { .. } if !env.dynamic_skips => dead_if(stmt, env),
         StmtKind::While { .. } if !env.dynamic_skips => dead_while(stmt, env),
         StmtKind::Action {
