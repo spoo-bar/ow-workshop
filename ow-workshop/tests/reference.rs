@@ -14,9 +14,10 @@
     clippy::too_many_lines
 )]
 
+// `insta` reads and writes files, which WASM does not have, so there the snapshot files are
+// compiled in and compared with the helper the other tests share.
+#[cfg(target_arch = "wasm32")]
 mod common;
-
-use common::assert_code_snapshot;
 use ow_workshop::__private::{Piece, template};
 use ow_workshop::Catalog;
 use ow_workshop::Kind;
@@ -25,10 +26,21 @@ use ow_workshop_data::Extension;
 use wasm_bindgen_test::wasm_bindgen_test;
 
 /// Compiles a mod for en-US and compares its code with `tests/snapshots/reference__<name>.snap`.
+///
+/// Natively this is an `insta` snapshot (`cargo insta review` accepts changes). On WASM the
+/// snapshot file is compared ignoring its header, whitespace-only lines and CRLF.
 macro_rules! check {
     ($name:literal, $mode:expr) => {{
         let output = $mode.compile(Lang::EnUs).expect("compiles");
-        assert_code_snapshot!("reference", $name, &output.code);
+        #[cfg(not(target_arch = "wasm32"))]
+        insta::assert_snapshot!($name, &output.code);
+        #[cfg(target_arch = "wasm32")]
+        {
+            let snap = include_str!(concat!("snapshots/reference__", $name, ".snap"));
+            let body = snap.strip_prefix("---\n").expect("a snapshot header");
+            let body = &body[body.find("---\n").expect("the end of the header") + 4..];
+            common::assert_workshop_code_eq(&output.code, body);
+        }
     }};
 }
 
@@ -251,7 +263,6 @@ fn switches() {
 // conditions: a lone `else`/`elif` and a second `else` cannot be written with the builder, so
 // those three rules are dropped from the expected output.
 #[derive(GlobalVars)]
-#[allow(dead_code)] // `i` and `j` are used only by the rules left out above.
 struct CondGlobals {
     #[ow(name = "A", index = 0)]
     a: Global<Num>,
@@ -269,10 +280,6 @@ struct CondGlobals {
     g: Global<Num>,
     #[ow(name = "H", index = 7)]
     h: Global<Num>,
-    #[ow(name = "I", index = 8)]
-    i: Global<Num>,
-    #[ow(name = "J", index = 9)]
-    j: Global<Num>,
     #[ow(name = "K", index = 10)]
     k: Global<Num>,
 }
@@ -425,20 +432,13 @@ struct OpGlobals {
     d: Global<Num>,
 }
 
-#[derive(PlayerVars)]
-#[allow(dead_code)] // declared so the variables block matches the fixture
-struct OpPlayers {
-    #[ow(name = "A", index = 0)]
-    a: PlayerVar<Num>,
-}
-
 struct OperatorsStrict;
 
 impl Workshop for OperatorsStrict {
     type Globals = OpGlobals;
-    type Players = OpPlayers;
+    type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &OpGlobals, _: &OpPlayers) {
+    fn build(&self, ws: &mut Builder, g: &OpGlobals, (): &()) {
         let b = || g.b.get();
         ws.rule("strict optimizations", OngoingGlobal, |r, _| {
             r.actions(|bl| {
@@ -487,9 +487,9 @@ struct Operators;
 
 impl Workshop for Operators {
     type Globals = OpGlobals;
-    type Players = OpPlayers;
+    type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &OpGlobals, _: &OpPlayers) {
+    fn build(&self, ws: &mut Builder, g: &OpGlobals, (): &()) {
         let (a, b, c, d) = (|| g.a.get(), || g.b.get(), || g.c.get(), || g.d.get());
         let hero = || IntoExpr::<Heroes>::into_expr(Hero::Ana).erase();
         ws.rule("comparison", OngoingGlobal, |r, _| {
