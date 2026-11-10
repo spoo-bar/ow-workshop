@@ -19,6 +19,7 @@ use common::assert_workshop_code_eq;
 use ow_workshop::__private::{Piece, template};
 use ow_workshop::Kind;
 use ow_workshop::prelude::*;
+use ow_workshop_data::Extension;
 use wasm_bindgen_test::wasm_bindgen_test;
 
 /// An ignored placeholder for a fixture that is not ported yet.
@@ -41,13 +42,9 @@ macro_rules! stub {
     };
 }
 
-stub!(customgamesettings, "customGameSettings", "#101");
 stub!(enums, "enums", "#101");
-stub!(extensions, "extensions", "#101");
-stub!(shionsettings, "shionSettings", "#101");
 stub!(translations, "translations", "#101");
 stub!(translations2, "translations2", "#101");
-stub!(workshopsettings, "workshopSettings", "#101");
 
 /// Size mode, as every fixture in #100 uses.
 fn size() -> CompileOptions {
@@ -3521,4 +3518,447 @@ fn compression() {
             "And(Not(Current Array Element)",
         );
     check(&Compression, &expected);
+}
+
+// shionSettings: a mod with settings and no rules.
+struct ShionSettings;
+
+impl Workshop for ShionSettings {
+    type Globals = ();
+    type Players = ();
+
+    fn build(&self, _: &mut Builder, (): &(), (): &()) {}
+
+    fn settings(&self) -> Settings {
+        let shion = Values::new()
+            .with("secondaryFireCooldown%", SettingValue::Percent(113.0))
+            .with("ability1Cooldown%", SettingValue::Percent(81.0))
+            .with("ability1Distance%", SettingValue::Percent(110.0))
+            .with("ability2Cooldown%", SettingValue::Percent(86.0))
+            .with("ability2Kb%", SettingValue::Percent(119.0))
+            .with("ability2Duration%", SettingValue::Percent(83.0))
+            .with("ability2Speed%", SettingValue::Percent(109.0))
+            .with("enableInfiniteUlt", true);
+        Settings::default()
+            .with_mode(ModeKey::Mode(Gamemode::Skirmish), ModeSettings::default())
+            .with_heroes(
+                HeroTeam::AllTeams,
+                HeroSettings::default().hero(Hero::Shion, shion),
+            )
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn shionsettings() {
+    check(
+        &ShionSettings,
+        include_str!("fixtures/reference/shionSettings.txt"),
+    );
+}
+
+// extensions
+#[derive(GlobalVars)]
+struct ExtGlobals {
+    #[ow(name = "Afqdsfdsq", index = 0)]
+    afqdsfdsq: Global<Num>,
+}
+
+struct Extensions;
+
+impl Workshop for Extensions {
+    type Globals = ExtGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &ExtGlobals, (): &()) {
+        ws.rule("Rule 1", OngoingEachPlayer, |r, ev| {
+            let me = ev.event_player();
+            let as_position = || me.clone().erase().cast::<Position>();
+            r.actions(|x| {
+                x.create_beam_with(
+                    all_players(),
+                    Beam::BrigitteFlailChain,
+                    as_position(),
+                    as_position(),
+                    CreateBeamArgs {
+                        color: Color::White.into(),
+                        reevaluation: EffectReeval::VisibilityPositionAndRadius.into(),
+                    },
+                );
+                x.create_effect_with(
+                    all_players(),
+                    Effect::EchoFocusingBeamSound,
+                    Color::White,
+                    me.clone(),
+                    g.afqdsfdsq.get(),
+                    CreateEffectArgs {
+                        reevaluation: EffectReeval::VisibilityPositionAndRadius.into(),
+                    },
+                );
+                x.play_effect(
+                    all_players(),
+                    DynamicEffect::AnaBioticGrenadeIncreasedHealingSound,
+                    Color::White,
+                    as_position(),
+                    1,
+                );
+            });
+        });
+    }
+
+    fn settings(&self) -> Settings {
+        Settings::default()
+            .with_lobby(Lobby::default().team1_slots(0).team2_slots(0))
+            .with_mode(
+                ModeKey::Mode(Gamemode::TeamDeathmatch),
+                ModeSettings::default().maps(MapSelection::Enabled(
+                    [
+                        Map::WorkshopChamber,
+                        Map::WorkshopExpanse,
+                        Map::WorkshopGreenScreen,
+                        Map::WorkshopIsland,
+                    ]
+                    .map(MapRef::new)
+                    .to_vec(),
+                )),
+            )
+            .with_extension(Extension::BeamEffects)
+            .with_extension(Extension::BeamSounds)
+            .with_extension(Extension::BuffAndDebuffSounds)
+            .with_extension(Extension::SpawnMoreDummyBots)
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn extensions() {
+    check(
+        &Extensions,
+        include_str!("fixtures/reference/extensions.txt"),
+    );
+}
+
+// workshopSettings: `A` takes any value, so it is untyped.
+#[derive(GlobalVars)]
+struct WsGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+}
+
+struct WorkshopSettings;
+
+impl Workshop for WorkshopSettings {
+    type Globals = WsGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &WsGlobals, (): &()) {
+        use workshop_setting as w;
+        ws.rule("workshop settings", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.comment("bools");
+                put(x, g.a, Expr::<Bool>::from(w::toggle("", "boolean", true)));
+                x.comment("ints");
+                put(x, g.a, Expr::<Num>::from(w::int("int", "int", 3)));
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::int("int", "unsigned int", 3).unsigned()),
+                );
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::int("int", "signed int", 3).signed()),
+                );
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::int("int", "int<2;19>", 3).range(2..=19)),
+                );
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::int("int", "int<6;>", 3).range(6..=i32::MAX)),
+                );
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::int("int", "int<;6>", 3).range(i32::MIN..=6)),
+                );
+                x.comment("floats");
+                put(x, g.a, Expr::<Num>::from(w::real("float", "float", 3.5)));
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::real("float", "unsigned float", 3.5).unsigned()),
+                );
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::real("float", "signed float", 3.5).signed()),
+                );
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::real("float", "float<2.5;19>", 3.5).range(2.5..=19.0)),
+                );
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(
+                        w::real("float", "float<6;>", 3.5).range(6.0..=9_999_999_999_999.0),
+                    ),
+                );
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(
+                        w::real("float", "float<;6>", 3.5).range(-9_999_999_999_999.0..=6.0),
+                    ),
+                );
+                x.comment("heroes");
+                put(
+                    x,
+                    g.a,
+                    Expr::<Hero>::from(w::hero("hero", "hero", Hero::Ana)),
+                );
+                put(
+                    x,
+                    g.a,
+                    Expr::<Hero>::from(w::hero("hero", "hero", Hero::WreckingBall).sort(3)),
+                );
+                x.comment("enums");
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::combo("enum", "enum", ["a", "b\nc\nd"], 0)),
+                );
+                // The reference spells the option styles `p"a"`, `b"b"` and `w"c"`; a combo
+                // option is a plain string here, so the styled text is written out.
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::combo("enum", "enum", ["a", "\u{392}", "\u{FF43}"], 2)),
+                );
+                x.comment("texture test");
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::combo(
+                        "<txC00000000008E02>",
+                        "<txC00000000008E02>",
+                        ["<txC00000000008E02>"],
+                        0,
+                    )),
+                );
+                x.comment("char workaround");
+                let special = "!\"#$%&'()*+,-./:\n;<=>?[\\]^_`{|}~";
+                put(
+                    x,
+                    g.a,
+                    Expr::<Num>::from(w::combo(
+                        special,
+                        special,
+                        ["{test special chars:}", special],
+                        0,
+                    )),
+                );
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn workshopsettings() {
+    // Allowed differences: a second hero setting with the same name gets a hidden suffix so the
+    // two stay distinct, where the reference printed the name twice; and an integer range is
+    // `i32`, so an open end is `i32::MAX` or `i32::MIN` rather than 13 nines.
+    check_with(
+        &WorkshopSettings,
+        include_str!("fixtures/reference/workshopSettings.txt"),
+        &[
+            ("3, 6, 9999999999999, 0", "3, 6, 2147483647, 0"),
+            ("3, -9999999999999, 6, 0", "3, -2147483648, 6, 0"),
+            (
+                "Custom String(\"hero\"), Custom String(\"hero\"), Wrecking Ball",
+                "Custom String(\"hero\"), Custom String(\"hero\u{1}\"), Wrecking Ball",
+            ),
+        ],
+    );
+}
+
+// customGameSettings: the settings are the whole mod. The `unknown gamemode` entry has no
+// equivalent (a mode is a `Gamemode`), so it is dropped from the expected output.
+struct CustomGameSettings;
+
+impl Workshop for CustomGameSettings {
+    type Globals = ();
+    type Players = ();
+
+    fn build(&self, _: &mut Builder, (): &(), (): &()) {}
+
+    fn settings(&self) -> Settings {
+        let pct = SettingValue::Percent;
+        let choice = |text: &str| SettingValue::Choice(text.to_owned());
+        let version = "1.4.3";
+        let description = format!(
+            "Tower Meifense - BETA do not copy! by Zezombye v{version}\n\nThis is an extremely long string that takes advantage of the fact that the description can have up to 512 characters (not bytes). \u{a4}\u{a7}\u{20ac} Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat naz|"
+        );
+        let hero = |values: Vec<(&str, SettingValue)>| {
+            values
+                .into_iter()
+                .fold(Values::new(), |all, (key, value)| all.with(key, value))
+        };
+        Settings::default()
+            .with_main(Main {
+                mode_name: Some("\u{ff34}\u{ff4f}\u{ff57}\u{ff45}\u{ff52}\u{2001}\u{ff2d}\u{ff45}\u{ff49}\u{ff46}\u{ff45}\u{ff4e}\u{ff53}\u{ff45}".to_owned()),
+                description: Some(description),
+            })
+            .with_lobby(
+                Lobby::default()
+                    .raw("mapRotation", choice("paused"))
+                    .raw("spectatorSlots", 6)
+                    .raw("returnToLobby", "unknown value")
+                    .raw("swapTeamsAfterMatch", false)
+                    .raw("unknownSetting", "abc"),
+            )
+            .with_mode(
+                ModeKey::Mode(Gamemode::Assault),
+                ModeSettings::default()
+                    .maps(MapSelection::Enabled(vec![MapRef::new(Map::TempleOfAnubis)]))
+                    .raw("captureSpeed%", pct(60.0))
+                    .raw("unknown value", 60),
+            )
+            .with_mode(
+                ModeKey::Mode(Gamemode::Escort),
+                ModeSettings::default()
+                    .maps(MapSelection::Enabled(vec![MapRef::new(Map::Dorado)]))
+                    .raw("payloadSpeed%", pct(200.0)),
+            )
+            .with_mode(
+                ModeKey::General,
+                ModeSettings::default()
+                    .raw("gamemodeStartTrigger", choice("manual"))
+                    .raw("heroLimit", choice("off"))
+                    .raw("respawnTime%", pct(100.0))
+                    .raw("spawnHealthPacks", choice("disabled")),
+            )
+            .with_heroes(
+                HeroTeam::Team1,
+                HeroSettings::default().selection(HeroSelection::Enabled(vec![
+                    Hero::Ashe,
+                    Hero::Bastion,
+                    Hero::Torbjorn,
+                    Hero::Widowmaker,
+                ])),
+            )
+            .with_heroes(
+                HeroTeam::Team2,
+                HeroSettings::default().hero(
+                    Hero::Mei,
+                    hero(vec![
+                        ("ability1Cooldown%", pct(200.0)),
+                        ("ability2Cooldown%", pct(200.0)),
+                        ("enableSecondaryFire", false.into()),
+                        ("primaryFireFreezeRate%", pct(50.0)),
+                        ("unknown value", "123%".into()),
+                    ]),
+                ),
+            )
+            .with_heroes(
+                HeroTeam::AllTeams,
+                HeroSettings::default()
+                    .hero(
+                        Hero::Anran,
+                        hero(vec![
+                            ("ability1Cooldown%", pct(50.0)),
+                            ("ability2Cooldown%", pct(50.0)),
+                            ("damageDealt%", pct(200.0)),
+                            ("ultGen%", pct(120.0)),
+                        ]),
+                    )
+                    .hero(
+                        Hero::Ashe,
+                        hero(vec![("ammoClipSize%", pct(200.0)), ("ultDuration%", pct(400.0))]),
+                    )
+                    .hero(Hero::Bastion, hero(vec![("ammoClipSize%", pct(200.0))]))
+                    .hero(
+                        Hero::Domina,
+                        hero(vec![
+                            ("ability1KB%", pct(125.0)),
+                            ("passiveHeal%", pct(125.0)),
+                            ("ultBarrierHealth%", pct(200.0)),
+                            ("ammoClipSize%", pct(200.0)),
+                        ]),
+                    )
+                    .hero(
+                        Hero::Emre,
+                        hero(vec![
+                            ("ability2Kb%", pct(50.0)),
+                            ("ability1Duration%", pct(200.0)),
+                            ("ability1Heat%", pct(125.0)),
+                            ("ultKb%", pct(150.0)),
+                            ("enableInfiniteUlt", true.into()),
+                        ]),
+                    )
+                    .hero(
+                        Hero::JetpackCat,
+                        hero(vec![
+                            ("primaryFireRange%", pct(150.0)),
+                            ("secondaryFireMaximumTime%", pct(200.0)),
+                            ("enablePassiveUnlimitedFuel", true.into()),
+                        ]),
+                    )
+                    .hero(
+                        Hero::Mizuki,
+                        hero(vec![
+                            ("ability1Duration%", pct(200.0)),
+                            ("enableRolePassive", false.into()),
+                        ]),
+                    )
+                    .hero(
+                        Hero::Vendetta,
+                        hero(vec![
+                            ("secondaryFireRechargeRate%", pct(120.0)),
+                            ("ability1Cooldown%", pct(10.0)),
+                            ("ability1Distance%", pct(120.0)),
+                            ("ability2Cooldown%", pct(10.0)),
+                            ("ability2Distance%", pct(120.0)),
+                            ("ultGen%", pct(120.0)),
+                        ]),
+                    )
+                    .hero(
+                        Hero::Widowmaker,
+                        hero(vec![("damageDealt%", pct(120.0)), ("ability1Cooldown%", pct(10.0))]),
+                    )
+                    .hero(
+                        Hero::JunkerQueen,
+                        hero(vec![("secondaryFireCooldown%", pct(120.0))]),
+                    ),
+            )
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn customgamesettings() {
+    // `unknown gamemode` (between Assault and Escort) is not expressible.
+    let fixture = include_str!("fixtures/reference/customGameSettings.txt");
+    let start = fixture
+        .find("\t\tunknown gamemode\n")
+        .expect("the unknown mode");
+    let end = start + fixture[start..].find("\t\tEscort").expect("Escort follows");
+    let expected = format!("{}{}", &fixture[..start], &fixture[end..]);
+    // Allowed difference: Domina's `ability1KB%` (written with a capital B) is printed where it
+    // was written, first, rather than after the keys spelled exactly like the schema.
+    let knockback = "\t\t\t\tSonic Repulsors Knockback Scalar: 125%\n";
+    let heal = "\t\t\t\tReconstruction Heal Scalar: 125%\n";
+    let expected = expected
+        .replace(knockback, "")
+        .replace(heal, &format!("{knockback}{heal}"));
+    check(&CustomGameSettings, &expected);
 }
