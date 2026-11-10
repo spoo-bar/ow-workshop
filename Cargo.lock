@@ -808,6 +808,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ab365ce29ba0232367502b2894556ae77a9c214d33dbf453fdba7f586905918"
 
 [[package]]
+name = "wasm-smoke"
+version = "0.1.0"
+dependencies = [
+ "ow-workshop",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "winapi-util"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"

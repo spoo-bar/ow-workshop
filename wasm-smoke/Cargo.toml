@@ -1,0 +1,19 @@
+[package]
+name = "wasm-smoke"
+description = "A tiny cdylib that compiles the hello_world mod, to check the WASM build and measure its size."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+ow-workshop = { path = "../ow-workshop", version = "0.1.0" }
+wasm-bindgen = "0.2"
+
+[lints]
+workspace = true

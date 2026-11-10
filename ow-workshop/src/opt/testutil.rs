@@ -146,6 +146,12 @@ pub(crate) fn options(level: OptLevel, strict: bool) -> CompileOptions {
 
 /// Optimizes `e` under `options`; returns it rendered and the warning codes reported.
 pub(crate) fn run_with(e: &Expr, options: &CompileOptions) -> (String, Vec<&'static str>) {
+    let (out, codes) = optimized(e, options);
+    (sh(&out), codes)
+}
+
+/// Optimizes `e` under `options`; returns it and the warning codes reported.
+pub(crate) fn optimized(e: &Expr, options: &CompileOptions) -> (Expr, Vec<&'static str>) {
     let mut diags = Diagnostics::default();
     let program = Program::default();
     let mut ctx = Ctx::new(options, Lang::EnUs, &mut diags, &program);
@@ -158,7 +164,7 @@ pub(crate) fn run_with(e: &Expr, options: &CompileOptions) -> (String, Vec<&'sta
         has_skips: false,
         empty_string: None,
     };
-    let out = sh(&optimize_expr(e, &mut env));
+    let out = optimize_expr(e, &mut env);
     (
         out,
         diags.0.iter().map(crate::ir::Diagnostic::code).collect(),

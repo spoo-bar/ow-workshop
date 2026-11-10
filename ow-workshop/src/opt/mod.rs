@@ -12,9 +12,13 @@ mod arrays;
 mod build;
 mod conditions;
 mod control;
+#[cfg(test)]
+mod eval;
 mod helpers;
 mod logic;
 mod math;
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod proptests;
 mod replacements;
 mod scope;
 mod size;
@@ -209,7 +213,12 @@ fn sweep(rule: &mut Rule, env: &mut Env<'_, '_>) {
 
 /// The optimize pass.
 pub(crate) fn run(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diagnostics> {
-    let called = control::called_subroutines(&program.rules);
+    // Size mode drops a called subroutine that does nothing too; its name and index stay declared.
+    let called = if ctx.options.optimize == crate::options::OptLevel::Size {
+        std::collections::HashSet::new()
+    } else {
+        control::called_subroutines(&program.rules)
+    };
     let empty_string = replacements::empty_string_var(program);
     program
         .rules

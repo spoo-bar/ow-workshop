@@ -44,7 +44,7 @@ pub(super) fn called_subroutines(rules: &[Rule]) -> HashSet<SubId> {
 
 /// Whether a rule is worth keeping: it has an action that is not control flow or a pause.
 ///
-/// A subroutine that something calls is kept either way.
+/// A subroutine in `called` is kept either way.
 pub(super) fn does_something(rule: &Rule, called: &HashSet<SubId>) -> bool {
     if let crate::ir::Event::Subroutine(sub) = rule.event {
         if called.contains(&sub) {

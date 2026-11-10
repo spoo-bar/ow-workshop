@@ -176,9 +176,8 @@ fn missing(sub: Needs, caller: Needs) -> Option<&'static str> {
 pub(crate) fn check(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diagnostics> {
     let subs = propagate(program);
     for rule in &program.rules {
-        if matches!(rule.event, Event::Subroutine(_)) {
-            continue;
-        }
+        // A subroutine inherits its caller's event values, so only the restart check applies.
+        let in_subroutine = matches!(rule.event, Event::Subroutine(_));
         let caller = provided(rule.event);
         walk_block(&rule.body, &mut |stmt: &Stmt| {
             let (id, restart) = match &stmt.kind {
@@ -192,7 +191,7 @@ pub(crate) fn check(program: &mut Program, ctx: &mut Ctx<'_>) -> Result<(), Diag
                 .entries
                 .get(id.0 as usize)
                 .map_or("?", |d| d.name.as_str());
-            if let Some(what) = missing(sub, caller) {
+            if let Some(what) = missing(sub, caller).filter(|_| !in_subroutine) {
                 ctx.warn(
                     Warning::MismatchedSubroutineEvent,
                     format!(
