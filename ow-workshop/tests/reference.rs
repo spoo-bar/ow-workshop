@@ -17,6 +17,7 @@ mod common;
 
 use common::assert_workshop_code_eq;
 use ow_workshop::__private::{Piece, template};
+use ow_workshop::Catalog;
 use ow_workshop::Kind;
 use ow_workshop::prelude::*;
 use ow_workshop_data::Extension;
@@ -43,8 +44,6 @@ macro_rules! stub {
 }
 
 stub!(enums, "enums", "#101");
-stub!(translations, "translations", "#101");
-stub!(translations2, "translations2", "#101");
 
 /// Size mode, as every fixture in #100 uses.
 fn size() -> CompileOptions {
@@ -3961,4 +3960,327 @@ fn customgamesettings() {
         .replace(knockback, "")
         .replace(heal, &format!("{knockback}{heal}"));
     check(&CustomGameSettings, &expected);
+}
+
+// translations
+#[derive(GlobalVars)]
+struct TrGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Any>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Any>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Any>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Any>,
+    #[ow(name = "E", index = 4)]
+    e: Global<Any>,
+    #[ow(name = "G", index = 6)]
+    g: Global<Any>,
+    #[ow(name = "H", index = 7)]
+    h: Global<Any>,
+    #[ow(name = "I", index = 8)]
+    i: Global<Any>,
+    #[ow(name = "K", index = 10)]
+    k: Global<Any>,
+    #[ow(name = "L", index = 11)]
+    l: Global<Any>,
+    #[ow(name = "N", index = 13)]
+    n: Global<Any>,
+    #[ow(name = "Y", index = 24)]
+    y: Global<Any>,
+    #[ow(name = "Z", index = 25)]
+    z: Global<Any>,
+}
+
+fn translation_settings() -> Settings {
+    Settings::default()
+        .with_lobby(
+            Lobby::default()
+                .raw("allowPlayersInQueue", true)
+                .raw("enableMatchVoiceChat", true),
+        )
+        .with_mode(
+            ModeKey::Mode(Gamemode::Skirmish),
+            ModeSettings::default().maps(MapSelection::Enabled(vec![MapRef::new(
+                Map::WorkshopChamber,
+            )])),
+        )
+}
+
+struct Translated;
+
+impl Workshop for Translated {
+    type Globals = TrGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &TrGlobals, (): &()) {
+        let (a, b, c, d, e) = (
+            || g.a.get(),
+            || g.b.get(),
+            || g.c.get(),
+            || g.d.get(),
+            || g.e.get(),
+        );
+        let (y, z) = (|| g.y.get().cast::<Num>(), || g.z.get().cast::<Num>());
+        let source = |x: &mut Block, text: &str, value: Expr<Str>| x.debug_value(text, value);
+        ws.rule("owo\nuwu", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.set(g.a, t!("some string"));
+                source(x, "t\"some string\"", t!("some string"));
+                x.set(g.c, t_ctx!("context\nowo", "some string"));
+                x.set(g.d, t_ctx!("context\nowo", "some string"));
+                x.set(g.e, t!("\u{AD}\n\nstring with whitespace \u{AD}"));
+                source(x, "t\"line 1 \\n line 2   \\n line 3  \"", t!("line 1 \n line 2   \n line 3  "));
+                x.set(g.g, t!("line 1 \n    line 2 \n line 3  "));
+                x.set(
+                    g.h,
+                    t!("a very very long string that will be split dsqljmfk ljkfqsdjlk qjlk lkjfsdq lkqjs mqslkdj fqsmklj qsmlkfj qsklfj qslkfjm qsmljkdf qslkmjdf lkqmjsdf lmkqjsdf lkmjqsfd lkmjqsdlfmkj qlsmjkdf lkmjqsdf lkjmqsldkmfj qslmkjdf lmkjqsfd lkmjqsfldmkj qsjmlkfd lmqkjsdf mljkqsfml dkjqsmlkjfd qsmlkjfd mlkqjsfd jlmkqsfmlkj qslkmjf mljksf"),
+                );
+                x.set(g.z, 1234);
+                x.set(g.y, 5432);
+                x.if_(ws_fmt!("{}", host_player()).eq("Zezombye"), |x| x.set(g.k, 2));
+                x.set(g.i, t!("some formatted string {}", z() + 1));
+                x.set(
+                    g.i,
+                    t!("some formatted string {} which is relatively long qjdsfio piqsjf ioqpjsfd joiqsfd poijqsf pijo", z()),
+                );
+                x.big_message(t!("multiple formatters {} {} owo", z(), y()));
+                x.big_message(t!("multiple formatters {0} {1} owo", z(), y()));
+                x.big_message(t!("multiple formatters {1} {0} owo", y(), z()));
+                x.big_message(t!("multiple formatters {0} {1} {2} {3} owo", a(), b(), c(), e()));
+                x.big_message(t!(
+                    "multiple formatters {} with a very long string ifdjopq ifjsqop idjfq spoifj poifjeqs iopj{} owo",
+                    z(),
+                    y()
+                ));
+                x.big_message(t!(
+                    "multiple formatters {0} with a very long string ifdjopq ifjsqop idjfq spoifj poifjeqs iopj {1} owo",
+                    z(),
+                    y()
+                ));
+                x.big_message(t!(
+                    "multiple formatters {1} with a very long string ifdjopq ifjsqop idjfq spoifj poifjeqs iopj {0} owo",
+                    z(),
+                    y()
+                ));
+                x.set(g.l, t!("653453[]|.<>$= \u{a4}$"));
+                x.set(g.n, "untranslated string");
+                source(x, "_(A)", tr(a()));
+                let header = |text: Expr<Str>| HudArgs {
+                    reevaluation: HudReeval::VisibilityAndString.into(),
+                    ..HudArgs::default()
+                };
+                let _ = header;
+                x.hud_header_with(tr(a()), HudArgs { reevaluation: HudReeval::VisibilityAndString.into(), ..HudArgs::default() });
+                x.hud_header_with(tr(h_of(&g.h)), HudArgs { reevaluation: HudReeval::VisibilityAndString.into(), ..HudArgs::default() });
+                x.hud_header_with(a(), HudArgs { reevaluation: HudReeval::VisibilityAndString.into(), ..HudArgs::default() });
+                x.hud_header_with(tr(g.n.get()), HudArgs { reevaluation: HudReeval::VisibilityAndString.into(), ..HudArgs::default() });
+                let strings = IntoExpr::<Array<Array<Str>>>::into_expr(vec![
+                    tr_raw(t!("string 1")),
+                    tr_raw(t!("string 2")),
+                ]);
+                x.big_message(tr(strings.get(z())));
+            });
+        });
+        ws.rule("", OngoingEachPlayer, |r, ev| {
+            r.condition(ev.event_player().is_holding_button(Button::Interact));
+            r.actions(|x| {
+                let text = || ws_fmt!("{}{}", tr(a()), input_binding_string(Button::Interact));
+                x.big_message(text());
+                x.small_message(text());
+            });
+        });
+    }
+
+    fn settings(&self) -> Settings {
+        translation_settings()
+    }
+
+    fn translations(&self) -> Option<Translations> {
+        let mut catalog = Catalog::default();
+        for (lang, po) in [
+            (
+                TranslationLang::Fr,
+                include_str!("fixtures/reference/translations.fr.po"),
+            ),
+            (
+                TranslationLang::Es,
+                include_str!("fixtures/reference/translations.es.po"),
+            ),
+            (
+                TranslationLang::ZhCn,
+                include_str!("fixtures/reference/translations.zh_cn.po"),
+            ),
+        ] {
+            catalog.merge_po(lang, po).expect("parses");
+        }
+        Some(
+            Translations::new([
+                TranslationLang::En,
+                TranslationLang::Fr,
+                TranslationLang::Es,
+                TranslationLang::ZhCn,
+            ])
+            .with_catalog(catalog)
+            .keep_unused(true),
+        )
+    }
+
+    fn options(&self) -> CompileOptions {
+        let mut options = CompileOptions::default();
+        options.tags = true;
+        options
+    }
+}
+
+fn h_of(var: &Global<Any>) -> Expr<Any> {
+    var.get()
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn translations() {
+    // Allowed differences:
+    // - the tag setup rule has its own name and no credit comments, and the two internal
+    //   variables take the last two slots in the other order (as in `strings`);
+    // - `debug` pads with ordinary spaces where the reference used em spaces (as in
+    //   `compression`);
+    // - the formatter test `{0} {1} {2} {4}` is written `{0} {1} {2} {3}` here (an argument
+    //   no placeholder uses is an error), which is a different translation key, so the one
+    //   message line that uses it is not compared.
+    let setup = "OverPy <\u{AD}tx> / <\u{AD}fg> setup code";
+    let expected = include_str!("fixtures/reference/translations.txt")
+        .replace(
+            &format!("rule (\"{setup}\")"),
+            "rule (\"<\u{AD}tx> / <\u{AD}fg> setup code\")",
+        )
+        .replace("        \"By Zezombye\"\n", "")
+        .replace(
+            "        \"More info: https://workshop.codes/wiki/articles/tx-reference-sheet\"\n",
+            "",
+        )
+        .replace(
+            "        126: __holygrail__\n        127: __overpyTranslationHelper__\n",
+            "        126: __overpyTranslationHelper__\n        127: __holygrail__\n",
+        )
+        .replace('\u{2003}', " ");
+    let output = Translated.compile(Lang::EnUs).expect("compiles").code;
+    let four = "String Replace(String Replace(String Replace(String Replace(";
+    let without = |code: &str| {
+        code.lines()
+            .filter(|line| !line.contains(four))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    assert_workshop_code_eq(&without(&output), &without(&expected));
+}
+
+// translations2: the language is kept in a player variable.
+#[derive(GlobalVars)]
+struct Tr2Globals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Any>,
+}
+
+struct Translated2;
+
+impl Workshop for Translated2 {
+    type Globals = Tr2Globals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &Tr2Globals, (): &()) {
+        ws.rule("owo\nuwu", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.set(g.a, t!("host player: {}", host_player()));
+                x.debug_value("t\"some string\"", t!("some string"));
+            });
+        });
+        ws.rule("", OngoingEachPlayer, |r, ev| {
+            r.condition(ev.event_player().is_holding_button(Button::Interact));
+            r.actions(|x| {
+                let text = || {
+                    ws_fmt!(
+                        "{}{}",
+                        tr(g.a.get()),
+                        input_binding_string(Button::Interact)
+                    )
+                };
+                x.big_message(text());
+                x.small_message(text());
+            });
+        });
+    }
+
+    fn settings(&self) -> Settings {
+        translation_settings()
+    }
+
+    fn translations(&self) -> Option<Translations> {
+        use TranslationLang::{De, En, EsEs, Fr, It, Ja, Ko, Pl, Pt, Ru, Th, Tr, Zh};
+        let mut catalog = Catalog::default();
+        for (lang, po) in [
+            (En, include_str!("fixtures/reference/translations2.en.po")),
+            (
+                EsEs,
+                include_str!("fixtures/reference/translations2.es_es.po"),
+            ),
+            (Fr, include_str!("fixtures/reference/translations2.fr.po")),
+            (It, include_str!("fixtures/reference/translations2.it.po")),
+            (Ja, include_str!("fixtures/reference/translations2.ja.po")),
+            (Ko, include_str!("fixtures/reference/translations2.ko.po")),
+            (Pl, include_str!("fixtures/reference/translations2.pl.po")),
+            (Pt, include_str!("fixtures/reference/translations2.pt.po")),
+            (Ru, include_str!("fixtures/reference/translations2.ru.po")),
+            (Th, include_str!("fixtures/reference/translations2.th.po")),
+            (Tr, include_str!("fixtures/reference/translations2.tr.po")),
+            (Zh, include_str!("fixtures/reference/translations2.zh.po")),
+        ] {
+            catalog.merge_po(lang, po).expect("parses");
+        }
+        Some(
+            Translations::new([De, Fr, Zh, EsEs, Tr, Th, Ja, Ko, Pl, Pt, Ru, It, En])
+                .with_catalog(catalog)
+                .with_player_var(PlayerVarMode::Default),
+        )
+    }
+
+    fn options(&self) -> CompileOptions {
+        let mut options = CompileOptions::default();
+        options.tags = true;
+        options
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn translations2() {
+    // Allowed differences, as in `translations`: the tag setup rule's name and comments, the
+    // order of the two internal variables, and `debug`'s padding; also the name of the rule
+    // that detects the player's language, and one comment inside it.
+    let setup = "OverPy <\u{AD}tx> / <\u{AD}fg> setup code";
+    let expected = include_str!("fixtures/reference/translations2.txt")
+        .replace(
+            &format!("rule (\"{setup}\")"),
+            "rule (\"<\u{AD}tx> / <\u{AD}fg> setup code\")",
+        )
+        .replace("        \"By Zezombye\"\n", "")
+        .replace(
+            "        \"More info: https://workshop.codes/wiki/articles/tx-reference-sheet\"\n",
+            "",
+        )
+        .replace(
+            "126: __holygrail__\n        127: __overpyTranslationHelper__\n",
+            "126: __overpyTranslationHelper__\n        127: __holygrail__\n",
+        )
+        .replace(
+            "OverPy translation setup - Determine the player's language",
+            "Translation setup - detect player language",
+        )
+        .replace(
+            "        \"Have a tolerance of 1/100 of a degree to account for precision errors\"\n",
+            "",
+        )
+        .replace('\u{2003}', " ");
+    check(&Translated2, &expected);
 }
