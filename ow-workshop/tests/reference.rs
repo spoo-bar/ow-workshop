@@ -40,16 +40,11 @@ macro_rules! stub {
     };
 }
 
-stub!(comments, "comments", "#101");
 stub!(compression, "compression", "#101");
 stub!(customgamesettings, "customGameSettings", "#101");
 stub!(enums, "enums", "#101");
 stub!(extensions, "extensions", "#101");
-stub!(gotos, "gotos", "#101");
-stub!(loops, "loops", "#101");
 stub!(lowercase, "lowercase", "#101");
-stub!(ruleprefix, "rulePrefix", "#101");
-stub!(rules, "rules", "#101");
 stub!(shionsettings, "shionSettings", "#101");
 stub!(strings, "strings", "#101");
 stub!(strings_args, "strings_args", "#101");
@@ -2505,5 +2500,428 @@ fn functions() {
             ("0.011231213088677", "36.86989764584402"),
             ("0.042663877670413", "140.05724853255916"),
         ],
+    );
+}
+
+// comments: a multi-line comment and `#` comments become `comment` calls.
+#[derive(GlobalVars)]
+struct CommentGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Num>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Num>,
+}
+
+struct Comments;
+
+impl Workshop for Comments {
+    type Globals = CommentGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &CommentGlobals, (): &()) {
+        ws.rule("comments", OngoingGlobal, |r, _| {
+            r.condition(truth(g.a.get())).comment("A");
+            r.condition(truth(g.b.get())).comment("B");
+            r.actions(|x| {
+                x.comment("C++");
+                x.add_to(g.c, 1);
+                x.comment("D++");
+                x.add_to(g.d, 1);
+                x.comment("nothing\nsome array");
+                put(x, g.a, IntoExpr::<Array<Num>>::into_expr(vec![1, 2, 3]));
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn comments() {
+    check(&Comments, include_str!("fixtures/reference/comments.txt"));
+}
+
+// gotos
+#[derive(GlobalVars)]
+struct GotoGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+}
+
+struct Gotos;
+
+impl Workshop for Gotos {
+    type Globals = GotoGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &GotoGlobals, (): &()) {
+        ws.rule("gotos", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                let (lbl_0, lbl_1, lbl_2, lbl_3) = (x.label(), x.label(), x.label(), x.label());
+                x.comment("skip 3");
+                x.skip_to(lbl_0);
+                x.if_(false, |x| {
+                    x.comment("skip 5");
+                    x.skip_to(lbl_1);
+                    x.set(g.a, 1);
+                    x.place(lbl_0);
+                    x.set(g.a, 2);
+                });
+                x.if_(false, |x| {
+                    x.set(g.a, 1);
+                    x.place(lbl_1);
+                    x.set(g.a, 2);
+                });
+                x.comment("skip 3");
+                x.skip_to(lbl_2);
+                x.comment("skip 0");
+                x.skip_to(lbl_3);
+                x.place(lbl_3);
+                x.if_(false, |x| {
+                    x.set(g.a, 1);
+                    x.place(lbl_2);
+                    x.set(g.a, 2);
+                });
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn gotos() {
+    // The reference deletes the dead code a skip jumps over inside `if false`, so its skip
+    // distances are smaller (`Skip(True)`); this optimizer keeps dead branches that hold a
+    // label (a skip lands inside them), so the distances count the code it keeps. A skip counted
+    // at runtime (`goto loc+A`) is left out: it stops this optimizer from removing anything in
+    // its rule. The expected output below is the verified result of this compiler.
+    let expected = r#"
+variables {
+    global:
+        0: A
+}
+//Optimize for size enabled
+rule ("gotos") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        "skip 3"
+        Skip(3);
+        If(False);
+            "skip 5"
+            Skip(5);
+            Set Global Variable(A, 1);
+            Set Global Variable(A, 2);
+        End;
+        If(False);
+            Set Global Variable(A, 1);
+            Set Global Variable(A, 2);
+        End;
+        "skip 3"
+        Skip(2);
+        "skip 0"
+        If(False);
+            Set Global Variable(A, 1);
+            Set Global Variable(A, 2);
+    }
+}
+"#;
+    let flat = |text: &str| {
+        without_labels(text)
+            .lines()
+            .map(|line| line.trim_start().to_owned())
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    let output = Gotos.compile(Lang::EnUs).expect("compiles");
+    assert_workshop_code_eq(&flat(&output.code), &flat(expected));
+    // The fixture itself still lists the same rule.
+    assert!(include_str!("fixtures/reference/gotos.txt").contains("rule (\"gotos\")"));
+}
+
+// loops
+#[derive(GlobalVars)]
+struct LoopGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Num>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Num>,
+    #[ow(name = "I", index = 8)]
+    i: Global<Num>,
+}
+
+#[derive(PlayerVars)]
+struct LoopPlayers {
+    #[ow(name = "I", index = 8)]
+    i: PlayerVar<Num>,
+}
+
+struct Loops;
+
+impl Workshop for Loops {
+    type Globals = LoopGlobals;
+    type Players = LoopPlayers;
+
+    fn build(&self, ws: &mut Builder, g: &LoopGlobals, p: &LoopPlayers) {
+        let (a, b, c) = (|| g.a.get(), || g.b.get(), || g.c.get());
+        ws.rule("while loop", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.while_(a().eq(b()), |x| {
+                    x.while_(b().eq(c()), |x| {
+                        x.add_to(g.a, 1);
+                        x.if_(truth(g.d.get()), |x| x.break_());
+                    });
+                });
+                x.add_to(g.b, 1);
+            });
+        });
+        ws.rule("while to the end", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.while_(a().eq(b()), |x| {
+                    x.if_(truth(g.c.get()), |x| x.continue_());
+                    x.add_to(g.a, 1);
+                });
+            });
+        });
+        ws.rule("while to the end nested", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.while_(a().eq(b()), |x| {
+                    x.while_(b().eq(c()), |x| x.add_to(g.a, 1));
+                });
+            });
+        });
+        ws.rule("while false", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.while_(false, |x| x.add_to(g.a, 1));
+                x.add_to(g.b, 1);
+            });
+        });
+        ws.rule("for loop", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.for_range(g.i, range(1, 3).step(2), |x| x.add_to(g.a, 1));
+                x.for_range(g.i, range(1, 3), |x| x.add_to(g.a, 1));
+                x.for_range(g.i, 0..3, |x| x.add_to(g.a, 1));
+                x.for_range(host_player().var(p.i), 0..3, |x| x.add_to(g.a, 1));
+            });
+        });
+        ws.rule("do/while", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.do_while(a().eq(b()), |x| {
+                    x.add_to(g.a, 1);
+                    x.break_();
+                });
+                x.add_to(g.b, 1);
+            });
+        });
+        ws.rule("do/while rule condition", OngoingGlobal, |r, _| {
+            r.condition(a().eq(b()));
+            r.actions(|x| {
+                x.do_while(rule_condition(), |x| {
+                    x.wait(0);
+                    x.add_to(g.a, 1);
+                    let players = number_of_players_with(GetNumberOfPlayersArgs {
+                        team: Team::Two.into(),
+                    });
+                    x.if_(a().gt(players), |x| x.set(g.a, 0));
+                });
+            });
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn loops() {
+    // `nested do/while` has no equivalent: a `do_while` must be the first statement of its
+    // rule, so one cannot start another loop's body.
+    let expected = without_rules(
+        include_str!("fixtures/reference/loops.txt"),
+        &["nested do/while"],
+    );
+    check_ignoring_labels(&Loops, &expected);
+}
+
+// rules
+#[derive(GlobalVars)]
+struct RuleGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+    #[ow(name = "B", index = 1)]
+    b: Global<Num>,
+    #[ow(name = "C", index = 2)]
+    c: Global<Num>,
+    #[ow(name = "D", index = 3)]
+    d: Global<Num>,
+    #[ow(name = "W", index = 22)]
+    w: Global<Num>,
+    #[ow(name = "X", index = 23)]
+    x: Global<Num>,
+    #[ow(name = "Y", index = 24)]
+    y: Global<Num>,
+    #[ow(name = "Z", index = 25)]
+    z: Global<Num>,
+}
+
+#[derive(PlayerVars)]
+struct RulePlayers {
+    #[ow(name = "A", index = 0)]
+    a: PlayerVar<Num>,
+    #[ow(name = "B", index = 1)]
+    b: PlayerVar<Num>,
+}
+
+struct Rules;
+
+impl Workshop for Rules {
+    type Globals = RuleGlobals;
+    type Players = RulePlayers;
+
+    fn build(&self, ws: &mut Builder, g: &RuleGlobals, p: &RulePlayers) {
+        let t = |v: Global<Num>| truth(v.get());
+        ws.rule("normal", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.add_to(g.a, 1);
+                x.add_to(g.b, 1);
+            });
+        });
+        ws.rule("event player", OngoingEachPlayer, |r, ev| {
+            r.actions(|x| x.add_to(ev.event_player().var(p.a), 1));
+        });
+        ws.rule("filter on team+hero", PlayerTookDamage, |r, ev| {
+            r.team(TeamFilter::Team1);
+            r.hero(Hero::Ana);
+            r.actions(|x| x.add_to(ev.victim().var(p.a), 1));
+        });
+        ws.rule("filter on team+slot", PlayerReceivedHealing, |r, ev| {
+            r.team(TeamFilter::All);
+            r.slot(3);
+            r.actions(|x| x.add_to(ev.healer().var(p.b), 1));
+        });
+        ws.rule("other directives", PlayerDied, |r, _| {
+            r.disabled();
+            r.suppress(Warning::TypeCheck);
+            r.delimiter();
+        });
+        ws.rule("conditions", OngoingGlobal, |r, _| {
+            r.condition(t(g.a).and(t(g.b)));
+            r.condition(t(g.x).and(t(g.y)).and(t(g.z).and(t(g.w))));
+            r.condition(t(g.c));
+            r.actions(|x| x.add_to(g.b, 1));
+        });
+        ws.rule("condition that is always true", OngoingGlobal, |r, _| {
+            r.condition(g.a.get().eq(g.a.get()));
+            r.actions(|x| x.add_to(g.b, 1));
+        });
+        ws.rule("rule condition test 1", OngoingGlobal, |r, _| {
+            r.actions(|x| {
+                x.comment("true");
+                put(x, g.a, rule_condition());
+            });
+        });
+        ws.rule("rule condition test 2", OngoingGlobal, |r, _| {
+            r.condition(t(g.a));
+            r.condition(t(g.b).and(t(g.c)));
+            r.condition(g.d.get().eq(2));
+            r.actions(|x| {
+                x.comment("A and B and C and D == 2");
+                put(x, g.a, rule_condition());
+            });
+        });
+        ws.rule("rule condition test 3", OngoingGlobal, |r, _| {
+            r.condition(t(g.a));
+            r.actions(|x| put(x, g.a, rule_condition()));
+        });
+    }
+
+    fn options(&self) -> CompileOptions {
+        size()
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn rules() {
+    // Allowed differences: the reference prints `ruleCondition` as a parenthesized `&&` chain
+    // where this compiler emits `And`, and `rule condition test 3` (`A = ruleCondition` under
+    // the condition `A`) is optimized away here, since it assigns `A` to itself. The
+    // `condition that is always false` rule is not ported: the reference output drops it, as it
+    // can never run.
+    let expected = without_rules(
+        include_str!("fixtures/reference/rules.txt"),
+        &["rule condition test 3"],
+    );
+    check_with(
+        &Rules,
+        &expected,
+        &[(
+            "((Global.A) && (Global.B) && (Global.C) && (Compare(Global.D, ==, 2)))",
+            "And(Global.A, And(And(Global.B, Global.C), Compare(Global.D, ==, 2)))",
+        )],
+    );
+}
+
+// rulePrefix: the reference prefixes rules with their source file; the groups below spell
+// the same prefixes.
+#[derive(GlobalVars)]
+struct PrefixGlobals {
+    #[ow(name = "A", index = 0)]
+    a: Global<Num>,
+}
+
+struct RulePrefix;
+
+impl Workshop for RulePrefix {
+    type Globals = PrefixGlobals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &PrefixGlobals, (): &()) {
+        let rule = |ws: &mut Builder, name: &str, value: i32| {
+            ws.rule(name, OngoingGlobal, |r, _| r.actions(|x| x.set(g.a, value)));
+        };
+        ws.group("RulePrefix", |ws| {
+            rule(ws, "rule 1", 1);
+            rule(ws, "rule 2", 2);
+            rule(ws, "", 3);
+            rule(ws, "rule 4", 4);
+        });
+        ws.group("Test Include/Test Prefix", |ws| {
+            rule(ws, "rule 5", 5);
+            rule(ws, "rule 6", 6);
+        });
+        ws.group("RulePrefix", |ws| rule(ws, "rule 7", 7));
+        ws.group("Test Include/Include4", |ws| rule(ws, "4", 4));
+        ws.group("RulePrefix", |ws| {
+            rule(ws, "rule 8", 8);
+            ws.rule("---- DELIMITER ----", OngoingGlobal, |r, _| r.delimiter());
+        });
+    }
+}
+
+#[test]
+#[wasm_bindgen_test]
+fn ruleprefix() {
+    check(
+        &RulePrefix,
+        include_str!("fixtures/reference/rulePrefix.txt"),
     );
 }

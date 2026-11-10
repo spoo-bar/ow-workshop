@@ -189,6 +189,7 @@ fn statement(stmt: &Stmt, lang: Lang) -> usize {
         | StmtKind::StartRule(..)
         | StmtKind::SwitchIf
         | StmtKind::Abort
+        | StmtKind::Break
         | StmtKind::AbortIfConditionTrue
         | StmtKind::AbortIfConditionFalse
         | StmtKind::Loop

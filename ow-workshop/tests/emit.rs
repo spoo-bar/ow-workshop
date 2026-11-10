@@ -43,3 +43,27 @@ rule ("Init") {
 "#;
     assert_workshop_code_eq(&code, expected);
 }
+
+struct Breaks;
+
+impl Workshop for Breaks {
+    type Globals = Globals;
+    type Players = ();
+
+    fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
+        ws.rule("Loop", OngoingGlobal, |r, _| {
+            r.actions(|b| {
+                b.while_(true, |b| {
+                    b.add_to(g.round, 1);
+                    b.if_(g.round.get().gt(3), |b| b.break_());
+                });
+            });
+        });
+    }
+}
+
+#[test]
+fn a_break_in_a_loop_is_printed_and_counted() {
+    let output = Breaks.compile(Lang::EnUs).expect("compiles");
+    assert!(output.code.contains("Break;"), "{}", output.code);
+}
