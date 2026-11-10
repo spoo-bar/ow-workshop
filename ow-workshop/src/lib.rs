@@ -139,6 +139,7 @@ mod vars;
 mod warning;
 mod width;
 mod workshop;
+mod workshop_debug;
 #[cfg(test)]
 mod workshop_enum;
 pub mod workshop_setting;
@@ -169,7 +170,7 @@ pub use expr::{Expr, null, vect};
 pub use generated::api::*;
 pub use hud::HudArgs;
 pub use ir::{
-    Diagnostic, Diagnostics, ErrorKind, Kind, Location, Severity, TeamFilter, WarningSet,
+    Diagnostic, Diagnostics, ErrorKind, Kind, Location, Severity, TeamFilter, VarId, WarningSet,
 };
 pub use label::Label;
 pub use localized::{localized, localized_en};
@@ -192,6 +193,7 @@ pub use players::{
 pub mod __private {
     pub use crate::fmt::{Piece, template};
     pub use crate::translate::translated;
+    pub use crate::workshop_debug::{debug_field, debug_field_with};
 }
 pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
@@ -213,3 +215,4 @@ pub use vars::{
 pub use warning::Warning;
 pub use width::{TextWidthError, spaces_for, spaces_for_str, visual_len};
 pub use workshop::{Workshop, WorkshopExt};
+pub use workshop_debug::{DebugField, DebugHandle, DebugRender, Scope, WorkshopDebug};

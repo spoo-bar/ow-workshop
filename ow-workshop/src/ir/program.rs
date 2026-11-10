@@ -23,6 +23,9 @@ pub(crate) struct Program {
     pub(crate) options: CompileOptions,
     /// Language-dependent strings, when the mod has translations.
     pub(crate) translations: Option<Translations>,
+    /// How to show variables in a debug build: the variable structs' fields, then whatever the
+    /// mod registered with `Builder::debug`.
+    pub(crate) debug_fields: Vec<crate::workshop_debug::DebugField>,
 }
 
 impl Program {

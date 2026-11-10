@@ -228,6 +228,14 @@ macro_rules! const_enums {
         impl ValueType for data::$name {}
         impl Is<data::$name> for data::$name {}
         impl Is<Any> for data::$name {}
+        impl crate::workshop_debug::DebugRender for data::$name {
+            type Value = data::$name;
+
+            #[track_caller]
+            fn debug_render(value: Expr<data::$name>) -> Expr<Str> {
+                crate::workshop_debug::render_constant(value)
+            }
+        }
         impl ConstEnum for data::$name {
             const NAME: &'static str = stringify!($name);
             fn key(self) -> &'static str {

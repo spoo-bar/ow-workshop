@@ -8,8 +8,10 @@ macro_rules! id {
     };
 }
 
-id!(/// Handle of a declared global or player variable.
-    VarId);
+/// Handle of a declared global or player variable.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct VarId(pub(crate) u32);
+
 id!(/// Handle of a declared subroutine.
     SubId);
 id!(/// Handle of a jump label.

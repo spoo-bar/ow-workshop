@@ -7,6 +7,7 @@ use crate::event::{Ev, EventType};
 use crate::ir::{Diagnostics, Location, Program, Rule};
 use crate::rule::Rule as RuleBuilder;
 use crate::rule_name::{RuleMeta, default_rule_name, module_path};
+use crate::workshop_debug::{DebugField, WorkshopDebug};
 
 /// Records the rules and subroutines of a mod in call order.
 #[derive(Debug, Default)]
@@ -20,6 +21,8 @@ pub struct Builder {
     template: Option<fn(&RuleMeta) -> String>,
     /// Whether the mod enables text tags.
     pub(crate) tags: bool,
+    /// Fields registered with [`Builder::debug`].
+    debug_fields: Vec<DebugField>,
 }
 
 // Recording methods are used as the API grows.
@@ -86,6 +89,12 @@ impl Builder {
         self.rules.push(rule);
     }
 
+    /// Adds the fields of `thing` to the debug panels, after those of the mod's `Globals` and
+    /// `Players`. Debug builds only; a release build ignores it.
+    pub fn debug(&mut self, thing: &impl WorkshopDebug) {
+        self.debug_fields.extend(thing.debug_fields());
+    }
+
     /// Appends a finished rule.
     pub(crate) fn push_rule(&mut self, rule: Rule) {
         self.rules.push(rule);
@@ -100,11 +109,12 @@ impl Builder {
     pub(crate) fn finish(self, program: Program) -> (Program, Diagnostics) {
         let mut diagnostics = self.diagnostics;
         crate::subroutine::report_undefined(&self.subs, &self.sub_states, &mut diagnostics);
-        let program = Program {
+        let mut program = Program {
             rules: self.rules,
             subroutines: self.subs,
             ..program
         };
+        program.debug_fields.extend(self.debug_fields);
         (program, diagnostics)
     }
 }

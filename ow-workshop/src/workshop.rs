@@ -8,6 +8,7 @@ use crate::pipeline;
 use crate::settings::Settings;
 use crate::translations::Translations;
 use crate::vars::{GlobalVars, PlayerVars, VarRegistry};
+use crate::workshop_debug::WorkshopDebug as _;
 use ow_workshop_data::Lang;
 
 /// A mod: implement this to define rules, variables and settings.
@@ -73,7 +74,10 @@ impl<W: Workshop> WorkshopExt for W {
         let mut ws = Builder::with_template(options.rule_name_template).with_tags(options.tags);
         self.build(&mut ws, &globals, &players);
 
+        let mut debug_fields = globals.debug_fields();
+        debug_fields.extend(players.debug_fields());
         let program = Program {
+            debug_fields,
             globals: global_reg.vars,
             players: player_reg.vars,
             settings: self.settings(),

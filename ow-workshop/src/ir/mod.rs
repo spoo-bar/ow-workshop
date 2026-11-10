@@ -19,7 +19,8 @@ pub use error_kind::ErrorKind;
 pub(crate) use expr::{
     CmpOp, ConstRef, Decompress, Expr, ExprKind, StrExpr, StrModifier, StrToken, Translated,
 };
-pub(crate) use ids::{LabelId, SubId, VarId};
+pub use ids::VarId;
+pub(crate) use ids::{LabelId, SubId};
 pub use loc::Location;
 pub(crate) use program::Program;
 pub use rule::TeamFilter;
