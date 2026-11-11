@@ -43,11 +43,10 @@ impl Workshop for HelloWorld {
 
     fn settings(&self) -> Settings {
         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
-        Settings::default()
-            .with_mode(
-                ModeKey::Mode(Gamemode::TeamDeathmatch),
-                ModeSettings::default().maps(maps),
-            )
+        Settings::default().with_mode(
+            ModeKey::Mode(Gamemode::TeamDeathmatch),
+            ModeSettings::default().maps(maps),
+        )
     }
 }
 
