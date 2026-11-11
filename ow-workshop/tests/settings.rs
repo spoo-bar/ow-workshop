@@ -54,7 +54,8 @@ fn shion_settings() {
         .with_heroes(
             HeroTeam::AllTeams,
             HeroSettings::default().hero(Hero::Shion, shion),
-        );
+        )
+        .without_checks();
     insta::assert_snapshot!("shion", settings_of(settings));
 }
 
@@ -84,8 +85,9 @@ fn extensions_settings() {
 
 #[test]
 fn the_block_comes_before_the_rules_and_ends_with_a_blank_line() {
-    let settings =
-        Settings::default().with_mode(ModeKey::Mode(Gamemode::Skirmish), ModeSettings::default());
+    let settings = Settings::default()
+        .with_mode(ModeKey::Mode(Gamemode::Skirmish), ModeSettings::default())
+        .without_checks();
     let code = Mod(settings)
         .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
         .expect("compiles")
@@ -111,9 +113,38 @@ fn invalid_settings_fail_the_compile() {
 }
 
 #[test]
+fn empty_settings_fail_the_compile() {
+    let err = Mod(Settings::default())
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect_err("the game rejects code without a settings block");
+    assert!(
+        err.0.iter().any(|d| d.code() == "settings-no-modes"),
+        "{err}"
+    );
+}
+
+#[test]
+fn a_mode_without_a_map_fails_the_compile() {
+    let settings = Settings::default().with_mode(
+        ModeKey::Mode(Gamemode::TeamDeathmatch),
+        ModeSettings::default(),
+    );
+    let err = Mod(settings)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect_err("the game says \"No Map Selected\"");
+    assert!(
+        err.0.iter().any(|d| d.code() == "settings-no-maps"),
+        "{err}"
+    );
+}
+
+#[test]
 fn extension_points_are_a_warning() {
     let settings = Settings::default()
-        .with_mode(ModeKey::Mode(Gamemode::Skirmish), ModeSettings::default())
+        .with_mode(
+            ModeKey::Mode(Gamemode::TeamDeathmatch),
+            ModeSettings::default().maps(MapSelection::Enabled(vec![MapRef::new(Map::Paris)])),
+        )
         .with_extension(Extension::Projectiles);
     let out = Mod(settings)
         .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
@@ -128,6 +159,10 @@ mod workshop_values {
     struct Values;
 
     impl Workshop for Values {
+        fn settings(&self) -> ow_workshop::Settings {
+            ow_workshop::Settings::unchecked()
+        }
+
         type Globals = Globals;
         type Players = ();
 
@@ -187,6 +222,10 @@ mod workshop_values {
         struct Many;
 
         impl Workshop for Many {
+            fn settings(&self) -> ow_workshop::Settings {
+                ow_workshop::Settings::unchecked()
+            }
+
             type Globals = Globals;
             type Players = ();
 

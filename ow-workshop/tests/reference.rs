@@ -94,6 +94,10 @@ struct VarPlayers {
 struct Variables;
 
 impl Workshop for Variables {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = VarGlobals;
     type Players = VarPlayers;
 
@@ -141,6 +145,10 @@ struct SubGlobals {
 struct Subroutines;
 
 impl Workshop for Subroutines {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = SubGlobals;
     type Players = ();
 
@@ -214,6 +222,10 @@ struct SwitchGlobals {
 struct Switches;
 
 impl Workshop for Switches {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = SwitchGlobals;
     type Players = ();
 
@@ -313,6 +325,10 @@ fn truthy(var: Global<Num>) -> Expr<Bool> {
 struct Conditions;
 
 impl Workshop for Conditions {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = CondGlobals;
     type Players = ();
 
@@ -456,6 +472,10 @@ struct OpGlobals {
 struct OperatorsStrict;
 
 impl Workshop for OperatorsStrict {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = OpGlobals;
     type Players = ();
 
@@ -507,6 +527,10 @@ fn n(x: i32) -> Expr<Num> {
 struct Operators;
 
 impl Workshop for Operators {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = OpGlobals;
     type Players = ();
 
@@ -789,6 +813,10 @@ fn arr(e: Expr<Num>) -> Expr<Array<Num>> {
 struct OperatorsAssign;
 
 impl Workshop for OperatorsAssign {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = AssignGlobals;
     type Players = AssignPlayers;
 
@@ -885,6 +913,10 @@ fn as_<T: ValueType>(e: Expr<Num>) -> Expr<T> {
 struct ElementSaving;
 
 impl Workshop for ElementSaving {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = EsGlobals;
     type Players = EsPlayers;
 
@@ -1142,6 +1174,10 @@ struct EsIndexPlayers {
 struct ElementSavingIndex;
 
 impl Workshop for ElementSavingIndex {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = EsIndexGlobals;
     type Players = EsIndexPlayers;
 
@@ -1198,6 +1234,10 @@ struct DictGlobals {
 struct Dicts;
 
 impl Workshop for Dicts {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = DictGlobals;
     type Players = ();
 
@@ -1262,6 +1302,10 @@ struct EnumGlobals {
 struct BuiltinEnums;
 
 impl Workshop for BuiltinEnums {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = EnumGlobals;
     type Players = ();
 
@@ -1321,6 +1365,10 @@ struct MacroGlobals {
 struct BuiltinMacros;
 
 impl Workshop for BuiltinMacros {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = MacroGlobals;
     type Players = ();
 
@@ -1366,6 +1414,10 @@ struct MapGlobals {
 struct GetCurrentMap;
 
 impl Workshop for GetCurrentMap {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = MapGlobals;
     type Players = ();
 
@@ -1413,6 +1465,10 @@ struct EventGlobals {
 struct EventVars;
 
 impl Workshop for EventVars {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = EventGlobals;
     type Players = ();
 
@@ -1522,6 +1578,10 @@ fn as_array(e: Expr<Any>) -> Expr<Array<Any>> {
 struct Arrays;
 
 impl Workshop for Arrays {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ArrayGlobals;
     type Players = ArrayPlayers;
 
@@ -1806,6 +1866,10 @@ struct FnPlayers {
 struct Functions;
 
 impl Workshop for Functions {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = FnGlobals;
     type Players = FnPlayers;
 
@@ -2219,6 +2283,10 @@ struct CommentGlobals {
 struct Comments;
 
 impl Workshop for Comments {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = CommentGlobals;
     type Players = ();
 
@@ -2258,6 +2326,10 @@ struct GotoGlobals {
 struct Gotos;
 
 impl Workshop for Gotos {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = GotoGlobals;
     type Players = ();
 
@@ -2333,6 +2405,10 @@ struct LoopPlayers {
 struct Loops;
 
 impl Workshop for Loops {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = LoopGlobals;
     type Players = LoopPlayers;
 
@@ -2447,6 +2523,10 @@ struct RulePlayers {
 struct Rules;
 
 impl Workshop for Rules {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = RuleGlobals;
     type Players = RulePlayers;
 
@@ -2534,6 +2614,10 @@ struct PrefixGlobals {
 struct RulePrefix;
 
 impl Workshop for RulePrefix {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = PrefixGlobals;
     type Players = ();
 
@@ -2599,6 +2683,10 @@ const CHARS_120: &str = "|______________________________________________________
 struct Strings;
 
 impl Workshop for Strings {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = StringGlobals;
     type Players = ();
 
@@ -2890,6 +2978,10 @@ fn arg_patterns(len: usize) -> Vec<Vec<usize>> {
 struct StringsArgs;
 
 impl Workshop for StringsArgs {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ArgsGlobals;
     type Players = ();
 
@@ -2946,6 +3038,10 @@ struct LowerGlobals {
 struct Lowercase;
 
 impl Workshop for Lowercase {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = LowerGlobals;
     type Players = ();
 
@@ -3012,6 +3108,10 @@ struct CompressGlobals {
 struct Compression;
 
 impl Workshop for Compression {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = CompressGlobals;
     type Players = ();
 
@@ -3123,6 +3223,8 @@ impl Workshop for ShionSettings {
                 HeroTeam::AllTeams,
                 HeroSettings::default().hero(Hero::Shion, shion),
             )
+            // Compiled as exported; the game would ask for a map.
+            .without_checks()
     }
 }
 
@@ -3220,6 +3322,10 @@ struct WsGlobals {
 struct WorkshopSettings;
 
 impl Workshop for WorkshopSettings {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = WsGlobals;
     type Players = ();
 
@@ -3788,6 +3894,10 @@ struct UserEnumGlobals {
 struct UserEnums;
 
 impl Workshop for UserEnums {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = UserEnumGlobals;
     type Players = ();
 

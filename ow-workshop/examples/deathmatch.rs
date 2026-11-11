@@ -2,6 +2,7 @@
 #![cfg_attr(target_arch = "wasm32", no_main)]
 
 use ow_workshop::prelude::*;
+use ow_workshop::{Gamemode, Map};
 
 #[derive(GlobalVars)]
 struct Globals {
@@ -36,6 +37,14 @@ impl Workshop for Deathmatch {
                 );
             });
         });
+    }
+
+    fn settings(&self) -> Settings {
+        let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
+        Settings::default().with_mode(
+            ModeKey::Mode(Gamemode::TeamDeathmatch),
+            ModeSettings::default().maps(maps),
+        )
     }
 }
 

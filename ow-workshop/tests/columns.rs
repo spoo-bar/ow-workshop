@@ -16,6 +16,10 @@ struct Waves {
 }
 
 impl Workshop for Waves {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = Globals;
     type Players = ();
 
@@ -85,6 +89,10 @@ struct Spawns {
 }
 
 impl Workshop for Spawns {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = SpawnGlobals;
     type Players = ();
 

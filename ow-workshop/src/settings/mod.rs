@@ -31,6 +31,8 @@ pub struct Settings {
     pub workshop: Vec<(String, WorkshopValue)>,
     /// Workshop extensions the mod turns on.
     pub extensions: Vec<Extension>,
+    /// Skips validation and prints nothing when empty; see [`Settings::unchecked`].
+    pub(crate) unchecked: bool,
 }
 
 impl Settings {
@@ -78,9 +80,32 @@ impl Settings {
         self
     }
 
+    /// Settings that skip validation and print no block while nothing is set.
+    ///
+    /// The game rejects code without a `settings` block, or with a game mode that has no map, so
+    /// a real mod must declare complete settings. This exists only for tests of other parts of the
+    /// compiler.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn unchecked() -> Self {
+        Self::default().without_checks()
+    }
+
+    /// These settings, skipping validation; see [`Settings::unchecked`]. For reference tests that
+    /// compile settings exported from the game as they are.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn without_checks(mut self) -> Self {
+        self.unchecked = true;
+        self
+    }
+
     /// Whether nothing is set, so no settings block is printed.
     pub(crate) fn is_empty(&self) -> bool {
-        *self == Self::default()
+        Self {
+            unchecked: false,
+            ..self.clone()
+        } == Self::default()
     }
 
     /// Whether the extension is on.

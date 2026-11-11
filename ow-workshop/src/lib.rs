@@ -7,6 +7,7 @@
 //!
 //! ```
 //! use ow_workshop::prelude::*;
+//! use ow_workshop::{Gamemode, Map};
 //!
 //! struct HelloWorld;
 //!
@@ -23,6 +24,14 @@
 //!             r.condition(ev.event_player().has_spawned());
 //!             r.actions(|b| b.small_message(ws_fmt!("Welcome, {}!", ev.event_player())));
 //!         });
+//!     }
+//!
+//!     fn settings(&self) -> Settings {
+//!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
+//!         Settings::default().with_mode(
+//!             ModeKey::Mode(Gamemode::TeamDeathmatch),
+//!             ModeSettings::default().maps(maps),
+//!         )
 //!     }
 //! }
 //!
@@ -82,6 +91,7 @@
 //!
 //! ```
 //! use ow_workshop::prelude::*;
+//! use ow_workshop::{Gamemode, Map};
 //!
 //! #[derive(Clone, Copy, WorkshopEnum)]
 //! enum State {
@@ -117,6 +127,14 @@
 //!             });
 //!         });
 //!     }
+//!
+//!     fn settings(&self) -> Settings {
+//!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
+//!         Settings::default().with_mode(
+//!             ModeKey::Mode(Gamemode::TeamDeathmatch),
+//!             ModeSettings::default().maps(maps),
+//!         )
+//!     }
 //! }
 //!
 //! let debug = Mode
@@ -143,6 +161,7 @@
 //!
 //! ```
 //! use ow_workshop::prelude::*;
+//! use ow_workshop::{Gamemode, Map};
 //!
 //! struct MyMode;
 //!
@@ -152,6 +171,14 @@
 //!
 //!     fn build(&self, ws: &mut Builder, _: &(), _: &()) {
 //!         ws.rule("Init", OngoingGlobal, |_, _| {});
+//!     }
+//!
+//!     fn settings(&self) -> Settings {
+//!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
+//!         Settings::default().with_mode(
+//!             ModeKey::Mode(Gamemode::TeamDeathmatch),
+//!             ModeSettings::default().maps(maps),
+//!         )
 //!     }
 //! }
 //!
@@ -164,7 +191,7 @@
 //!         .map_err(|diagnostics| diagnostics.to_string())
 //! }
 //!
-//! assert_eq!(compile("en-US"), Ok(String::new()));
+//! assert!(compile("en-US").is_ok());
 //! assert!(compile("xx-XX").is_err());
 //! ```
 

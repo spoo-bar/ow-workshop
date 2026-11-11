@@ -3,6 +3,7 @@
 #![cfg_attr(target_arch = "wasm32", no_main)]
 
 use ow_workshop::prelude::*;
+use ow_workshop::{Gamemode, Map};
 
 /// A 300-character text with seven arguments.
 fn long_text() -> Expr<Str> {
@@ -54,6 +55,14 @@ impl Workshop for InGameChecklist {
         let mut options = CompileOptions::default();
         options.tags = true;
         options
+    }
+
+    fn settings(&self) -> Settings {
+        let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
+        Settings::default().with_mode(
+            ModeKey::Mode(Gamemode::TeamDeathmatch),
+            ModeSettings::default().maps(maps),
+        )
     }
 }
 

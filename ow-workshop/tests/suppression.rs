@@ -14,6 +14,10 @@ struct Levels {
 struct Mod(Levels);
 
 impl Workshop for Mod {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ();
     type Players = ();
 
@@ -89,6 +93,10 @@ fn the_options_suppress_everywhere() {
 fn suppressing_one_warning_keeps_the_others() {
     struct Other;
     impl Workshop for Other {
+        fn settings(&self) -> ow_workshop::Settings {
+            ow_workshop::Settings::unchecked()
+        }
+
         type Globals = ();
         type Players = ();
 
@@ -110,6 +118,10 @@ fn suppressing_one_warning_keeps_the_others() {
 struct Repeated;
 
 impl Workshop for Repeated {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ();
     type Players = ();
 
@@ -145,6 +157,10 @@ fn late(b: &mut Block) {
 struct Unordered;
 
 impl Workshop for Unordered {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ();
     type Players = ();
 

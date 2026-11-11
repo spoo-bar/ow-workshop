@@ -12,6 +12,10 @@ struct Mode {
 }
 
 impl Workshop for Mode {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = Globals;
     type Players = ();
 

@@ -21,6 +21,10 @@ struct Players {
 struct Mode;
 
 impl Workshop for Mode {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = Globals;
     type Players = Players;
 
@@ -146,6 +150,10 @@ fn warnings_are_the_outputs_warnings() {
     struct Chased;
 
     impl Workshop for Chased {
+        fn settings(&self) -> ow_workshop::Settings {
+            ow_workshop::Settings::unchecked()
+        }
+
         type Globals = Globals;
         type Players = ();
 

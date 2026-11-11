@@ -53,6 +53,7 @@ fn parse(
 ///
 /// ```no_run
 /// use ow_workshop::prelude::*;
+/// use ow_workshop::{Gamemode, Map};
 ///
 /// struct MyMode;
 ///
@@ -62,6 +63,14 @@ fn parse(
 ///
 ///     fn build(&self, ws: &mut Builder, _: &(), _: &()) {
 ///         ws.rule("Init", OngoingGlobal, |_, _| {});
+///     }
+///
+///     fn settings(&self) -> Settings {
+///         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
+///         Settings::default().with_mode(
+///             ModeKey::Mode(Gamemode::TeamDeathmatch),
+///             ModeSettings::default().maps(maps),
+///         )
 ///     }
 /// }
 ///

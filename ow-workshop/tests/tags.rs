@@ -7,6 +7,10 @@ use ow_workshop::prelude::*;
 struct Tagged;
 
 impl Workshop for Tagged {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ();
     type Players = ();
 
@@ -29,6 +33,10 @@ impl Workshop for Tagged {
 struct Textured;
 
 impl Workshop for Textured {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ();
     type Players = ();
 

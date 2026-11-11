@@ -5,6 +5,10 @@ use ow_workshop::prelude::*;
 struct Mode;
 
 impl Workshop for Mode {
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ();
     type Players = ();
 

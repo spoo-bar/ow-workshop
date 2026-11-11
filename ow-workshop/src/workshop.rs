@@ -22,9 +22,10 @@ pub trait Workshop {
     fn build(&self, ws: &mut Builder, globals: &Self::Globals, players: &Self::Players);
 
     /// Custom game settings.
-    fn settings(&self) -> Settings {
-        Settings::default()
-    }
+    ///
+    /// Required: the game rejects code without a `settings` block, so the settings must enable at
+    /// least one game mode, and every enabled mode needs a map.
+    fn settings(&self) -> Settings;
 
     /// Compile options.
     fn options(&self) -> CompileOptions {
@@ -96,6 +97,10 @@ mod tests {
     struct Empty;
 
     impl Workshop for Empty {
+        fn settings(&self) -> crate::settings::Settings {
+            crate::settings::Settings::unchecked()
+        }
+
         type Globals = ();
         type Players = ();
 
@@ -117,6 +122,10 @@ mod tests {
     struct Configured;
 
     impl Workshop for Configured {
+        fn settings(&self) -> crate::settings::Settings {
+            crate::settings::Settings::unchecked()
+        }
+
         type Globals = ();
         type Players = ();
 

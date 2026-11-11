@@ -54,17 +54,21 @@ fn string_problem(max_chars: Option<u32>, max_bytes: Option<u32>, text: &str) ->
         .map(|max| format!("is {bytes} bytes long in UTF-8; the most is {max}"))
 }
 
-/// Reports problems with `settings` and applies the silent fixes. Does nothing without settings.
+/// Reports problems with `settings` and applies the silent fixes. Settings made with
+/// [`Settings::unchecked`] are left alone.
 pub(crate) fn validate(settings: &mut Settings, options: &CompileOptions, diags: &mut Diagnostics) {
-    if settings.is_empty() {
+    if settings.unchecked {
         return;
     }
     drop_best_available(settings);
     let mut check = Check { diags };
-    if settings.modes.is_empty() {
+    // `General` only holds settings shared by every mode; it is not a mode to play.
+    let playable =
+        |(key, mode): &&(ModeKey, ModeSettings)| mode.enabled && *key != ModeKey::General;
+    if settings.modes.iter().find(playable).is_none() {
         check.error(
             ErrorKind::SettingsNoModes,
-            "the settings have no `modes`; enable at least one game mode".to_owned(),
+            "the settings enable no game mode; enable at least one, with a map".to_owned(),
         );
     }
     check.maps(settings);
@@ -160,6 +164,19 @@ impl Check<'_> {
                 self.error(
                     ErrorKind::SettingsOw1Only,
                     format!("the game mode `{name}` only exists in Overwatch 1"),
+                );
+            }
+            let no_maps = match &mode.maps {
+                None => true,
+                Some(MapSelection::Enabled(maps)) => maps.is_empty(),
+                Some(MapSelection::Disabled(_)) => false,
+            };
+            if mode.enabled && no_maps && *key != ModeKey::General {
+                self.error(
+                    ErrorKind::SettingsNoMaps,
+                    format!(
+                        "the game mode `{name}` has no map; the game refuses it with \"No Map Selected\""
+                    ),
                 );
             }
             let Some(maps) = &mode.maps else { continue };
