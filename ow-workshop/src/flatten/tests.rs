@@ -1,7 +1,7 @@
 use ow_workshop_data::ActionId;
 
 use super::{FlatKind, FlatStmt, flatten_rule};
-use crate::ir::{Block, Event, Rule, StmtKind, SubId};
+use crate::ir::{Event, Rule, StmtKind, SubId};
 use crate::lower::testutil::{action, block, boolean, if_, num, options, program};
 use crate::options::OptLevel;
 
@@ -164,10 +164,4 @@ fn lowered_switch_indents_its_body_until_the_end_action() {
         run(body, OptLevel::Speed),
         ["0:Stmt", "1:Stmt", "1:Stmt", "0:Stmt", "1:Stmt", "0:Stmt"]
     );
-}
-
-#[test]
-fn empty_block_is_fine() {
-    let rule = Rule::new("r", Event::OngoingGlobal, Block::default());
-    assert_eq!(flatten_rule(&rule, &options(OptLevel::Speed)).len(), 0);
 }

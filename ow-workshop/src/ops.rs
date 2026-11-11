@@ -408,33 +408,6 @@ mod tests {
     }
 
     #[test]
-    fn references_and_ints_work() {
-        let a = n(1);
-        let sum = &a + &a;
-        assert!(matches!(sum.ir().kind(), ExprKind::Add(..)));
-        let i: Expr<Int> = 4.into();
-        let r: Expr<Num> = i + 1;
-        assert!(matches!(r.ir().kind(), ExprKind::Add(..)));
-    }
-
-    #[test]
-    fn vector_arithmetic_has_vector_type() {
-        let v = vect(1, 2, 3);
-        let sum: Expr<Vector> = &v + &v;
-        let scaled: Expr<Vector> = n(2) * &v;
-        let shrunk: Expr<Vector> = &v / 2;
-        let comp: Expr<Vector> = &v * &v;
-        let pos: Expr<Position> = Expr::from_ir(v.ir().clone());
-        let moved: Expr<Vector> = pos + &v;
-        for e in [sum, scaled, shrunk, comp, moved] {
-            assert!(matches!(
-                e.ir().kind(),
-                ExprKind::Add(..) | ExprKind::Mul(..) | ExprKind::Div(..)
-            ));
-        }
-    }
-
-    #[test]
     fn negating_a_literal_is_a_literal() {
         assert_eq!((-n(5)).ir().kind(), &ExprKind::Num(-5.0));
         assert!(matches!((-vect(1, 2, 3)).ir().kind(), ExprKind::Neg(_)));

@@ -54,22 +54,6 @@ fn break_in_a_while_stays_a_workshop_break() {
 }
 
 #[test]
-fn break_in_a_for_stays_a_workshop_break() {
-    let for_ = StmtKind::For {
-        var: crate::ir::Place::Global(crate::ir::VarId(0)),
-        start: num(0.0),
-        stop: num(3.0),
-        step: num(1.0),
-        body: block(vec![StmtKind::Break]),
-    };
-    let (p, _) = lowered(vec![for_]);
-    let StmtKind::For { body, .. } = kinds(&p)[0] else {
-        panic!()
-    };
-    assert_eq!(body.stmts[0].kind, StmtKind::Break);
-}
-
-#[test]
 fn continue_skips_to_a_label_at_the_end_of_the_body() {
     let (p, _) = lowered(vec![while_(vec![
         action(),

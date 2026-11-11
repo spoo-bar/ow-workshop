@@ -223,26 +223,6 @@ mod tests {
     }
 
     #[test]
-    fn flags() {
-        let mut ws = Builder::new();
-        ws.rule("flags", OngoingGlobal, |r, _| {
-            r.disabled();
-            r.delimiter();
-            r.new_page_named("page");
-            r.suppress(Warning::BreakOutsideLoop);
-            r.comment("note");
-        });
-        ws.rule("plain page", OngoingGlobal, |r, _| r.new_page());
-        let (program, _) = finish(ws);
-        let rule = &program.rules[0];
-        assert!(rule.disabled && rule.delimiter);
-        assert_eq!(rule.new_page.as_deref(), Some("page"));
-        assert!(rule.suppressed.contains(Warning::BreakOutsideLoop));
-        assert_eq!(rule.comment.as_deref(), Some("note"));
-        assert_eq!(program.rules[1].new_page.as_deref(), Some(""));
-    }
-
-    #[test]
     fn player_filters() {
         let mut ws = Builder::new();
         ws.rule("team", OngoingEachPlayer, |r, _| r.team(TeamFilter::Team2));

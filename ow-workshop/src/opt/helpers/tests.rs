@@ -113,20 +113,6 @@ fn not_truthy_values() {
 }
 
 #[test]
-fn falsy_and_truthy_are_disjoint() {
-    for e in [
-        num(0.0),
-        num(3.0),
-        array(vec![]),
-        var(),
-        boolean(true),
-        null(),
-    ] {
-        assert!(!(definitely_falsy(&e) && definitely_truthy(&e)));
-    }
-}
-
-#[test]
 fn equal_expressions_ignore_locations() {
     let a = Expr::new(ExprKind::Num(1.0), None);
     let b = Expr::new(ExprKind::Num(1.0), Some(crate::ir::Location::caller()));

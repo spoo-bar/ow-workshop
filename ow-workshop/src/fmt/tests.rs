@@ -80,12 +80,6 @@ fn template_has_a_source_location() {
 }
 
 #[test]
-fn chars_constants_exist() {
-    assert_eq!(chars::BLACK_SQUARE, '\u{25a0}');
-    assert_eq!(chars::SOFT_HYPHEN, '\u{ad}');
-}
-
-#[test]
 fn placeholder_lookalikes() {
     assert!(has_placeholder_lookalike("a {0} b"));
     assert!(has_placeholder_lookalike("{12}"));

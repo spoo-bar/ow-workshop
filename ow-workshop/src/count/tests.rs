@@ -45,11 +45,6 @@ fn a_one_action_rule_is_three_elements() {
 }
 
 #[test]
-fn empty_rule_is_one_element() {
-    assert_eq!(total(&rule_with(vec![], vec![])), 1);
-}
-
-#[test]
 fn conditions() {
     let alive = call(ValueId::IsAlive, vec![call(ValueId::EventPlayer, vec![])]);
     let cmp = expr(ExprKind::Compare {

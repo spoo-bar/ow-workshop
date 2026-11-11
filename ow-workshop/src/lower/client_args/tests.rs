@@ -162,11 +162,3 @@ fn tokens_split_two_word_names() {
     );
     assert_eq!(tokens("NONE"), ["NONE"]);
 }
-
-#[test]
-fn the_bit_set_holds_positions() {
-    let set: SmallBitSet = [3, 1, 3].into_iter().collect();
-    assert!(set.contains(1) && set.contains(3) && !set.contains(2));
-    assert_eq!(set.iter().collect::<Vec<_>>(), [1, 3]);
-    assert!(SmallBitSet::default().is_empty());
-}

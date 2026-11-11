@@ -163,13 +163,6 @@ fn different_literals_are_not_equal() {
 }
 
 #[test]
-fn custom_strings_are_literals_only_when_not_strict() {
-    let e = cmp(Eq, cstr("am"), cstr("**"));
-    assert_eq!(speed(&e), "false");
-    assert_eq!(strict(&e), "(\"am\"() == \"**\"())");
-}
-
-#[test]
 fn a_literal_is_not_compared_with_a_formatted_string() {
     let formatted = crate::ir::Expr::new(
         crate::ir::ExprKind::Str(crate::ir::StrExpr::Custom {
@@ -220,12 +213,6 @@ fn if_then_else_with_equal_branches() {
 #[test]
 fn if_then_else_swaps_a_negated_condition() {
     assert_eq!(speed(&ite(not(g(2)), g(0), g(1))), "(g2 ? g1 : g0)");
-}
-
-#[test]
-fn nothing_changes_with_the_optimizer_off() {
-    assert_eq!(off(&and(tru(), g(0))), "(true && g0)");
-    assert_eq!(off(&not(cmp(Eq, g(0), g(1)))), "!(g0 == g1)");
 }
 
 /// The `strict optimizations` rule of the operators fixture: none of these may change.

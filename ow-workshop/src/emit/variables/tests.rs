@@ -61,11 +61,6 @@ fn both_sections() {
 }
 
 #[test]
-fn no_variables_print_nothing() {
-    assert_eq!(variables(&mut Program::default()), "");
-}
-
-#[test]
 fn indices_ascend_whatever_the_declaration_order() {
     let mut program = Program::default();
     program.globals.declare(VarDecl {

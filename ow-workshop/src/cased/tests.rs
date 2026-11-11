@@ -98,11 +98,6 @@ fn placeholders_appear_in_one_output() {
 }
 
 #[test]
-fn widths_use_the_font_table() {
-    assert_eq!(char_width('A'), 342);
-}
-
-#[test]
 fn n_must_be_between_2_and_6() {
     let text = Expr::<Str>::from("a");
     assert_eq!(

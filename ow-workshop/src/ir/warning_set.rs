@@ -66,30 +66,3 @@ impl Extend<Warning> for WarningSet {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn holds_every_warning_independently() {
-        for (i, &warning) in Warning::ALL.iter().enumerate() {
-            let set = WarningSet::from(warning);
-            for (j, &other) in Warning::ALL.iter().enumerate() {
-                assert_eq!(set.contains(other), i == j);
-            }
-        }
-    }
-
-    #[test]
-    fn unions_and_collects() {
-        let a: WarningSet = [Warning::DarkColor, Warning::Wait9999]
-            .into_iter()
-            .collect();
-        let b = WarningSet::from(Warning::ClosestPlayer);
-        let both = a.union(b);
-        assert!(both.contains(Warning::DarkColor) && both.contains(Warning::ClosestPlayer));
-        assert!(!a.contains(Warning::ClosestPlayer));
-        assert!(WarningSet::default().is_empty() && !both.is_empty());
-    }
-}

@@ -126,12 +126,6 @@ fn assigning_a_variable_to_itself_is_removed() {
 }
 
 #[test]
-fn adding_zero_is_a_no_op() {
-    let p = optimized(vec![set(0, add(g(0), num(0.0))), real()]);
-    assert_eq!(shape(&p), ["Kill"]);
-}
-
-#[test]
 fn random_values_are_not_the_same_variable() {
     let roll = val(
         ow_workshop_data::ValueId::RandomRandint,

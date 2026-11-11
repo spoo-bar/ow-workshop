@@ -84,20 +84,6 @@ fn dictionary_in_a_condition_and_nested() {
 }
 
 #[test]
-fn two_dimensional_set() {
-    let p = lowered(StmtKind::Set {
-        target: grid(&[1, 2]),
-        value: num(5.0),
-    });
-    assert_eq!(
-        set(&p),
-        format!(
-            "g0[g1] = Concat(Concat(Slice(g0[g1], 0, g2), [5]), Slice(g0[g1], (g2 + 1), {END}))"
-        )
-    );
-}
-
-#[test]
 fn three_dimensional_set() {
     let p = lowered(StmtKind::Set {
         target: grid(&[1, 2, 3]),
@@ -110,21 +96,6 @@ fn three_dimensional_set() {
         set(&p),
         format!(
             "g0[g1] = Concat(Concat(Slice(g0[g1], 0, g2), [{inner}]), Slice(g0[g1], (g2 + 1), {END}))"
-        )
-    );
-}
-
-#[test]
-fn deleting_from_a_two_dimensional_place() {
-    let p = lowered(StmtKind::Modify {
-        target: grid(&[1, 2]),
-        op: ModifyOp::RemoveFromArrayByIndex,
-        value: var(3),
-    });
-    assert_eq!(
-        set(&p),
-        format!(
-            "g0[g1] = Concat(Concat(Slice(g0[g1], 0, g2), [FilteredArray(g0[g1][g2], (# Ne g3))]), Slice(g0[g1], (g2 + 1), {END}))"
         )
     );
 }

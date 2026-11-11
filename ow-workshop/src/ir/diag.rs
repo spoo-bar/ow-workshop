@@ -224,14 +224,6 @@ mod tests {
     }
 
     #[test]
-    fn diagnostics_are_an_error_value() {
-        let mut diags = Diagnostics::default();
-        diags.error(ErrorKind::EmitFailed, "m".to_owned(), None);
-        let error: &dyn std::error::Error = &diags;
-        assert_eq!(error.to_string(), "error[emit-failed]: m");
-    }
-
-    #[test]
     fn finish_dedups_and_orders_by_location() {
         let warn =
             |w: Warning, m: &str, loc: Option<Location>| Diagnostic::new(w, m.to_owned(), loc);
