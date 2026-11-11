@@ -65,41 +65,33 @@ fn player_values_need_a_player_event() {
 }
 
 #[test]
-fn damage_or_healing_values() {
-    let w = check_program(
-        1,
-        vec![
-            sub(0, vec![value(ValueId::EventAbility)]),
-            caller(Event::OngoingEachPlayer, vec![call(0)]),
-        ],
-    );
-    assert!(w.0[0].message.contains("event damage or healing values"));
-}
-
-#[test]
-fn damage_values() {
-    // The caller has damage-or-healing (healing event) but not damage.
-    let w = check_program(
-        1,
-        vec![
-            sub(0, vec![value(ValueId::EventDamage)]),
-            caller(Event::PlayerDealtHealing, vec![call(0)]),
-        ],
-    );
-    assert_eq!(w.0.len(), 1);
-    assert!(w.0[0].message.contains("event damage values"));
-}
-
-#[test]
-fn healing_values() {
-    let w = check_program(
-        1,
-        vec![
-            sub(0, vec![value(ValueId::EventHealing)]),
-            caller(Event::PlayerDied, vec![call(0)]),
-        ],
-    );
-    assert!(w.0[0].message.contains("event healing values"));
+fn damage_and_healing_values() {
+    // (value read by the subroutine, caller event, expected warning text)
+    let cases = [
+        (
+            ValueId::EventAbility,
+            Event::OngoingEachPlayer,
+            "event damage or healing values",
+        ),
+        (
+            ValueId::EventDamage,
+            Event::PlayerDealtHealing,
+            "event damage values",
+        ),
+        (
+            ValueId::EventHealing,
+            Event::PlayerDied,
+            "event healing values",
+        ),
+    ];
+    for (read, event, message) in cases {
+        let w = check_program(
+            1,
+            vec![sub(0, vec![value(read)]), caller(event, vec![call(0)])],
+        );
+        assert_eq!(w.0.len(), 1, "{message}");
+        assert!(w.0[0].message.contains(message), "{message}");
+    }
 }
 
 #[test]

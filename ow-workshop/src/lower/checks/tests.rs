@@ -137,11 +137,10 @@ fn dark_text_colors() {
 }
 
 #[test]
-fn waits_of_9999() {
-    assert_eq!(
-        warned(vec![act(ActionId::Wait, vec![("time", num(9999.0))])]),
-        ["wait-9999"]
-    );
+fn waits_and_durations_of_9999() {
+    let timed = |id, name, value| warned(vec![act(id, vec![(name, num(value))])]);
+    assert_eq!(timed(ActionId::Wait, "time", 9999.0), ["wait-9999"]);
+    assert_eq!(timed(ActionId::Wait, "time", 5.0), [] as [&str; 0]);
     assert_eq!(
         warned(vec![act(
             ActionId::WaitUntil,
@@ -152,23 +151,12 @@ fn waits_of_9999() {
         )]),
         ["wait-9999"]
     );
-    assert_eq!(
-        warned(vec![act(ActionId::Wait, vec![("time", num(5.0))])]),
-        [] as [&str; 0]
-    );
-}
-
-#[test]
-fn durations_of_9999() {
     for id in [
         ActionId::SetStatusEffect,
         ActionId::StartDamageOverTime,
         ActionId::StartHealingOverTime,
     ] {
-        assert_eq!(
-            warned(vec![act(id, vec![("duration", num(9999.0))])]),
-            ["duration-9999"]
-        );
+        assert_eq!(timed(id, "duration", 9999.0), ["duration-9999"]);
     }
 }
 

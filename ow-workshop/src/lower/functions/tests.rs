@@ -197,32 +197,28 @@ fn left() -> Expr {
 
 #[test]
 fn hud_alignment_pads_the_subheader_first() {
-    let p = lowered(vec![hud(vec![
-        ("subheader", num(1.0)),
-        ("text", num(2.0)),
-        ("location", left()),
-    ])]);
-    let args = args_of(&p);
-    assert_eq!(args[2], "\"{0}{1}\"(1, \"<170em>\"())");
-    assert_eq!(args[3], "2");
-    assert_eq!(args[4], "HudPosition.LEFT");
-}
-
-#[test]
-fn hud_alignment_pads_the_text_without_a_subheader() {
-    let p = lowered(vec![hud(vec![("text", num(2.0)), ("location", left())])]);
-    let args = args_of(&p);
-    assert_eq!(args[2], "Null");
-    assert_eq!(args[3], "\"{0}{1}\"(2, \"<170em>\"())");
-    assert_eq!(args[4], "HudPosition.LEFT");
-}
-
-#[test]
-fn hud_alignment_uses_only_spaces_when_both_are_empty() {
-    let p = lowered(vec![hud(vec![("location", left())])]);
-    let args = args_of(&p);
-    assert_eq!(args[3], "\"<170em>\"()");
-    assert_eq!(args[4], "HudPosition.LEFT");
+    let pad = "\"<170em>\"()";
+    // (given arguments, subheader, text)
+    let cases = [
+        (
+            vec![("subheader", num(1.0)), ("text", num(2.0))],
+            format!("\"{{0}}{{1}}\"(1, {pad})"),
+            "2".to_owned(),
+        ),
+        (
+            vec![("text", num(2.0))],
+            "Null".to_owned(),
+            format!("\"{{0}}{{1}}\"(2, {pad})"),
+        ),
+        (vec![], "Null".to_owned(), pad.to_owned()),
+    ];
+    for (mut given, subheader, text) in cases {
+        given.push(("location", left()));
+        let args = args_of(&lowered(vec![hud(given)]));
+        assert_eq!(args[2], subheader);
+        assert_eq!(args[3], text);
+        assert_eq!(args[4], "HudPosition.LEFT");
+    }
 }
 
 #[test]
