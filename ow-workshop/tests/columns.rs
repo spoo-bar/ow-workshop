@@ -26,8 +26,8 @@ impl Workshop for Waves {
     type Globals = Globals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-        ws.rule("Waves", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Waves", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 let rows = [
                     (Hero::Ana, Some(3)),
@@ -39,7 +39,7 @@ impl Workshop for Waves {
                     columns.compressed();
                 }
             });
-        });
+        })]
     }
 }
 
@@ -102,8 +102,8 @@ impl Workshop for Spawns {
     type Globals = SpawnGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &SpawnGlobals, (): &()) {
-        ws.rule("Spawns", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a SpawnGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Spawns", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 let rows = [
                     (3, vect(1, 2, 3)),
@@ -115,7 +115,7 @@ impl Workshop for Spawns {
                     columns.compressed();
                 }
             });
-        });
+        })]
     }
 }
 

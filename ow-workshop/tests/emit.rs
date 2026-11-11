@@ -23,10 +23,10 @@ impl Workshop for Mode {
     type Globals = Globals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-        ws.rule("Init", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Init", OngoingGlobal, |r, _| {
             r.actions(|b| b.set(g.round, 1));
-        });
+        })]
     }
 }
 
@@ -67,15 +67,15 @@ impl Workshop for Breaks {
     type Globals = Globals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-        ws.rule("Loop", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Loop", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 b.while_(true, |b| {
                     b.add_to(g.round, 1);
                     b.if_(g.round.get().gt(3), |b| b.break_());
                 });
             });
-        });
+        })]
     }
 }
 

@@ -31,19 +31,22 @@ impl Workshop for Mode {
     type Globals = Globals;
     type Players = Players;
 
-    fn build(&self, ws: &mut Builder, g: &Globals, p: &Players) {
-        let helper = ws.declare_subroutine("helper");
-        ws.define(helper, |b, _| b.set(g.hidden, 1));
-        ws.rule("Run", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a Globals, p: &'a Players) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
+        let helper = Sub::named("helper");
+        defs.push(subroutine(helper, |b, _| b.set(g.hidden, 1)));
+        defs.push(rule("Run", OngoingGlobal, move |r, _| {
             r.condition(g.wave.get().gt(0));
             r.actions(|b| {
                 b.chase_at_rate(g.counter, 10, 5, ChaseRateReeval::DestinationAndRate);
                 b.call(helper);
             });
-        });
-        ws.rule("Score", OngoingEachPlayer, |r, ev| {
+        }));
+        defs.push(rule("Score", OngoingEachPlayer, |r, ev| {
             r.actions(|b| b.set(ev.event_player().var(p.kills), 0));
-        });
+        }));
+        defs
     }
 }
 
@@ -163,13 +166,13 @@ fn warnings_are_the_outputs_warnings() {
         type Globals = Globals;
         type Players = ();
 
-        fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-            ws.rule("Bad", OngoingGlobal, |r, _| {
+        fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+            vec![rule("Bad", OngoingGlobal, |r, _| {
                 r.actions(|b| {
                     b.chase_at_rate(g.counter, 10, 9999, ChaseRateReeval::DestinationAndRate);
                     b.for_range(g.counter, range(0, 2), |_| {});
                 });
-            });
+            })]
         }
     }
 

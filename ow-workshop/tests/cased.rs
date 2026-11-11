@@ -15,8 +15,8 @@ impl Workshop for Mode {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, (): &(), (): &()) {
-        ws.rule("Cased", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Cased", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 b.cased_progress_bar_text(
                     2,
@@ -25,7 +25,7 @@ impl Workshop for Mode {
                 )
                 .expect("valid");
             });
-        });
+        })]
     }
 }
 

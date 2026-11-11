@@ -15,13 +15,13 @@ impl Workshop for Mode {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, (): &(), (): &()) {
-        ws.rule("Greet", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Greet", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 b.big_message(localized_en("Hello", [0; 0]));
                 b.big_message(localized_en("{0} - {1}", [1, 2]));
             });
-        });
+        })]
     }
 }
 

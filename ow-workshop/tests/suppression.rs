@@ -24,9 +24,11 @@ impl Workshop for Mod {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, (): &(), (): &()) {
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let levels = self.0;
-        ws.rule("Rule", OngoingGlobal, |r, _| {
+        defs.push(rule("Rule", OngoingGlobal, move |r, _| {
             if levels.rule {
                 r.suppress(Warning::Wait9999);
             }
@@ -40,7 +42,8 @@ impl Workshop for Mod {
                     });
                 }
             });
-        });
+        }));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -106,12 +109,12 @@ fn suppressing_one_warning_keeps_the_others() {
         type Globals = ();
         type Players = ();
 
-        fn build(&self, ws: &mut Builder, (): &(), (): &()) {
-            ws.rule("Rule", OngoingGlobal, |r, _| {
+        fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+            vec![rule("Rule", OngoingGlobal, |r, _| {
                 r.actions(|b| {
                     b.suppress(Warning::DarkColor, |b| b.wait(9999));
                 });
-            });
+            })]
         }
     }
     let warnings = Other
@@ -134,15 +137,15 @@ impl Workshop for Repeated {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, (): &(), (): &()) {
-        ws.rule("Rule", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Rule", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 // The same call site raised twice gives one warning.
                 for _ in 0..2 {
                     b.wait(9999);
                 }
             });
-        });
+        })]
     }
 }
 
@@ -176,13 +179,13 @@ impl Workshop for Unordered {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, (): &(), (): &()) {
-        ws.rule("Rule", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Rule", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 late(b);
                 early(b);
             });
-        });
+        })]
     }
 }
 

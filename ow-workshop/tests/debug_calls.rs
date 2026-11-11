@@ -26,8 +26,10 @@ impl Workshop for Mode {
     type Globals = Globals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-        ws.rule("Run", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
+        defs.push(rule("Run", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 if self.calls {
                     b.print("starting");
@@ -49,12 +51,13 @@ impl Workshop for Mode {
                     b.print("done");
                 }
             });
-        });
+        }));
         if self.calls {
-            ws.rule("Only debug", OngoingGlobal, |r, _| {
+            defs.push(rule("Only debug", OngoingGlobal, |r, _| {
                 r.actions(|b| b.debug_only(|b| b.small_message("hello")));
-            });
+            }));
         }
+        defs
     }
 }
 
@@ -132,10 +135,10 @@ fn stripped_calls_leave_no_variable_behind() {
         type Globals = Globals;
         type Players = ();
 
-        fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-            ws.rule("Run", OngoingGlobal, |r, _| {
+        fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+            vec![rule("Run", OngoingGlobal, |r, _| {
                 r.actions(|b| b.debug_only(|b| b.set(g.flag, 1)));
-            });
+            })]
         }
     }
 

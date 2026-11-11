@@ -17,13 +17,13 @@ impl Workshop for Tagged {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, (): &(), (): &()) {
-        ws.rule("Tags", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Tags", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 b.big_message(ws_fmt!("<fgFF0000FF>Red</fg>"));
                 b.big_message(ws_fmt!("<tx2DD21>"));
             });
-        });
+        })]
     }
 
     fn options(&self) -> CompileOptions {
@@ -46,10 +46,10 @@ impl Workshop for Textured {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, (): &(), (): &()) {
-        ws.rule("Texture", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Texture", OngoingGlobal, |r, _| {
             r.actions(|b| b.big_message(ws_fmt!("{} Ultimate", Texture::Ultimate)));
-        });
+        })]
     }
 }
 

@@ -124,7 +124,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      # Run every file in ow-workshop/examples (none yet), as a debug build and as a release
+      # Run every file in ow-workshop/examples, as a debug build and as a release
       # build, which prints no debug panels and no log.
       - run: |
           for f in ow-workshop/examples/*.rs; do

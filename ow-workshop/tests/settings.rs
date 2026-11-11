@@ -19,10 +19,10 @@ impl Workshop for Mod {
     type Globals = Globals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-        ws.rule("Rule 1", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Rule 1", OngoingGlobal, |r, _| {
             r.actions(|b| b.set(g.round, 1));
-        });
+        })]
     }
 
     fn settings(&self) -> Settings {
@@ -193,8 +193,8 @@ mod workshop_values {
         type Globals = Globals;
         type Players = ();
 
-        fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-            ws.rule("workshop settings", OngoingGlobal, |r, _| {
+        fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+            vec![rule("workshop settings", OngoingGlobal, |r, _| {
                 r.actions(|b| {
                     b.set(g.flag, workshop_setting::toggle("", "boolean", true));
                     b.set(g.round, workshop_setting::int("int", "int", 3));
@@ -220,7 +220,7 @@ mod workshop_values {
                         workshop_setting::combo("<txC00000000008E02>", "{x}", ["a:b"], 0),
                     );
                 });
-            });
+            })]
         }
     }
 
@@ -259,14 +259,14 @@ mod workshop_values {
             type Globals = Globals;
             type Players = ();
 
-            fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-                ws.rule("many", OngoingGlobal, |r, _| {
+            fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+                vec![rule("many", OngoingGlobal, |r, _| {
                     r.actions(|b| {
                         for i in 0..129 {
                             b.set(g.round, workshop_setting::int("c", &format!("n{i}"), 0));
                         }
                     });
-                });
+                })]
             }
         }
 

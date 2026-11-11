@@ -123,11 +123,17 @@ impl<E: EventType> Rule<E> {
         self.comment = Some(text.into());
     }
 
-    /// Finishes the rule located at the caller; records problems in `diagnostics`.
-    #[track_caller]
-    pub(crate) fn finish(self, name: String, event: E, diagnostics: &mut Diagnostics) -> ir::Rule {
+    /// Finishes the rule defined at `loc`; records problems in `diagnostics`.
+    pub(crate) fn finish(
+        self,
+        loc: ir::Location,
+        name: String,
+        event: E,
+        diagnostics: &mut Diagnostics,
+    ) -> ir::Rule {
         check_do_while(&self.body, &name, diagnostics);
         let mut rule = ir::Rule::new(name, event.raw().0, self.body);
+        rule.location = Some(loc);
         rule.conditions = self.conditions;
         rule.disabled = self.disabled;
         rule.delimiter = self.delimiter;
