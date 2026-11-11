@@ -2,10 +2,29 @@
 
 use ow_workshop_data::Lang;
 
+use crate::options::{DebugMode, DebugOptions};
+
 /// Reads `--lang <code>` or `--lang=<code>`; English (`en-US`) by default.
 #[doc(hidden)]
 pub fn lang_from_args(args: impl IntoIterator<Item = String>) -> Result<Lang, String> {
+    parse(args, false).map(|(lang, _)| lang)
+}
+
+/// [`lang_from_args`] that also reads `--debug` and `--no-debug`, which force the debug mode on
+/// (with its default options) or off; `None` leaves the mod's own setting.
+#[doc(hidden)]
+pub fn args_from(
+    args: impl IntoIterator<Item = String>,
+) -> Result<(Lang, Option<DebugMode>), String> {
+    parse(args, true)
+}
+
+fn parse(
+    args: impl IntoIterator<Item = String>,
+    debug_flags: bool,
+) -> Result<(Lang, Option<DebugMode>), String> {
     let mut lang = Lang::EnUs;
+    let mut debug = None;
     let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         let code = if arg == "--lang" {
@@ -13,17 +32,24 @@ pub fn lang_from_args(args: impl IntoIterator<Item = String>) -> Result<Lang, St
                 .ok_or_else(|| "`--lang` needs a language code".to_owned())?
         } else if let Some(code) = arg.strip_prefix("--lang=") {
             code.to_owned()
+        } else if debug_flags && arg == "--debug" {
+            debug = Some(DebugMode::On(DebugOptions::default()));
+            continue;
+        } else if debug_flags && arg == "--no-debug" {
+            debug = Some(DebugMode::Off);
+            continue;
         } else {
             return Err(format!("unknown argument `{arg}`"));
         };
         lang = code.parse().map_err(|e| format!("{e}"))?;
     }
-    Ok(lang)
+    Ok((lang, debug))
 }
 
 /// Defines a native `main` for a [`Workshop`](crate::Workshop): prints the workshop code to
 /// stdout and diagnostics to stderr, and exits with code 1 on errors. `--lang <code>` picks the
-/// language (default `en-US`). Expands to nothing on `wasm32`.
+/// language (default `en-US`); `--debug` and `--no-debug` force debug output on or off, whatever
+/// the build profile says (see [`DebugMode`](crate::DebugMode)). Expands to nothing on `wasm32`.
 ///
 /// ```no_run
 /// use ow_workshop::prelude::*;
@@ -47,15 +73,18 @@ macro_rules! main {
         #[cfg(not(target_arch = "wasm32"))]
         fn main() {
             use $crate::WorkshopExt as _;
-            let lang = match $crate::lang_from_args(::std::env::args().skip(1)) {
-                ::core::result::Result::Ok(lang) => lang,
+            let (lang, debug) = match $crate::args_from(::std::env::args().skip(1)) {
+                ::core::result::Result::Ok(parsed) => parsed,
                 ::core::result::Result::Err(message) => {
                     ::std::eprintln!("error: {message}");
                     ::std::process::exit(2);
                 }
             };
-            match ($mode).compile(lang) {
+            match ($mode).compile_with_debug(lang, debug) {
                 ::core::result::Result::Ok(output) => {
+                    if let ::core::option::Option::Some(log) = &output.debug_log {
+                        ::std::eprintln!("{log}");
+                    }
                     for warning in &output.warnings {
                         ::std::eprintln!("{warning}");
                     }
@@ -123,6 +152,21 @@ mod tests {
     fn lang_flag_forms() {
         assert_eq!(lang_from_args(args(&["--lang", "de-DE"])), Ok(Lang::DeDe));
         assert_eq!(lang_from_args(args(&["--lang=ja-JP"])), Ok(Lang::JaJp));
+    }
+
+    #[test]
+    fn debug_flags_force_the_mode() {
+        let parse = |list: &[&str]| args_from(args(list)).expect("parses");
+        assert_eq!(parse(&[]), (Lang::EnUs, None));
+        assert_eq!(
+            parse(&["--debug"]).1,
+            Some(DebugMode::On(DebugOptions::default()))
+        );
+        assert_eq!(
+            parse(&["--no-debug", "--lang=de-DE"]),
+            (Lang::DeDe, Some(DebugMode::Off))
+        );
+        assert!(lang_from_args(args(&["--debug"])).is_err());
     }
 
     #[test]

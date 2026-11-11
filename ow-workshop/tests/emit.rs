@@ -25,7 +25,10 @@ impl Workshop for Mode {
 
 #[test]
 fn compiles_variables_and_a_rule() {
-    let code = Mode.compile(Lang::EnUs).expect("compiles").code;
+    let code = Mode
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code;
     let expected = r#"
 variables {
     global:
@@ -64,6 +67,8 @@ impl Workshop for Breaks {
 
 #[test]
 fn a_break_in_a_loop_is_printed_and_counted() {
-    let output = Breaks.compile(Lang::EnUs).expect("compiles");
+    let output = Breaks
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles");
     assert!(output.code.contains("Break;"), "{}", output.code);
 }

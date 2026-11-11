@@ -2,12 +2,13 @@
 
 use crate::builder::Builder;
 use crate::ir::{Diagnostics, Program};
-use crate::options::CompileOptions;
+use crate::options::{CompileOptions, DebugMode};
 use crate::output::CompileOutput;
 use crate::pipeline;
 use crate::settings::Settings;
 use crate::translations::Translations;
 use crate::vars::{GlobalVars, PlayerVars, VarRegistry};
+use crate::workshop_debug::WorkshopDebug as _;
 use ow_workshop_data::Lang;
 
 /// A mod: implement this to define rules, variables and settings.
@@ -40,20 +41,43 @@ pub trait Workshop {
 pub trait WorkshopExt: Workshop {
     /// Builds the mod and returns its workshop code in `lang`.
     fn compile(&self, lang: Lang) -> Result<CompileOutput, Diagnostics>;
+
+    /// [`compile`](Self::compile) with the debug mode forced to `debug` instead of the one in
+    /// [`Workshop::options`]; `None` keeps it. This is what `main!`'s `--debug` and
+    /// `--no-debug` use.
+    fn compile_with_debug(
+        &self,
+        lang: Lang,
+        debug: Option<DebugMode>,
+    ) -> Result<CompileOutput, Diagnostics>;
 }
 
 impl<W: Workshop> WorkshopExt for W {
     fn compile(&self, lang: Lang) -> Result<CompileOutput, Diagnostics> {
+        self.compile_with_debug(lang, None)
+    }
+
+    fn compile_with_debug(
+        &self,
+        lang: Lang,
+        debug: Option<DebugMode>,
+    ) -> Result<CompileOutput, Diagnostics> {
         let mut global_reg = VarRegistry::default();
         let mut player_reg = VarRegistry::default();
         let globals = W::Globals::declare(&mut global_reg);
         let players = W::Players::declare(&mut player_reg);
 
-        let options = self.options();
+        let mut options = self.options();
+        if let Some(debug) = debug {
+            options.debug = debug;
+        }
         let mut ws = Builder::with_template(options.rule_name_template).with_tags(options.tags);
         self.build(&mut ws, &globals, &players);
 
+        let mut debug_fields = globals.debug_fields();
+        debug_fields.extend(players.debug_fields());
         let program = Program {
+            debug_fields,
             globals: global_reg.vars,
             players: player_reg.vars,
             settings: self.settings(),
@@ -80,10 +104,14 @@ mod tests {
 
     #[test]
     fn empty_mod_compiles_to_empty_string() {
-        let out = Empty.compile(Lang::EnUs).expect("compiles");
-        assert_eq!(out.code, "");
-        assert_eq!(out.warnings, vec![]);
-        assert_eq!(out.element_count, 0);
+        for debug in [DebugMode::Off, DebugMode::Auto] {
+            let out = Empty
+                .compile_with_debug(Lang::EnUs, Some(debug))
+                .expect("compiles");
+            assert_eq!(out.code, "", "{debug:?}");
+            assert_eq!(out.warnings, vec![]);
+            assert_eq!(out.element_count, 0);
+        }
     }
 
     struct Configured;

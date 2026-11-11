@@ -32,7 +32,8 @@ pub(crate) fn blocks_mut(stmt: &mut Stmt) -> Vec<&mut Block> {
             .collect(),
         StmtKind::While { body, .. }
         | StmtKind::For { body, .. }
-        | StmtKind::DoWhile { body, .. } => vec![body],
+        | StmtKind::DoWhile { body, .. }
+        | StmtKind::DebugOnly(body) => vec![body],
         StmtKind::Switch { cases, default, .. } => {
             cases.iter_mut().map(|(_, b)| b).chain(default).collect()
         }

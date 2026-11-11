@@ -39,7 +39,7 @@ impl Workshop for Waves {
 #[test]
 fn rows_become_one_array_per_column() {
     let code = Waves { compressed: false }
-        .compile(Lang::EnUs)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
         .expect("compiles")
         .code;
     let expected = r#"
@@ -66,10 +66,10 @@ rule ("Waves") {
 fn compressed_leaves_the_column_with_null_and_heroes_alone() {
     // Heroes are not numbers, and `Null` is not 0: nothing here can be packed.
     let plain = Waves { compressed: false }
-        .compile(Lang::EnUs)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
         .expect("compiles");
     let packed = Waves { compressed: true }
-        .compile(Lang::EnUs)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
         .expect("compiles");
     assert_eq!(plain.code, packed.code);
 }
@@ -108,7 +108,7 @@ impl Workshop for Spawns {
 #[test]
 fn compressed_literal_columns_become_decoded_strings() {
     let plain = Spawns { compressed: false }
-        .compile(Lang::EnUs)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
         .expect("compiles");
     assert!(
         plain
@@ -119,7 +119,7 @@ fn compressed_literal_columns_become_decoded_strings() {
     );
 
     let packed = Spawns { compressed: true }
-        .compile(Lang::EnUs)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
         .expect("compiles");
     let code = &packed.code;
     assert!(!code.contains("Array(3, 8, 11)"), "{code}");

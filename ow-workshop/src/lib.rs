@@ -51,6 +51,91 @@
 //! The `examples` directory has runnable mods: `hello_world`, `zombie_survival` and
 //! `custom_settings`.
 //!
+//! # Debugging
+//!
+//! A debug build adds debug information to the mod without you changing it. The Cargo profile of
+//! *your* binary decides: `cargo run` is a debug build, `cargo run --release` exports the
+//! workshop code as is. (`main!` also takes `--debug` and `--no-debug` to force either, and
+//! [`CompileOptions::debug`] sets a [`DebugMode`] for a profile that does not fit.)
+//!
+//! A debug build
+//!
+//! * starts the output with the comment line `// ow-workshop debug build`, so a pasted debug
+//!   build is recognizable;
+//! * shows a live panel of your variables on screen: the rules `Debug: globals` and
+//!   `Debug: players` print one HUD text per variable of your `Globals` and `Players`, which
+//!   the derives describe with [`WorkshopDebug`]. If they would push the mod over the element
+//!   limit they shrink, with a `debug-budget` warning, and never push over a mod that fits in
+//!   release;
+//! * prints a log on **stderr** (variables, subroutines, rules with their element counts,
+//!   totals and warnings), before the warnings. The code stays on stdout, so
+//!   `cargo run > mod.txt` still captures just the code. The log is also
+//!   [`CompileOutput::debug_log`];
+//! * keeps the calls that only exist for debugging: [`debug!`], [`Block::print`] and anything
+//!   inside [`Block::debug_only`]. A release build drops them before labels are resolved, so
+//!   jumps keep their distances.
+//!
+//! Control how a field shows with attributes on the variable structs: `#[ow(debug = false)]`
+//! hides it, `#[ow(debug_label = "Lives left")]` renames it (the default is the field name) and
+//! `#[ow(debug_with = path::to_fn)]` renders it with your own `fn(Expr<T>) -> Expr<Str>`. Enums
+//! derived with [`WorkshopEnum`] render their variant names:
+//!
+//! ```
+//! use ow_workshop::prelude::*;
+//!
+//! #[derive(Clone, Copy, WorkshopEnum)]
+//! enum State {
+//!     Lobby,
+//!     Playing,
+//! }
+//!
+//! #[derive(GlobalVars)]
+//! struct Globals {
+//!     #[ow(debug_with = State::debug_render)]
+//!     state: Global<Num>,
+//!     #[ow(debug_label = "Boss HP")]
+//!     boss_health: Global<Num>,
+//!     #[ow(debug = false)]
+//!     scratch: Global<Num>,
+//! }
+//!
+//! struct Mode;
+//!
+//! impl Workshop for Mode {
+//!     type Globals = Globals;
+//!     type Players = ();
+//!
+//!     fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
+//!         ws.rule("Run", OngoingGlobal, |r, _| {
+//!             r.actions(|b| {
+//!                 b.set(g.state, State::Playing);
+//!                 b.set(g.boss_health, 100);
+//!                 b.set(g.scratch, 0);
+//!                 // Only in a debug build.
+//!                 b.print("started");
+//!                 b.debug_only(|b| b.set(g.boss_health, 1));
+//!             });
+//!         });
+//!     }
+//! }
+//!
+//! let debug = Mode
+//!     .compile_with_debug(Lang::EnUs, Some(DebugMode::On(DebugOptions::default())))
+//!     .expect("compiles");
+//! assert!(debug.code.starts_with("// ow-workshop debug build"));
+//! assert!(debug.code.contains("Debug: globals"));
+//! assert!(debug.code.contains("Boss HP: {0}"));
+//! assert!(!debug.code.contains("scratch: {0}"));
+//! assert!(debug.debug_log.is_some());
+//!
+//! let release = Mode
+//!     .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+//!     .expect("compiles");
+//! assert!(!release.code.contains("Debug"));
+//! assert!(!release.code.contains("started"));
+//! assert!(release.debug_log.is_none());
+//! ```
+//!
 //! # Using it from WASM
 //!
 //! `ow-workshop` has no `wasm-bindgen` dependency. Export a function from your own crate, which
@@ -102,6 +187,7 @@ mod control;
 mod count;
 mod current_map;
 mod debug;
+mod debug_log;
 mod dict;
 mod emit;
 mod event;
@@ -139,6 +225,7 @@ mod vars;
 mod warning;
 mod width;
 mod workshop;
+mod workshop_debug;
 #[cfg(test)]
 mod workshop_enum;
 pub mod workshop_setting;
@@ -150,13 +237,14 @@ pub use builder::Builder;
 pub use cased::{CasedTextArgs, CasedTextError};
 pub use catalog::{Catalog, Entry};
 #[doc(hidden)]
-pub use cli::lang_from_args;
+pub use cli::{args_from, lang_from_args};
 pub use columns::{ColumnPlace, Columns, Table};
 pub use compress::{
     CompressError, Compressible, compress, compressed, decompress_numbers, decompress_vectors,
 };
 pub use control::{ForRange, IfBuilder, IntoForRange, RangeStep, range, rule_condition};
 pub use debug::DebugValue;
+pub use debug_log::{DebugLog, DebugRule, DebugSubroutine, DebugTotals, DebugVariable};
 pub use dict::{Dict, dict};
 pub use event::{
     Ev, EventType, HasDamage, HasDamageOrHealing, HasEventPlayer, HasHealing, OngoingEachPlayer,
@@ -169,13 +257,13 @@ pub use expr::{Expr, null, vect};
 pub use generated::api::*;
 pub use hud::HudArgs;
 pub use ir::{
-    Diagnostic, Diagnostics, ErrorKind, Kind, Location, Severity, TeamFilter, WarningSet,
+    Diagnostic, Diagnostics, ErrorKind, Kind, Location, Severity, TeamFilter, VarId, WarningSet,
 };
 pub use label::Label;
 pub use localized::{localized, localized_en};
 pub use math::{ceil, floor, round};
 pub use ops::{Apply, NumLike, Operand, Ordered, VecLike, if_then_else};
-pub use options::{CompileOptions, EmptyString, OptLevel, Replacements};
+pub use options::{CompileOptions, DebugMode, DebugOptions, EmptyString, OptLevel, Replacements};
 pub use output::CompileOutput;
 pub use ow_workshop_data::chars;
 pub use ow_workshop_data::{Extension, Gamemode, Lang, LocalizedString, Map, Texture};
@@ -192,6 +280,7 @@ pub use players::{
 pub mod __private {
     pub use crate::fmt::{Piece, template};
     pub use crate::translate::translated;
+    pub use crate::workshop_debug::{debug_field, debug_field_with};
 }
 pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
@@ -213,3 +302,4 @@ pub use vars::{
 pub use warning::Warning;
 pub use width::{TextWidthError, spaces_for, spaces_for_str, visual_len};
 pub use workshop::{Workshop, WorkshopExt};
+pub use workshop_debug::{DebugField, DebugHandle, DebugRender, Scope, WorkshopDebug};

@@ -14,6 +14,8 @@ pub enum GameState {
 #[derive(GlobalVars)]
 pub struct Globals {
     wave: Global<Num>,
+    // A debug build shows the state by name instead of as a number.
+    #[ow(debug_with = GameState::debug_render)]
     state: Global<Num>,
     spawn_points: Global<Array<Position>>,
     spawn_index: Global<Num>,

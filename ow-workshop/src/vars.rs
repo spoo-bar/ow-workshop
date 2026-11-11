@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 use crate::expr::Expr;
 use crate::ir::{self, ExprKind, VarDecl, VarId, Vars};
 use crate::ty::{Array, IntoExpr, Is, Num, Player, ValueType};
+use crate::workshop_debug::{DebugHandle, Scope, WorkshopDebug};
 
 /// Collects variable declarations while the handles are created.
 #[derive(Debug, Default)]
@@ -29,13 +30,13 @@ impl VarRegistry {
 }
 
 /// A struct of global variable handles.
-pub trait GlobalVars: Sized {
+pub trait GlobalVars: Sized + WorkshopDebug {
     /// Registers the variables and returns their handles.
     fn declare(reg: &mut VarRegistry) -> Self;
 }
 
 /// A struct of player variable handles.
-pub trait PlayerVars: Sized {
+pub trait PlayerVars: Sized + WorkshopDebug {
     /// Registers the variables and returns their handles.
     fn declare(reg: &mut VarRegistry) -> Self;
 }
@@ -136,6 +137,32 @@ impl<T: ValueType> PlayerHandle for PlayerVar<T> {
             id: reg.declare(name, index, init),
             _type: PhantomData,
         }
+    }
+}
+
+impl<T: ValueType + 'static> DebugHandle for Global<T> {
+    type Value = T;
+    const SCOPE: Scope = Scope::Global;
+
+    fn var_id(self) -> VarId {
+        self.id
+    }
+
+    fn read(self, _: Expr<Player>) -> Expr<T> {
+        self.get()
+    }
+}
+
+impl<T: ValueType + 'static> DebugHandle for PlayerVar<T> {
+    type Value = T;
+    const SCOPE: Scope = Scope::Player;
+
+    fn var_id(self) -> VarId {
+        self.id
+    }
+
+    fn read(self, player: Expr<Player>) -> Expr<T> {
+        player.var(self).get()
     }
 }
 

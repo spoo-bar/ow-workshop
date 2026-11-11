@@ -3,9 +3,13 @@
 Some things only the game can confirm. Paste the output into *Custom Game → Settings → Workshop*
 (*Paste Rules*, or the clipboard paste button in *Settings*) and check each item.
 
-Generate code with `cargo run -p ow-workshop --example <name>`; add `--lang fr-FR` or
+Generate code with `cargo run -p ow-workshop --release --example <name>`; add `--lang fr-FR` or
 `--lang ja-JP` for another client language. The code goes to stdout, diagnostics to stderr.
 Copy stdout only.
+
+Without `--release` the example is a debug build: the code starts with `// ow-workshop debug build`
+and adds a live variable panel, and a debug log is printed to stderr. Use `--release` for every
+check below except the debug ones.
 
 | Example | What it covers |
 |---|---|
@@ -34,6 +38,17 @@ Copy stdout only.
   jump key's name.
 - [ ] The settings block applies: slots, maps, hero restrictions and extensions (`custom_settings`
   after pasting, open *Settings → Maps / Heroes / Extensions*).
+
+Debug builds:
+
+- [ ] The debug panels render and update live: paste `cargo run -p ow-workshop --example
+  zombie_survival` (no `--release`), start a match and watch the orange *Debug: globals* texts on
+  the right (`wave`, `state`, `spawn_points`, `spawn_index`) and the blue *Debug: players* texts
+  (`score`, `lives`); they change as the game runs, and `GameState` is not shown as a bare number
+  where a renderer is set.
+- [ ] A release paste contains no debug HUDs: paste `cargo run -p ow-workshop --release --example
+  zombie_survival`; it has no `Debug:` rules, no `// ow-workshop debug build` line and no extra HUD
+  texts at sort order -2000 / -1000 / -500.
 
 ## Results
 

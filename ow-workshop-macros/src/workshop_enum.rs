@@ -91,6 +91,27 @@ fn try_expand(input: TokenStream) -> syn::Result<TokenStream> {
         quote! { match value { #(#arms),* } }
     };
 
+    // The names are indexed directly when the values are 0, 1, 2, ..; otherwise the value's
+    // position among the variants' values picks the name.
+    let by_position = quote! {
+        names.get(<#name>::values().index_of(value))
+    };
+    let render = if with_value == 0 {
+        quote! {
+            let contiguous = [#(#name::#names as i64),*]
+                .iter()
+                .zip(0_i64..)
+                .all(|(value, position)| *value == position);
+            if contiguous {
+                names.get(value)
+            } else {
+                #by_position
+            }
+        }
+    } else {
+        by_position
+    };
+
     Ok(quote! {
         impl ::core::convert::From<#name> for ::ow_workshop::Expr<#target> {
             fn from(value: #name) -> Self {
@@ -101,6 +122,18 @@ fn try_expand(input: TokenStream) -> syn::Result<TokenStream> {
         impl ::ow_workshop::IntoExpr<#target> for #name {
             fn into_expr(self) -> ::ow_workshop::Expr<#target> {
                 ::core::convert::From::from(self)
+            }
+        }
+
+        impl ::ow_workshop::DebugRender for #name {
+            type Value = #target;
+
+            fn debug_render(
+                value: ::ow_workshop::Expr<#target>,
+            ) -> ::ow_workshop::Expr<::ow_workshop::Str> {
+                let names: ::ow_workshop::Expr<::ow_workshop::Array<::ow_workshop::Str>> =
+                    ::ow_workshop::IntoExpr::into_expr([#(::core::stringify!(#names)),*]);
+                #render
             }
         }
 

@@ -1,0 +1,16 @@
+error[E0308]: mismatched types
+ --> tests/ui/fail/debug_with_wrong_type.rs:9:23
+  |
+7 | #[derive(GlobalVars)]
+  |          ---------- arguments to this function are incorrect
+8 | struct Globals {
+9 |     #[ow(debug_with = render_bool)]
+  |                       ^^^^^^^^^^^ expected fn pointer, found fn item
+  |
+  = note: expected fn pointer `fn(Expr<ow_workshop::Num>) -> Expr<Str>`
+                found fn item `fn(Expr<ow_workshop::Bool>) -> Expr<Str> {render_bool}`
+note: function defined here
+ --> src/workshop_debug.rs
+  |
+  | pub fn debug_field_with<H: DebugHandle>(
+  |        ^^^^^^^^^^^^^^^^

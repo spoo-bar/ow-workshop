@@ -90,6 +90,9 @@ pub enum Warning {
         "A combo workshop setting whose default is not its first option, which then cannot be selected"
     )]
     WorkshopSettingEnumDefault,
+    /// Debug panels left out, or shortened, so that the mod stays under the element limit.
+    #[error("Debug panels left out, or shortened, so that the mod stays under the element limit")]
+    DebugBudget,
 }
 
 impl Warning {
@@ -123,6 +126,7 @@ impl Warning {
             Self::MalformattedTx => "malformatted-tx",
             Self::ExtensionPoints => "extension-points",
             Self::WorkshopSettingEnumDefault => "workshop-setting-enum-default",
+            Self::DebugBudget => "debug-budget",
         }
     }
 
@@ -154,5 +158,6 @@ impl Warning {
         Self::MalformattedTx,
         Self::ExtensionPoints,
         Self::WorkshopSettingEnumDefault,
+        Self::DebugBudget,
     ];
 }

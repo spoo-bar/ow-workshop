@@ -33,7 +33,9 @@ impl Workshop for Deathmatch {
 
 ## Examples
 
-Run one with `cargo run -p ow-workshop --example <name>`:
+Run one with `cargo run -p ow-workshop --release --example <name>` to get the workshop code as is.
+Without `--release` it is a debug build: the code also shows a live variable panel in game, and a
+debug log is printed to stderr (see "Debugging" in the crate docs):
 
 - [`hello_world`](ow-workshop/examples/hello_world.rs): the smallest useful mod.
 - [`zombie_survival`](ow-workshop/examples/zombie_survival.rs): variables, subroutines, loops, `switch` and a leaderboard.

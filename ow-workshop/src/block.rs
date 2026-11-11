@@ -69,6 +69,33 @@ impl Block {
         self.ir.stmts.push(stmt);
     }
 
+    /// How many statements this block holds so far.
+    pub(crate) fn recorded(&self) -> usize {
+        self.ir.stmts.len()
+    }
+
+    /// Wraps the statements recorded since `start` (a value of [`recorded`](Self::recorded)) in
+    /// `DebugOnly`, located at the caller.
+    #[track_caller]
+    pub(crate) fn mark_debug_only(&mut self, start: usize) {
+        let stmts = self.ir.stmts.split_off(start);
+        self.push(StmtKind::DebugOnly(ir::Block { stmts, opt: None }));
+    }
+
+    /// Records `body` as statements that exist only in a debug build: a release build (or
+    /// [`DebugOptions::keep_debug_calls`](crate::DebugOptions) turned off) leaves them out
+    /// before labels are resolved, so jumps around them keep their distances. Use it for extra
+    /// HUDs, test teleports and the like; [`debug!`](crate::debug) and [`print`](Self::print)
+    /// are debug-only already.
+    ///
+    /// A label declared inside is local to it: jumps from outside would break in a release
+    /// build.
+    #[track_caller]
+    pub fn debug_only(&mut self, body: impl FnOnce(&mut Block)) {
+        let inner = self.record(body);
+        self.push(StmtKind::DebugOnly(inner));
+    }
+
     /// Prints a note line above the next action; it costs no element.
     #[track_caller]
     pub fn comment(&mut self, text: impl Into<String>) {

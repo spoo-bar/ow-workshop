@@ -32,8 +32,15 @@ impl Workshop for Mode {
     }
 }
 
+/// `print` and `debug!` are debug-only, so this is a debug build without the variable panels.
 fn compile(tags: bool) -> String {
-    Mode { tags }.compile(Lang::EnUs).expect("compiles").code
+    let mut options = DebugOptions::default();
+    options.hud = false;
+    options.player_hud = false;
+    Mode { tags }
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::On(options)))
+        .expect("compiles")
+        .code
 }
 
 #[test]

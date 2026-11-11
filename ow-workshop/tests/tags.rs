@@ -41,7 +41,10 @@ impl Workshop for Textured {
 
 #[test]
 fn tags_get_the_holygrail_and_the_setup_rule() {
-    let code = Tagged.compile(Lang::EnUs).expect("compiles").code;
+    let code = Tagged
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code;
     assert!(
         code.contains(r#"Custom String("{0}fgFF0000FF>Red{0}/fg>", Global.__holygrail__)"#),
         "{code}"
@@ -57,7 +60,10 @@ fn tags_get_the_holygrail_and_the_setup_rule() {
 
 #[test]
 fn textures_enable_tags_automatically() {
-    let code = Textured.compile(Lang::EnUs).expect("compiles").code;
+    let code = Textured
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code;
     assert!(code.contains("__holygrail__"), "{code}");
     assert!(code.contains("txc"), "{code}");
     assert!(code.contains("setup code"), "{code}");
@@ -65,7 +71,10 @@ fn textures_enable_tags_automatically() {
 
 #[test]
 fn the_setup_rule_matches_the_listing() {
-    let code = Tagged.compile(Lang::EnUs).expect("compiles").code;
+    let code = Tagged
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code;
     let start = code.find("rule (\"<").expect("setup rule");
     let end = code[start..].find("\nrule (\"Tags\")").expect("user rule") + start;
     let underscores = "_".repeat(126);

@@ -16,6 +16,10 @@ struct FieldAttrs {
     name: Option<LitStr>,
     index: Option<LitInt>,
     init: Option<Expr>,
+    /// `debug = false` hides the field from the debug panels.
+    debug: Option<bool>,
+    debug_label: Option<LitStr>,
+    debug_with: Option<syn::Path>,
 }
 
 pub fn expand(input: TokenStream, scope: Scope) -> TokenStream {
@@ -46,6 +50,7 @@ fn try_expand(input: TokenStream, scope: Scope) -> syn::Result<TokenStream> {
     };
 
     let mut inits = Vec::new();
+    let mut shown = Vec::new();
     for field in &fields.named {
         let attrs = parse_attrs(field)?;
         let ident = field
@@ -70,6 +75,20 @@ fn try_expand(input: TokenStream, scope: Scope) -> syn::Result<TokenStream> {
         inits.push(quote! {
             #ident: <#ty as #handle_path>::declare(reg, #name, #index, #init)
         });
+        if attrs.debug != Some(false) {
+            let label = attrs
+                .debug_label
+                .map_or_else(|| ident.to_string(), |lit| lit.value());
+            shown.push(if let Some(render) = &attrs.debug_with {
+                quote! {
+                    fields.push(::ow_workshop::__private::debug_field_with(self.#ident, #label, #render));
+                }
+            } else {
+                quote! {
+                    fields.push(::ow_workshop::__private::debug_field(self.#ident, #label));
+                }
+            });
+        }
     }
 
     let ident = &input.ident;
@@ -78,6 +97,15 @@ fn try_expand(input: TokenStream, scope: Scope) -> syn::Result<TokenStream> {
         impl #impl_generics #trait_path for #ident #ty_generics #where_clause {
             fn declare(reg: &mut ::ow_workshop::VarRegistry) -> Self {
                 Self { #(#inits),* }
+            }
+        }
+
+        impl #impl_generics ::ow_workshop::WorkshopDebug for #ident #ty_generics #where_clause {
+            fn debug_fields(&self) -> ::std::vec::Vec<::ow_workshop::DebugField> {
+                #[allow(unused_mut)]
+                let mut fields = ::std::vec::Vec::new();
+                #(#shown)*
+                fields
             }
         }
     })
@@ -104,8 +132,16 @@ fn parse_attrs(field: &Field) -> syn::Result<FieldAttrs> {
                 }
             } else if meta.path.is_ident("init") {
                 attrs.init = Some(meta.value()?.parse()?);
+            } else if meta.path.is_ident("debug") {
+                attrs.debug = Some(meta.value()?.parse::<syn::LitBool>()?.value);
+            } else if meta.path.is_ident("debug_label") {
+                attrs.debug_label = Some(meta.value()?.parse()?);
+            } else if meta.path.is_ident("debug_with") {
+                attrs.debug_with = Some(meta.value()?.parse()?);
             } else {
-                return Err(meta.error("expected `name`, `index` or `init`"));
+                return Err(meta.error(
+                    "expected `name`, `index`, `init`, `debug`, `debug_label` or `debug_with`",
+                ));
             }
             Ok(())
         })?;

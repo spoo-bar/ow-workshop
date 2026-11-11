@@ -31,17 +31,36 @@ use wasm_bindgen_test::wasm_bindgen_test;
 /// snapshot file is compared ignoring its header, whitespace-only lines and CRLF.
 macro_rules! check {
     ($name:literal, $mode:expr) => {{
-        let output = $mode.compile(Lang::EnUs).expect("compiles");
+        let output = $mode
+            .compile_with_debug(Lang::EnUs, Some(reference_debug()))
+            .expect("compiles");
+        let code = output
+            .code
+            .strip_prefix(DEBUG_HEADER)
+            .unwrap_or(&output.code)
+            .to_owned();
         #[cfg(not(target_arch = "wasm32"))]
-        insta::assert_snapshot!($name, &output.code);
+        insta::assert_snapshot!($name, &code);
         #[cfg(target_arch = "wasm32")]
         {
             let snap = include_str!(concat!("snapshots/reference__", $name, ".snap"));
             let body = snap.strip_prefix("---\n").expect("a snapshot header");
             let body = &body[body.find("---\n").expect("the end of the header") + 4..];
-            common::assert_workshop_code_eq(&output.code, body);
+            common::assert_workshop_code_eq(&code, body);
         }
     }};
+}
+
+/// The first line of a debug build.
+const DEBUG_HEADER: &str = "// ow-workshop debug build\n";
+
+/// The reference mods use `print` and `debug!`, which only a debug build keeps, so they are
+/// compiled as one, without the variable panels and with the header line cut off.
+fn reference_debug() -> DebugMode {
+    let mut options = DebugOptions::default();
+    options.hud = false;
+    options.player_hud = false;
+    DebugMode::On(options)
 }
 
 /// Size mode, as every fixture in #100 uses.
@@ -163,7 +182,9 @@ impl Workshop for Subroutines {
 #[test]
 #[wasm_bindgen_test]
 fn subroutines() {
-    let output = Subroutines.compile(Lang::EnUs).expect("compiles");
+    let output = Subroutines
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles");
     assert!(
         output
             .warnings
@@ -1439,7 +1460,9 @@ impl Workshop for EventVars {
 #[test]
 #[wasm_bindgen_test]
 fn eventvars() {
-    let output = EventVars.compile(Lang::EnUs).expect("compiles");
+    let output = EventVars
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles");
     // `epSub`, `globalSub` and the recursive pair read event values their callers may lack.
     assert!(
         output

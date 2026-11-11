@@ -110,7 +110,10 @@ impl Block {
     ///
     /// The wide subheader keeps the box at a fixed width so the text does not jump around.
     #[track_caller]
+    ///
+    /// A debug-only call: a release build leaves it out (see [`Block::debug_only`]).
     pub fn print(&mut self, text: impl IntoExpr<Any>) {
+        let start = self.recorded();
         self.hud_text_with(HudTextArgs {
             header: text.into_expr(),
             subheader: LOTS_OF_SPACES.into_expr(),
@@ -121,6 +124,7 @@ impl Block {
             reevaluation: HudReeval::VisibilityAndString.into(),
             ..HudTextArgs::default()
         });
+        self.mark_debug_only(start);
     }
 }
 

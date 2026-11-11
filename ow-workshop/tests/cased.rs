@@ -24,7 +24,10 @@ impl Workshop for Mode {
 
 #[test]
 fn expands_to_one_action_per_overlaid_text() {
-    let code = Mode.compile(Lang::EnUs).expect("compiles").code;
+    let code = Mode
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code;
     let actions: Vec<&str> = code
         .lines()
         .filter(|l| l.contains("Create Progress Bar In-World Text("))

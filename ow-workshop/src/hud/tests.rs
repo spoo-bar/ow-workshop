@@ -10,6 +10,12 @@ fn hud_args(record: impl FnOnce(&mut Block)) -> Vec<String> {
     record(&mut block);
     let stmts = block.into_ir().stmts;
     assert_eq!(stmts.len(), 1);
+    // `print` is a debug-only call: its HUD text is inside one `DebugOnly`.
+    let stmts = match &stmts[0].kind {
+        StmtKind::DebugOnly(inner) => inner.stmts.clone(),
+        _ => stmts,
+    };
+    assert_eq!(stmts.len(), 1);
     let StmtKind::Action { id, args } = &stmts[0].kind else {
         panic!("not an action: {:?}", stmts[0].kind);
     };

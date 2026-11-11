@@ -28,7 +28,10 @@ impl Workshop for Mod {
 }
 
 fn settings_of(settings: Settings) -> String {
-    let code = Mod(settings).compile(Lang::EnUs).expect("compiles").code;
+    let code = Mod(settings)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code;
     let end = code
         .find("variables {")
         .expect("the variables block follows the settings");
@@ -83,7 +86,10 @@ fn extensions_settings() {
 fn the_block_comes_before_the_rules_and_ends_with_a_blank_line() {
     let settings =
         Settings::default().with_mode(ModeKey::Mode(Gamemode::Skirmish), ModeSettings::default());
-    let code = Mod(settings).compile(Lang::EnUs).expect("compiles").code;
+    let code = Mod(settings)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles")
+        .code;
     assert!(
         code.starts_with(
             "settings\n{\n\tmodes\n\t{\n\t\tSkirmish\n\t\t{\n\t\t}\n\t}\n}\n\nvariables {"
@@ -95,7 +101,9 @@ fn the_block_comes_before_the_rules_and_ends_with_a_blank_line() {
 #[test]
 fn invalid_settings_fail_the_compile() {
     let settings = Settings::default().with_extension(Extension::Projectiles);
-    let err = Mod(settings).compile(Lang::EnUs).expect_err("no modes");
+    let err = Mod(settings)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect_err("no modes");
     assert!(
         err.0.iter().any(|d| d.code() == "settings-no-modes"),
         "{err}"
@@ -107,7 +115,9 @@ fn extension_points_are_a_warning() {
     let settings = Settings::default()
         .with_mode(ModeKey::Mode(Gamemode::Skirmish), ModeSettings::default())
         .with_extension(Extension::Projectiles);
-    let out = Mod(settings).compile(Lang::EnUs).expect("compiles");
+    let out = Mod(settings)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect("compiles");
     let codes: Vec<_> = out.warnings.iter().map(Diagnostic::code).collect();
     assert_eq!(codes, ["extension-points"]);
 }
@@ -154,7 +164,10 @@ mod workshop_values {
 
     #[test]
     fn matches_the_reference_lines() {
-        let code = Values.compile(Lang::EnUs).expect("compiles").code;
+        let code = Values
+            .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+            .expect("compiles")
+            .code;
         for line in [
             r#"Workshop Setting Toggle(Custom String("　"), Custom String("boolean"), True, 0)"#,
             r#"Workshop Setting Integer(Custom String("int"), Custom String("int"), 3, -999999999999, 999999999999, 0)"#,
@@ -188,7 +201,9 @@ mod workshop_values {
             }
         }
 
-        let err = Many.compile(Lang::EnUs).expect_err("too many");
+        let err = Many
+            .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+            .expect_err("too many");
         assert!(
             err.0
                 .iter()

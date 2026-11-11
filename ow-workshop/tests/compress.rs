@@ -38,7 +38,7 @@ impl Workshop for Mode {
 
 fn compile(alphabet_variable: bool) -> String {
     Mode { alphabet_variable }
-        .compile(Lang::EnUs)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
         .expect("compiles")
         .code
 }
@@ -83,7 +83,7 @@ fn the_alphabet_keeps_its_carriage_return_digit() {
     let code = Mode {
         alphabet_variable: false,
     }
-    .compile(Lang::EnUs)
+    .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
     .expect("compiles")
     .code;
     // The text prints a carriage return as `\r`, between the form feed and shift-out digits.

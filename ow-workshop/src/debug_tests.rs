@@ -23,7 +23,12 @@ fn shown(tags: bool, record: impl FnOnce(&mut Block)) -> ir::Expr {
     record(&mut block);
     let stmts = block.into_ir().stmts;
     assert_eq!(stmts.len(), 1);
-    let StmtKind::Action { id, args } = &stmts[0].kind else {
+    // `debug!` is a debug-only call: one statement that holds the HUD text.
+    let StmtKind::DebugOnly(inner) = &stmts[0].kind else {
+        panic!("not debug-only: {:?}", stmts[0].kind);
+    };
+    assert_eq!(inner.stmts.len(), 1);
+    let StmtKind::Action { id, args } = &inner.stmts[0].kind else {
         panic!("not an action");
     };
     assert_eq!(*id, ActionId::HudText);
