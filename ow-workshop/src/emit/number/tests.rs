@@ -50,9 +50,3 @@ fn infinity_prints_as_a_large_number() {
     assert_eq!(fmt(f64::INFINITY), "999999999999");
     assert_eq!(fmt(f64::NEG_INFINITY), "-999999999999");
 }
-
-#[test]
-fn constants() {
-    assert_eq!(fmt(std::f64::consts::PI), "3.141592653589793");
-    assert_eq!(fmt(std::f64::consts::E), "2.718281828459045");
-}

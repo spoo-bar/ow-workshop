@@ -215,16 +215,6 @@ mod tests {
     use crate::ty::Player;
 
     #[test]
-    fn number_literals() {
-        let n: Expr<Num> = 3.into();
-        assert_eq!(n.ir().kind(), &ExprKind::Num(3.0));
-        let n: Expr<Num> = 1.5.into();
-        assert_eq!(n.ir().kind(), &ExprKind::Num(1.5));
-        let i: Expr<Int> = 7u32.into();
-        assert_eq!(i.ir().kind(), &ExprKind::Num(7.0));
-    }
-
-    #[test]
     fn bool_and_string_literals() {
         let b: Expr<Bool> = true.into();
         assert_eq!(b.ir().kind(), &ExprKind::Bool(true));

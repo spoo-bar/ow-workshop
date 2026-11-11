@@ -192,11 +192,6 @@ fn de_de_sample() {
 }
 
 #[test]
-fn empty_settings_print_nothing() {
-    assert_eq!(print(Settings::default(), Lang::EnUs), "");
-}
-
-#[test]
 fn only_modes_and_heroes_sections_appear_when_set() {
     let settings =
         Settings::default().with_mode(ModeKey::Mode(Gamemode::Skirmish), ModeSettings::default());

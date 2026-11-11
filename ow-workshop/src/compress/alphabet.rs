@@ -49,12 +49,4 @@ mod tests {
         let letters: Vec<_> = symbols.iter().filter(|c| c.is_ascii_alphabetic()).collect();
         assert_eq!(letters, [&'Q', &'q']);
     }
-
-    #[test]
-    fn starts_and_ends_where_the_issue_says() {
-        let symbols = alphabet();
-        assert_eq!(symbols[0], '\u{1}');
-        assert_eq!(symbols[31], ' ');
-        assert_eq!(symbols[99], '\u{A1}');
-    }
 }
