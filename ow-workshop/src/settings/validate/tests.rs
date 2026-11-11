@@ -33,13 +33,6 @@ fn errors(settings: Settings) -> Vec<&'static str> {
         .collect()
 }
 
-fn main() -> Main {
-    Main {
-        mode_name: "Mode".to_owned(),
-        description: "About it".to_owned(),
-    }
-}
-
 fn tdm() -> ModeKey {
     ModeKey::Mode(Gamemode::TeamDeathmatch)
 }
@@ -188,22 +181,24 @@ fn number_limits() {
 #[test]
 fn string_limits_count_scalars_and_bytes() {
     // The mode name allows 129 bytes; the description 512 characters.
-    let name = |text: &str| {
-        with_tdm(Settings::default()).with_main(Main {
+    let name = |text: &str| Settings {
+        main: Some(Main {
             mode_name: text.to_owned(),
             description: String::new(),
-        })
+        }),
+        ..with_tdm(Settings::default())
     };
     assert_eq!(errors(name(&"a".repeat(129))), [] as [&str; 0]);
     assert_eq!(errors(name(&"a".repeat(130))), ["settings-string-too-long"]);
     // 43 three-byte scalars are 129 bytes; 44 are 132.
     assert_eq!(errors(name(&"あ".repeat(43))), [] as [&str; 0]);
     assert_eq!(errors(name(&"あ".repeat(44))), ["settings-string-too-long"]);
-    let description = |text: String| {
-        with_tdm(Settings::default()).with_main(Main {
+    let description = |text: String| Settings {
+        main: Some(Main {
             mode_name: String::new(),
             description: text,
-        })
+        }),
+        ..with_tdm(Settings::default())
     };
     assert_eq!(errors(description("あ".repeat(512))), [] as [&str; 0]);
     assert_eq!(
@@ -257,7 +252,6 @@ fn unset_slots_default_to_the_largest_of_the_modes() {
 #[test]
 fn best_available_data_center_is_dropped() {
     let mut settings = Settings::default()
-        .with_main(main())
         .with_mode(tdm(), ModeSettings::default().maps(workshop_maps()))
         .with_lobby(
             Lobby::default()
@@ -393,7 +387,6 @@ fn duplicate_extensions_are_paid_once() {
 #[test]
 fn extension_points_warning_can_be_suppressed() {
     let mut settings = Settings::default()
-        .with_main(main())
         .with_mode(tdm(), ModeSettings::default().maps(workshop_maps()))
         .with_extension(Extension::Projectiles);
     let mut options = CompileOptions::default();

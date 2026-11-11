@@ -17,45 +17,46 @@ fn print(settings: Settings, lang: Lang) -> String {
 
 /// The block from the design: every section, unknown keys, and the hero list last.
 fn sample() -> Settings {
-    Settings::default()
-        .with_main(Main {
+    Settings {
+        main: Some(Main {
             mode_name: "Ｔｏｗｅｒ Ｍｅｉｆｅｎｓｅ".into(),
             description: "Hold the tower".into(),
-        })
-        .with_lobby(
-            Lobby::default()
-                .map_rotation("paused")
-                .spectator_slots(6)
-                .swap_teams_after_match(false)
-                .raw("unknownSetting", "abc"),
-        )
-        .with_mode(
-            ModeKey::Mode(Gamemode::Assault),
-            ModeSettings::default()
-                .maps(MapSelection::Enabled(vec![MapRef::new(
-                    Map::TempleOfAnubis,
-                )]))
-                .capture_speed_percent(60),
-        )
-        .with_mode(
-            ModeKey::General,
-            ModeSettings::default().respawn_time_percent(100),
-        )
-        .with_heroes(
-            HeroTeam::Team1,
-            HeroSettings::default()
-                .selection(HeroSelection::Enabled(vec![Hero::Ashe, Hero::Bastion])),
-        )
-        .with_heroes(
-            HeroTeam::AllTeams,
-            HeroSettings::default().hero(
-                Hero::Ashe,
-                Values::new().with("ammoClipSize%", SettingValue::Percent(200.0)),
-            ),
-        )
-        .with_workshop_value("My toggle", WorkshopValue::Bool(true))
-        .with_workshop_value("My combo", WorkshopValue::Combo(2))
-        .with_extension(Extension::BeamEffects)
+        }),
+        ..Settings::default()
+    }
+    .with_lobby(
+        Lobby::default()
+            .map_rotation("paused")
+            .spectator_slots(6)
+            .swap_teams_after_match(false)
+            .raw("unknownSetting", "abc"),
+    )
+    .with_mode(
+        ModeKey::Mode(Gamemode::Assault),
+        ModeSettings::default()
+            .maps(MapSelection::Enabled(vec![MapRef::new(
+                Map::TempleOfAnubis,
+            )]))
+            .capture_speed_percent(60),
+    )
+    .with_mode(
+        ModeKey::General,
+        ModeSettings::default().respawn_time_percent(100),
+    )
+    .with_heroes(
+        HeroTeam::Team1,
+        HeroSettings::default().selection(HeroSelection::Enabled(vec![Hero::Ashe, Hero::Bastion])),
+    )
+    .with_heroes(
+        HeroTeam::AllTeams,
+        HeroSettings::default().hero(
+            Hero::Ashe,
+            Values::new().with("ammoClipSize%", SettingValue::Percent(200.0)),
+        ),
+    )
+    .with_workshop_value("My toggle", WorkshopValue::Bool(true))
+    .with_workshop_value("My combo", WorkshopValue::Combo(2))
+    .with_extension(Extension::BeamEffects)
 }
 
 #[test]
@@ -313,9 +314,12 @@ fn hero_list_comes_after_hero_objects() {
 
 #[test]
 fn string_settings_are_quoted_and_escaped() {
-    let settings = Settings::default().with_main(Main {
-        mode_name: "a \"b\"\nc".into(),
-        description: String::new(),
-    });
+    let settings = Settings {
+        main: Some(Main {
+            mode_name: "a \"b\"\nc".into(),
+            description: String::new(),
+        }),
+        ..Settings::default()
+    };
     assert!(print(settings, Lang::EnUs).contains("Mode Name: \"a \\\"b\\\"\\nc\"\n"));
 }

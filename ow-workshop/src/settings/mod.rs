@@ -36,14 +36,6 @@ pub struct Settings {
 }
 
 impl Settings {
-    /// Sets the `main` section, which a compile fills from the `Workshop`.
-    #[cfg(test)]
-    #[must_use]
-    pub(crate) fn with_main(mut self, main: Main) -> Self {
-        self.main = Some(main);
-        self
-    }
-
     /// Sets the `lobby` section.
     #[must_use]
     pub fn with_lobby(mut self, lobby: Lobby) -> Self {
