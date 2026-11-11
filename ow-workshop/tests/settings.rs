@@ -13,6 +13,14 @@ struct Globals {
 struct Mod(Settings);
 
 impl Workshop for Mod {
+    fn mode_name(&self) -> &'static str {
+        "Test"
+    }
+
+    fn description(&self) -> &'static str {
+        "Test mode"
+    }
+
     type Globals = Globals;
     type Players = ();
 
@@ -125,19 +133,22 @@ fn empty_settings_fail_the_compile() {
 }
 
 #[test]
-fn settings_without_main_fail_the_compile() {
+fn the_main_section_comes_from_the_workshop() {
     let settings = Settings::default().with_mode(
         ModeKey::Mode(Gamemode::TeamDeathmatch),
         ModeSettings::default().maps(MapSelection::Enabled(vec![MapRef::new(
             Map::WorkshopChamber,
         )])),
     );
-    let err = Mod(settings)
+    let code = Mod(settings)
         .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
-        .expect_err("the mode name and description are required");
+        .expect("compiles")
+        .code;
     assert!(
-        err.0.iter().any(|d| d.code() == "settings-no-main"),
-        "{err}"
+        code.starts_with(
+            "settings\n{\n\tmain\n\t{\n\t\tMode Name: \"Test\"\n\t\tDescription: \"Test mode\"\n\t}\n"
+        ),
+        "{code}"
     );
 }
 
@@ -159,10 +170,6 @@ fn a_mode_without_a_map_fails_the_compile() {
 #[test]
 fn extension_points_are_a_warning() {
     let settings = Settings::default()
-        .with_main(Main {
-            mode_name: "Mode".to_owned(),
-            description: "About it".to_owned(),
-        })
         .with_mode(
             ModeKey::Mode(Gamemode::TeamDeathmatch),
             ModeSettings::default().maps(MapSelection::Enabled(vec![MapRef::new(Map::Paris)])),
@@ -181,6 +188,14 @@ mod workshop_values {
     struct Values;
 
     impl Workshop for Values {
+        fn mode_name(&self) -> &'static str {
+            "Test"
+        }
+
+        fn description(&self) -> &'static str {
+            "Test mode"
+        }
+
         fn settings(&self) -> ow_workshop::Settings {
             ow_workshop::Settings::unchecked()
         }
@@ -244,6 +259,14 @@ mod workshop_values {
         struct Many;
 
         impl Workshop for Many {
+            fn mode_name(&self) -> &'static str {
+                "Test"
+            }
+
+            fn description(&self) -> &'static str {
+                "Test mode"
+            }
+
             fn settings(&self) -> ow_workshop::Settings {
                 ow_workshop::Settings::unchecked()
             }

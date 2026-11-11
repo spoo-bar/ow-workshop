@@ -19,14 +19,14 @@ Rules
     0  "Initialize player variables"  Ongoing - Each Player  3 elements  [generated]
     1  "Debug: globals"  Ongoing - Global  224 elements  [generated]
     2  "Debug: players"  Ongoing - Each Player  26 elements  [generated]
-    3  "[Setup] Collect spawn points"  Ongoing - Global  7 elements  at ow-workshop/examples/zombie_survival.rs:56:16
-    4  "[Setup] Start when players are in"  Ongoing - Global  50 elements  at ow-workshop/examples/zombie_survival.rs:64:16
-    5  "[Waves] Subroutine spawn_wave"  Subroutine  29 elements  at ow-workshop/examples/zombie_survival.rs:75:16
-    6  "[Waves] Run the waves"  Ongoing - Global  68 elements  at ow-workshop/examples/zombie_survival.rs:92:16
-    7  "[Players] Score on kill"  Player Died  7 elements  at ow-workshop/examples/zombie_survival.rs:112:16
-    8  "[Players] Lose a life"  Player Died  14 elements  at ow-workshop/examples/zombie_survival.rs:118:16
-    9  "[HUD] Wave counter"  Ongoing - Global  22 elements  at ow-workshop/examples/zombie_survival.rs:130:16
-   10  "[HUD] Leaderboard"  Ongoing - Global  27 elements  at ow-workshop/examples/zombie_survival.rs:137:16
+    3  "[Setup] Collect spawn points"  Ongoing - Global  7 elements  at ow-workshop/examples/zombie_survival.rs:64:16
+    4  "[Setup] Start when players are in"  Ongoing - Global  50 elements  at ow-workshop/examples/zombie_survival.rs:72:16
+    5  "[Waves] Subroutine spawn_wave"  Subroutine  29 elements  at ow-workshop/examples/zombie_survival.rs:83:16
+    6  "[Waves] Run the waves"  Ongoing - Global  68 elements  at ow-workshop/examples/zombie_survival.rs:100:16
+    7  "[Players] Score on kill"  Player Died  7 elements  at ow-workshop/examples/zombie_survival.rs:120:16
+    8  "[Players] Lose a life"  Player Died  14 elements  at ow-workshop/examples/zombie_survival.rs:126:16
+    9  "[HUD] Wave counter"  Ongoing - Global  22 elements  at ow-workshop/examples/zombie_survival.rs:138:16
+   10  "[HUD] Leaderboard"  Ongoing - Global  27 elements  at ow-workshop/examples/zombie_survival.rs:145:16
 
 Totals
   elements: 477 (227 without the debug panels)

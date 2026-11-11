@@ -18,11 +18,10 @@ fn check_all(mut settings: Settings) -> Vec<(Severity, &'static str)> {
         .collect()
 }
 
-/// Like `check_all`, minus `settings-no-main` and `settings-no-maps`: most tests build settings
-/// without a `main` section or maps.
+/// Like `check_all`, minus `settings-no-maps`: most tests build modes without maps.
 fn check(settings: Settings) -> Vec<(Severity, &'static str)> {
     let mut all = check_all(settings);
-    all.retain(|(_, code)| !matches!(*code, "settings-no-main" | "settings-no-maps"));
+    all.retain(|(_, code)| *code != "settings-no-maps");
     all
 }
 
@@ -62,19 +61,6 @@ fn empty_settings_are_an_error() {
 }
 
 #[test]
-fn main_is_required() {
-    let complete = Settings::default()
-        .with_main(main())
-        .with_mode(tdm(), ModeSettings::default().maps(workshop_maps()));
-    assert_eq!(check_all(complete.clone()), []);
-    let without = Settings {
-        main: None,
-        ..complete
-    };
-    assert_eq!(check_all(without), [(Severity::Error, "settings-no-main")]);
-}
-
-#[test]
 fn unchecked_settings_are_not_checked() {
     assert_eq!(check(Settings::unchecked()), []);
 }
@@ -84,7 +70,7 @@ fn enabled_mode_needs_a_map() {
     let errors = |settings: Settings| -> Vec<&'static str> {
         check_all(settings)
             .into_iter()
-            .filter(|(severity, code)| *severity == Severity::Error && *code != "settings-no-main")
+            .filter(|(severity, _)| *severity == Severity::Error)
             .map(|(_, code)| code)
             .collect()
     };

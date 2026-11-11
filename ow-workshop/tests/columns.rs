@@ -16,6 +16,14 @@ struct Waves {
 }
 
 impl Workshop for Waves {
+    fn mode_name(&self) -> &'static str {
+        "Test"
+    }
+
+    fn description(&self) -> &'static str {
+        "Test mode"
+    }
+
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
     }
@@ -89,6 +97,14 @@ struct Spawns {
 }
 
 impl Workshop for Spawns {
+    fn mode_name(&self) -> &'static str {
+        "Test"
+    }
+
+    fn description(&self) -> &'static str {
+        "Test mode"
+    }
+
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
     }

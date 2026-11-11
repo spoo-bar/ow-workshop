@@ -5,7 +5,7 @@ use crate::ir::{Diagnostics, Program};
 use crate::options::{CompileOptions, DebugMode};
 use crate::output::CompileOutput;
 use crate::pipeline;
-use crate::settings::Settings;
+use crate::settings::{Main, Settings};
 use crate::translations::Translations;
 use crate::vars::{GlobalVars, PlayerVars, VarRegistry};
 use crate::workshop_debug::WorkshopDebug as _;
@@ -20,6 +20,12 @@ pub trait Workshop {
 
     /// Records the rules and subroutines on `ws`, in output order.
     fn build(&self, ws: &mut Builder, globals: &Self::Globals, players: &Self::Players);
+
+    /// The name of the mode, shown in the game's mode list. Required.
+    fn mode_name(&self) -> &'static str;
+
+    /// The description of the mode. Required.
+    fn description(&self) -> &'static str;
 
     /// Custom game settings.
     ///
@@ -68,6 +74,13 @@ impl<W: Workshop> WorkshopExt for W {
         let globals = W::Globals::declare(&mut global_reg);
         let players = W::Players::declare(&mut player_reg);
 
+        let mut settings = self.settings();
+        if !settings.unchecked {
+            settings.main = Some(Main {
+                mode_name: self.mode_name().to_owned(),
+                description: self.description().to_owned(),
+            });
+        }
         let mut options = self.options();
         if let Some(debug) = debug {
             options.debug = debug;
@@ -81,7 +94,7 @@ impl<W: Workshop> WorkshopExt for W {
             debug_fields,
             globals: global_reg.vars,
             players: player_reg.vars,
-            settings: self.settings(),
+            settings,
             options,
             ..Program::default()
         };
@@ -97,6 +110,14 @@ mod tests {
     struct Empty;
 
     impl Workshop for Empty {
+        fn mode_name(&self) -> &'static str {
+            "Test"
+        }
+
+        fn description(&self) -> &'static str {
+            "Test mode"
+        }
+
         fn settings(&self) -> crate::settings::Settings {
             crate::settings::Settings::unchecked()
         }
@@ -122,6 +143,14 @@ mod tests {
     struct Configured;
 
     impl Workshop for Configured {
+        fn mode_name(&self) -> &'static str {
+            "Test"
+        }
+
+        fn description(&self) -> &'static str {
+            "Test mode"
+        }
+
         fn settings(&self) -> crate::settings::Settings {
             crate::settings::Settings::unchecked()
         }

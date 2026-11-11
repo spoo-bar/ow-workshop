@@ -7,6 +7,14 @@ use ow_workshop::{Gamemode, Map};
 pub struct HelloWorld;
 
 impl Workshop for HelloWorld {
+    fn mode_name(&self) -> &'static str {
+        "Hello World"
+    }
+
+    fn description(&self) -> &'static str {
+        "The smallest useful mod"
+    }
+
     type Globals = ();
     type Players = ();
 
@@ -33,15 +41,10 @@ impl Workshop for HelloWorld {
 
     fn settings(&self) -> Settings {
         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
-        Settings::default()
-            .with_main(Main {
-                mode_name: "Hello World".to_owned(),
-                description: "The smallest useful mod".to_owned(),
-            })
-            .with_mode(
-                ModeKey::Mode(Gamemode::TeamDeathmatch),
-                ModeSettings::default().maps(maps),
-            )
+        Settings::default().with_mode(
+            ModeKey::Mode(Gamemode::TeamDeathmatch),
+            ModeSettings::default().maps(maps),
+        )
     }
 }
 

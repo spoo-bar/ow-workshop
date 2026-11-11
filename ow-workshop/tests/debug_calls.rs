@@ -16,6 +16,14 @@ struct Mode {
 }
 
 impl Workshop for Mode {
+    fn mode_name(&self) -> &'static str {
+        "Test"
+    }
+
+    fn description(&self) -> &'static str {
+        "Test mode"
+    }
+
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
     }
@@ -119,6 +127,14 @@ fn stripped_calls_leave_no_variable_behind() {
     struct OnlyDebug;
 
     impl Workshop for OnlyDebug {
+        fn mode_name(&self) -> &'static str {
+            "Test"
+        }
+
+        fn description(&self) -> &'static str {
+            "Test mode"
+        }
+
         fn settings(&self) -> ow_workshop::Settings {
             ow_workshop::Settings::unchecked()
         }

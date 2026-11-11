@@ -12,6 +12,14 @@
 //! struct HelloWorld;
 //!
 //! impl Workshop for HelloWorld {
+//!     fn mode_name(&self) -> &'static str {
+//!         "My Mode"
+//!     }
+//!
+//!     fn description(&self) -> &'static str {
+//!         "Made with ow-workshop"
+//!     }
+//!
 //!     type Globals = ();
 //!     type Players = ();
 //!
@@ -29,10 +37,6 @@
 //!     fn settings(&self) -> Settings {
 //!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
 //!         Settings::default()
-//!             .with_main(Main {
-//!                 mode_name: "My Mode".to_owned(),
-//!                 description: "Made with ow-workshop".to_owned(),
-//!             })
 //!             .with_mode(
 //!                 ModeKey::Mode(Gamemode::TeamDeathmatch),
 //!                 ModeSettings::default().maps(maps),
@@ -117,6 +121,14 @@
 //! struct Mode;
 //!
 //! impl Workshop for Mode {
+//!     fn mode_name(&self) -> &'static str {
+//!         "My Mode"
+//!     }
+//!
+//!     fn description(&self) -> &'static str {
+//!         "Made with ow-workshop"
+//!     }
+//!
 //!     type Globals = Globals;
 //!     type Players = ();
 //!
@@ -136,10 +148,6 @@
 //!     fn settings(&self) -> Settings {
 //!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
 //!         Settings::default()
-//!             .with_main(Main {
-//!                 mode_name: "My Mode".to_owned(),
-//!                 description: "Made with ow-workshop".to_owned(),
-//!             })
 //!             .with_mode(
 //!                 ModeKey::Mode(Gamemode::TeamDeathmatch),
 //!                 ModeSettings::default().maps(maps),
@@ -176,6 +184,14 @@
 //! struct MyMode;
 //!
 //! impl Workshop for MyMode {
+//!     fn mode_name(&self) -> &'static str {
+//!         "My Mode"
+//!     }
+//!
+//!     fn description(&self) -> &'static str {
+//!         "Made with ow-workshop"
+//!     }
+//!
 //!     type Globals = ();
 //!     type Players = ();
 //!
@@ -186,10 +202,6 @@
 //!     fn settings(&self) -> Settings {
 //!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
 //!         Settings::default()
-//!             .with_main(Main {
-//!                 mode_name: "My Mode".to_owned(),
-//!                 description: "Made with ow-workshop".to_owned(),
-//!             })
 //!             .with_mode(
 //!                 ModeKey::Mode(Gamemode::TeamDeathmatch),
 //!                 ModeSettings::default().maps(maps),
@@ -328,8 +340,8 @@ pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
 pub use rule_name::{RuleMeta, default_rule_name};
 pub use settings::{
-    HeroSelection, HeroSettings, HeroTeam, Lobby, Main, MapRef, MapSelection, ModeKey,
-    ModeSettings, SettingValue, Settings, Values, WorkshopValue,
+    HeroSelection, HeroSettings, HeroTeam, Lobby, MapRef, MapSelection, ModeKey, ModeSettings,
+    SettingValue, Settings, Values, WorkshopValue,
 };
 pub use subroutine::{Sub, SubroutineOptions};
 pub use switch::SwitchBuilder;

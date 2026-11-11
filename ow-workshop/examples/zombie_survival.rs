@@ -46,6 +46,14 @@ pub struct ZombieSurvival {
 }
 
 impl Workshop for ZombieSurvival {
+    fn mode_name(&self) -> &'static str {
+        "Zombie Survival"
+    }
+
+    fn description(&self) -> &'static str {
+        "Survive waves of zombies"
+    }
+
     type Globals = Globals;
     type Players = Players;
 
@@ -147,15 +155,10 @@ impl Workshop for ZombieSurvival {
 
     fn settings(&self) -> Settings {
         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
-        Settings::default()
-            .with_main(Main {
-                mode_name: "Zombie Survival".to_owned(),
-                description: "Survive waves of zombies".to_owned(),
-            })
-            .with_mode(
-                ModeKey::Mode(Gamemode::TeamDeathmatch),
-                ModeSettings::default().maps(maps),
-            )
+        Settings::default().with_mode(
+            ModeKey::Mode(Gamemode::TeamDeathmatch),
+            ModeSettings::default().maps(maps),
+        )
     }
 }
 

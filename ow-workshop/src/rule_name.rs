@@ -108,6 +108,14 @@ mod tests {
     fn options_carry_the_template() {
         struct Custom;
         impl Workshop for Custom {
+            fn mode_name(&self) -> &'static str {
+                "Test"
+            }
+
+            fn description(&self) -> &'static str {
+                "Test mode"
+            }
+
             fn settings(&self) -> crate::settings::Settings {
                 crate::settings::Settings::unchecked()
             }

@@ -10,6 +10,14 @@ struct Globals {
 struct Mode;
 
 impl Workshop for Mode {
+    fn mode_name(&self) -> &'static str {
+        "Test"
+    }
+
+    fn description(&self) -> &'static str {
+        "Test mode"
+    }
+
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
     }

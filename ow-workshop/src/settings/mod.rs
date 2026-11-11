@@ -20,7 +20,7 @@ pub use values::{SettingValue, Values};
 #[non_exhaustive]
 pub struct Settings {
     /// The `main` section.
-    pub main: Option<Main>,
+    pub(crate) main: Option<Main>,
     /// The `lobby` section, if the mod sets one.
     pub lobby: Option<Lobby>,
     /// Per game mode settings.
@@ -36,9 +36,10 @@ pub struct Settings {
 }
 
 impl Settings {
-    /// Sets the `main` section.
+    /// Sets the `main` section, which a compile fills from the `Workshop`.
+    #[cfg(test)]
     #[must_use]
-    pub fn with_main(mut self, main: Main) -> Self {
+    pub(crate) fn with_main(mut self, main: Main) -> Self {
         self.main = Some(main);
         self
     }
@@ -122,13 +123,12 @@ fn replace<K: PartialEq, V>(entries: &mut Vec<(K, V)>, key: K, value: V) {
     }
 }
 
-/// The `main` section. Both fields are required.
+/// The `main` section, filled from [`Workshop::mode_name`](crate::Workshop::mode_name) and
+/// [`Workshop::description`](crate::Workshop::description) when the mod is compiled.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Main {
-    /// The name of the mode.
-    pub mode_name: String,
-    /// The description of the mode.
-    pub description: String,
+pub(crate) struct Main {
+    pub(crate) mode_name: String,
+    pub(crate) description: String,
 }
 
 /// The `lobby` section. Typed setters, one per schema setting, are generated.
