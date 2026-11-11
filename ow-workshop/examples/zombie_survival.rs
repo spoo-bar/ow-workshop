@@ -79,14 +79,18 @@ impl Workshop for ZombieSurvival {
                 b.add_to(g.wave, 1);
                 b.for_range(
                     g.spawn_index,
-                    range(0, min(len(g.spawn_points.get()), g.wave.get() + 3)),
+                    range(0, g.wave.get() + 3),
                     |b| {
-                        b.create_dummy(
-                            Hero::Reaper,
-                            Team::Two,
-                            g.spawn_index.get(),
+                        // Some maps (Workshop Chamber) have no Team 2 spawn points, so fall
+                        // back to a ring around the map origin instead of spawning nobody.
+                        let angle = g.spawn_index.get() * 72;
+                        let ring = vect(cos_deg(angle.clone()) * 8, 0, sin_deg(angle) * 8);
+                        let position = if_then_else(
+                            g.spawn_index.get().lt(len(g.spawn_points.get())),
                             g.spawn_points.get().get(g.spawn_index.get()),
+                            ring,
                         );
+                        b.create_dummy(Hero::Reaper, Team::Two, g.spawn_index.get(), position);
                     },
                 );
             });

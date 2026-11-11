@@ -85,8 +85,8 @@ rule ("[Waves] Subroutine spawn_wave") {
     }
     actions {
         Modify Global Variable(wave, Add, 1);
-        For Global Variable(spawn_index, 0, Min(Count Of(Global.spawn_points), Add(Global.wave, 3)), 1);
-            Create Dummy Bot(Hero(Reaper), Team 2, Global.spawn_index, Value In Array(Global.spawn_points, Global.spawn_index), Vector(0, 0, 0));
+        For Global Variable(spawn_index, 0, Add(Global.wave, 3), 1);
+            Create Dummy Bot(Hero(Reaper), Team 2, Global.spawn_index, If-Then-Else(Compare(Global.spawn_index, <, Count Of(Global.spawn_points)), Value In Array(Global.spawn_points, Global.spawn_index), Vector(Multiply(Cosine From Degrees(Multiply(Global.spawn_index, 72)), 8), 0, Multiply(Sine From Degrees(Multiply(Global.spawn_index, 72)), 8))), Vector(0, 0, 0));
         End;
     }
 }

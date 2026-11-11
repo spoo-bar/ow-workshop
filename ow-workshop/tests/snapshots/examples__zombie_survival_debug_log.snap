@@ -21,15 +21,15 @@ Rules
     2  "Debug: players"  Ongoing - Each Player  26 elements  [generated]
     3  "[Setup] Collect spawn points"  Ongoing - Global  7 elements  at ow-workshop/examples/zombie_survival.rs:59:16
     4  "[Setup] Start when players are in"  Ongoing - Global  50 elements  at ow-workshop/examples/zombie_survival.rs:67:16
-    5  "[Waves] Subroutine spawn_wave"  Subroutine  29 elements  at ow-workshop/examples/zombie_survival.rs:78:16
-    6  "[Waves] Run the waves"  Ongoing - Global  68 elements  at ow-workshop/examples/zombie_survival.rs:95:16
-    7  "[Players] Score on kill"  Player Died  7 elements  at ow-workshop/examples/zombie_survival.rs:115:16
-    8  "[Players] Lose a life"  Player Died  14 elements  at ow-workshop/examples/zombie_survival.rs:121:16
-    9  "[HUD] Wave counter"  Ongoing - Global  22 elements  at ow-workshop/examples/zombie_survival.rs:133:16
-   10  "[HUD] Leaderboard"  Ongoing - Global  27 elements  at ow-workshop/examples/zombie_survival.rs:140:16
+    5  "[Waves] Subroutine spawn_wave"  Subroutine  54 elements  at ow-workshop/examples/zombie_survival.rs:78:16
+    6  "[Waves] Run the waves"  Ongoing - Global  68 elements  at ow-workshop/examples/zombie_survival.rs:99:16
+    7  "[Players] Score on kill"  Player Died  7 elements  at ow-workshop/examples/zombie_survival.rs:119:16
+    8  "[Players] Lose a life"  Player Died  14 elements  at ow-workshop/examples/zombie_survival.rs:125:16
+    9  "[HUD] Wave counter"  Ongoing - Global  22 elements  at ow-workshop/examples/zombie_survival.rs:137:16
+   10  "[HUD] Leaderboard"  Ongoing - Global  27 elements  at ow-workshop/examples/zombie_survival.rs:144:16
 
 Totals
-  elements: 477 (227 without the debug panels)
+  elements: 502 (252 without the debug panels)
   global variables: 4 of 128
   player variables: 2 of 128
   subroutines: 1 of 128
