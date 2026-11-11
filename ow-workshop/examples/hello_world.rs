@@ -7,13 +7,8 @@ use ow_workshop::{Gamemode, Map};
 pub struct HelloWorld;
 
 impl Workshop for HelloWorld {
-    fn mode_name(&self) -> &'static str {
-        "Hello World"
-    }
-
-    fn description(&self) -> &'static str {
-        "The smallest useful mod"
-    }
+    const NAME: &'static str = "Hello World";
+    const DESCRIPTION: &'static str = "The smallest useful mod";
 
     type Globals = ();
     type Players = ();

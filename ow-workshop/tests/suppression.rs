@@ -14,13 +14,8 @@ struct Levels {
 struct Mod(Levels);
 
 impl Workshop for Mod {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -101,13 +96,8 @@ fn the_options_suppress_everywhere() {
 fn suppressing_one_warning_keeps_the_others() {
     struct Other;
     impl Workshop for Other {
-        fn mode_name(&self) -> &'static str {
-            "Test"
-        }
-
-        fn description(&self) -> &'static str {
-            "Test mode"
-        }
+        const NAME: &'static str = "Test";
+        const DESCRIPTION: &'static str = "Test mode";
 
         fn settings(&self) -> ow_workshop::Settings {
             ow_workshop::Settings::unchecked()
@@ -134,13 +124,8 @@ fn suppressing_one_warning_keeps_the_others() {
 struct Repeated;
 
 impl Workshop for Repeated {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -181,13 +166,8 @@ fn late(b: &mut Block) {
 struct Unordered;
 
 impl Workshop for Unordered {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()

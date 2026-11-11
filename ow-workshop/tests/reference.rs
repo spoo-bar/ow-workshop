@@ -94,13 +94,8 @@ struct VarPlayers {
 struct Variables;
 
 impl Workshop for Variables {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -153,13 +148,8 @@ struct SubGlobals {
 struct Subroutines;
 
 impl Workshop for Subroutines {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -238,13 +228,8 @@ struct SwitchGlobals {
 struct Switches;
 
 impl Workshop for Switches {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -349,13 +334,8 @@ fn truthy(var: Global<Num>) -> Expr<Bool> {
 struct Conditions;
 
 impl Workshop for Conditions {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -504,13 +484,8 @@ struct OpGlobals {
 struct OperatorsStrict;
 
 impl Workshop for OperatorsStrict {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -567,13 +542,8 @@ fn n(x: i32) -> Expr<Num> {
 struct Operators;
 
 impl Workshop for Operators {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -861,13 +831,8 @@ fn arr(e: Expr<Num>) -> Expr<Array<Num>> {
 struct OperatorsAssign;
 
 impl Workshop for OperatorsAssign {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -969,13 +934,8 @@ fn as_<T: ValueType>(e: Expr<Num>) -> Expr<T> {
 struct ElementSaving;
 
 impl Workshop for ElementSaving {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -1238,13 +1198,8 @@ struct EsIndexPlayers {
 struct ElementSavingIndex;
 
 impl Workshop for ElementSavingIndex {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -1306,13 +1261,8 @@ struct DictGlobals {
 struct Dicts;
 
 impl Workshop for Dicts {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -1382,13 +1332,8 @@ struct EnumGlobals {
 struct BuiltinEnums;
 
 impl Workshop for BuiltinEnums {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -1453,13 +1398,8 @@ struct MacroGlobals {
 struct BuiltinMacros;
 
 impl Workshop for BuiltinMacros {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -1510,13 +1450,8 @@ struct MapGlobals {
 struct GetCurrentMap;
 
 impl Workshop for GetCurrentMap {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -1569,13 +1504,8 @@ struct EventGlobals {
 struct EventVars;
 
 impl Workshop for EventVars {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -1690,13 +1620,8 @@ fn as_array(e: Expr<Any>) -> Expr<Array<Any>> {
 struct Arrays;
 
 impl Workshop for Arrays {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -1986,13 +1911,8 @@ struct FnPlayers {
 struct Functions;
 
 impl Workshop for Functions {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -2411,13 +2331,8 @@ struct CommentGlobals {
 struct Comments;
 
 impl Workshop for Comments {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -2462,13 +2377,8 @@ struct GotoGlobals {
 struct Gotos;
 
 impl Workshop for Gotos {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -2549,13 +2459,8 @@ struct LoopPlayers {
 struct Loops;
 
 impl Workshop for Loops {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -2675,13 +2580,8 @@ struct RulePlayers {
 struct Rules;
 
 impl Workshop for Rules {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -2774,13 +2674,8 @@ struct PrefixGlobals {
 struct RulePrefix;
 
 impl Workshop for RulePrefix {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -2851,13 +2746,8 @@ const CHARS_120: &str = "|______________________________________________________
 struct Strings;
 
 impl Workshop for Strings {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -3154,13 +3044,8 @@ fn arg_patterns(len: usize) -> Vec<Vec<usize>> {
 struct StringsArgs;
 
 impl Workshop for StringsArgs {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -3222,13 +3107,8 @@ struct LowerGlobals {
 struct Lowercase;
 
 impl Workshop for Lowercase {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -3300,13 +3180,8 @@ struct CompressGlobals {
 struct Compression;
 
 impl Workshop for Compression {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -3402,13 +3277,8 @@ fn compression() {
 struct ShionSettings;
 
 impl Workshop for ShionSettings {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     type Globals = ();
     type Players = ();
@@ -3452,13 +3322,8 @@ struct ExtGlobals {
 struct Extensions;
 
 impl Workshop for Extensions {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     type Globals = ExtGlobals;
     type Players = ();
@@ -3540,13 +3405,8 @@ struct WsGlobals {
 struct WorkshopSettings;
 
 impl Workshop for WorkshopSettings {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -3691,13 +3551,8 @@ struct CustomGameSettings;
 const CUSTOM_GAME_DESCRIPTION: &str = "Tower Meifense - BETA do not copy! by Zezombye v1.4.3\n\nThis is an extremely long string that takes advantage of the fact that the description can have up to 512 characters (not bytes). \u{a4}\u{a7}\u{20ac} Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat naz|";
 
 impl Workshop for CustomGameSettings {
-    fn mode_name(&self) -> &'static str {
-        "\u{ff34}\u{ff4f}\u{ff57}\u{ff45}\u{ff52}\u{2001}\u{ff2d}\u{ff45}\u{ff49}\u{ff46}\u{ff45}\u{ff4e}\u{ff53}\u{ff45}"
-    }
-
-    fn description(&self) -> &'static str {
-        CUSTOM_GAME_DESCRIPTION
-    }
+    const NAME: &'static str = "\u{ff34}\u{ff4f}\u{ff57}\u{ff45}\u{ff52}\u{2001}\u{ff2d}\u{ff45}\u{ff49}\u{ff46}\u{ff45}\u{ff4e}\u{ff53}\u{ff45}";
+    const DESCRIPTION: &'static str = CUSTOM_GAME_DESCRIPTION;
 
     type Globals = ();
     type Players = ();
@@ -3906,13 +3761,8 @@ fn translation_settings() -> Settings {
 struct Translated;
 
 impl Workshop for Translated {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     type Globals = TrGlobals;
     type Players = ();
@@ -4049,13 +3899,8 @@ struct Tr2Globals {
 struct Translated2;
 
 impl Workshop for Translated2 {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     type Globals = Tr2Globals;
     type Players = ();
@@ -4148,13 +3993,8 @@ struct UserEnumGlobals {
 struct UserEnums;
 
 impl Workshop for UserEnums {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()

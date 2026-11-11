@@ -7,13 +7,8 @@ use ow_workshop::prelude::*;
 struct Tagged;
 
 impl Workshop for Tagged {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -41,13 +36,8 @@ impl Workshop for Tagged {
 struct Textured;
 
 impl Workshop for Textured {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()

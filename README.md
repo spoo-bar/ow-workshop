@@ -16,13 +16,8 @@ struct Players { score: PlayerVar<Num> }
 struct Deathmatch;
 
 impl Workshop for Deathmatch {
-    fn mode_name(&self) -> &'static str {
-        "My Mode"
-    }
-
-    fn description(&self) -> &'static str {
-        "Made with ow-workshop"
-    }
+    const NAME: &'static str = "My Mode";
+    const DESCRIPTION: &'static str = "Made with ow-workshop";
 
     type Globals = Globals;
     type Players = Players;

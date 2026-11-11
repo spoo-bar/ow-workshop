@@ -18,14 +18,14 @@ pub trait Workshop {
     /// Player variable handles.
     type Players: PlayerVars;
 
+    /// The name of the mode, shown in the game's mode list.
+    const NAME: &'static str;
+
+    /// The description of the mode.
+    const DESCRIPTION: &'static str;
+
     /// Records the rules and subroutines on `ws`, in output order.
     fn build(&self, ws: &mut Builder, globals: &Self::Globals, players: &Self::Players);
-
-    /// The name of the mode, shown in the game's mode list. Required.
-    fn mode_name(&self) -> &'static str;
-
-    /// The description of the mode. Required.
-    fn description(&self) -> &'static str;
 
     /// Custom game settings.
     ///
@@ -77,8 +77,8 @@ impl<W: Workshop> WorkshopExt for W {
         let mut settings = self.settings();
         if !settings.unchecked {
             settings.main = Some(Main {
-                mode_name: self.mode_name().to_owned(),
-                description: self.description().to_owned(),
+                mode_name: W::NAME.to_owned(),
+                description: W::DESCRIPTION.to_owned(),
             });
         }
         let mut options = self.options();
@@ -110,13 +110,8 @@ mod tests {
     struct Empty;
 
     impl Workshop for Empty {
-        fn mode_name(&self) -> &'static str {
-            "Test"
-        }
-
-        fn description(&self) -> &'static str {
-            "Test mode"
-        }
+        const NAME: &'static str = "Test";
+        const DESCRIPTION: &'static str = "Test mode";
 
         fn settings(&self) -> crate::settings::Settings {
             crate::settings::Settings::unchecked()
@@ -143,13 +138,8 @@ mod tests {
     struct Configured;
 
     impl Workshop for Configured {
-        fn mode_name(&self) -> &'static str {
-            "Test"
-        }
-
-        fn description(&self) -> &'static str {
-            "Test mode"
-        }
+        const NAME: &'static str = "Test";
+        const DESCRIPTION: &'static str = "Test mode";
 
         fn settings(&self) -> crate::settings::Settings {
             crate::settings::Settings::unchecked()

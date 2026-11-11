@@ -21,13 +21,8 @@ struct Players {
 struct Mode;
 
 impl Workshop for Mode {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -158,13 +153,8 @@ fn warnings_are_the_outputs_warnings() {
     struct Chased;
 
     impl Workshop for Chased {
-        fn mode_name(&self) -> &'static str {
-            "Test"
-        }
-
-        fn description(&self) -> &'static str {
-            "Test mode"
-        }
+        const NAME: &'static str = "Test";
+        const DESCRIPTION: &'static str = "Test mode";
 
         fn settings(&self) -> ow_workshop::Settings {
             ow_workshop::Settings::unchecked()

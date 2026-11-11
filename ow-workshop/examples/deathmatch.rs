@@ -17,13 +17,8 @@ struct Players {
 struct Deathmatch;
 
 impl Workshop for Deathmatch {
-    fn mode_name(&self) -> &'static str {
-        "Deathmatch"
-    }
-
-    fn description(&self) -> &'static str {
-        "Score on every kill"
-    }
+    const NAME: &'static str = "Deathmatch";
+    const DESCRIPTION: &'static str = "Score on every kill";
 
     type Globals = Globals;
     type Players = Players;

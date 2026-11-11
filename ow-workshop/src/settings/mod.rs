@@ -123,8 +123,8 @@ fn replace<K: PartialEq, V>(entries: &mut Vec<(K, V)>, key: K, value: V) {
     }
 }
 
-/// The `main` section, filled from [`Workshop::mode_name`](crate::Workshop::mode_name) and
-/// [`Workshop::description`](crate::Workshop::description) when the mod is compiled.
+/// The `main` section, filled from [`Workshop::NAME`](crate::Workshop::NAME) and
+/// [`Workshop::DESCRIPTION`](crate::Workshop::DESCRIPTION) when the mod is compiled.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Main {
     pub(crate) mode_name: String,

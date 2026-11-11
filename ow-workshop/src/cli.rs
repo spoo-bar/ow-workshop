@@ -58,13 +58,8 @@ fn parse(
 /// struct MyMode;
 ///
 /// impl Workshop for MyMode {
-///     fn mode_name(&self) -> &'static str {
-///         "My Mode"
-///     }
-///
-///     fn description(&self) -> &'static str {
-///         "Made with ow-workshop"
-///     }
+///     const NAME: &'static str = "My Mode";
+///     const DESCRIPTION: &'static str = "Made with ow-workshop";
 ///
 ///     type Globals = ();
 ///     type Players = ();

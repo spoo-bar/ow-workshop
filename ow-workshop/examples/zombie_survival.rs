@@ -46,13 +46,8 @@ pub struct ZombieSurvival {
 }
 
 impl Workshop for ZombieSurvival {
-    fn mode_name(&self) -> &'static str {
-        "Zombie Survival"
-    }
-
-    fn description(&self) -> &'static str {
-        "Survive waves of zombies"
-    }
+    const NAME: &'static str = "Zombie Survival";
+    const DESCRIPTION: &'static str = "Survive waves of zombies";
 
     type Globals = Globals;
     type Players = Players;

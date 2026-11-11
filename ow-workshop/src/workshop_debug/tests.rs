@@ -195,13 +195,8 @@ fn registered_things_follow_the_variable_structs() {
     }
 
     impl Workshop for Mode {
-        fn mode_name(&self) -> &'static str {
-            "Test"
-        }
-
-        fn description(&self) -> &'static str {
-            "Test mode"
-        }
+        const NAME: &'static str = "Test";
+        const DESCRIPTION: &'static str = "Test mode";
 
         fn settings(&self) -> crate::settings::Settings {
             crate::settings::Settings::unchecked()

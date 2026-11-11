@@ -12,13 +12,8 @@ const FRENCH: &str = include_str!("data/custom_settings.fr.po");
 pub struct CustomSettings;
 
 impl Workshop for CustomSettings {
-    fn mode_name(&self) -> &'static str {
-        "Custom Settings"
-    }
-
-    fn description(&self) -> &'static str {
-        "Shows settings, workshop settings and translations"
-    }
+    const NAME: &'static str = "Custom Settings";
+    const DESCRIPTION: &'static str = "Shows settings, workshop settings and translations";
 
     type Globals = ();
     type Players = ();

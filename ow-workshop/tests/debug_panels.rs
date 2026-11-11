@@ -28,13 +28,8 @@ struct Mode {
 }
 
 impl Workshop for Mode {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     fn settings(&self) -> ow_workshop::Settings {
         ow_workshop::Settings::unchecked()
@@ -244,13 +239,8 @@ fn the_warning_can_be_suppressed() {
     struct Quiet(usize);
 
     impl Workshop for Quiet {
-        fn mode_name(&self) -> &'static str {
-            "Test"
-        }
-
-        fn description(&self) -> &'static str {
-            "Test mode"
-        }
+        const NAME: &'static str = "Test";
+        const DESCRIPTION: &'static str = "Test mode";
 
         fn settings(&self) -> ow_workshop::Settings {
             ow_workshop::Settings::unchecked()

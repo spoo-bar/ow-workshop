@@ -13,13 +13,8 @@ struct Globals {
 struct Mod(Settings);
 
 impl Workshop for Mod {
-    fn mode_name(&self) -> &'static str {
-        "Test"
-    }
-
-    fn description(&self) -> &'static str {
-        "Test mode"
-    }
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
 
     type Globals = Globals;
     type Players = ();
@@ -188,13 +183,8 @@ mod workshop_values {
     struct Values;
 
     impl Workshop for Values {
-        fn mode_name(&self) -> &'static str {
-            "Test"
-        }
-
-        fn description(&self) -> &'static str {
-            "Test mode"
-        }
+        const NAME: &'static str = "Test";
+        const DESCRIPTION: &'static str = "Test mode";
 
         fn settings(&self) -> ow_workshop::Settings {
             ow_workshop::Settings::unchecked()
@@ -259,13 +249,8 @@ mod workshop_values {
         struct Many;
 
         impl Workshop for Many {
-            fn mode_name(&self) -> &'static str {
-                "Test"
-            }
-
-            fn description(&self) -> &'static str {
-                "Test mode"
-            }
+            const NAME: &'static str = "Test";
+            const DESCRIPTION: &'static str = "Test mode";
 
             fn settings(&self) -> ow_workshop::Settings {
                 ow_workshop::Settings::unchecked()

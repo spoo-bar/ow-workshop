@@ -22,13 +22,8 @@ fn long_text() -> Expr<Str> {
 pub struct InGameChecklist;
 
 impl Workshop for InGameChecklist {
-    fn mode_name(&self) -> &'static str {
-        "In-Game Checklist"
-    }
-
-    fn description(&self) -> &'static str {
-        "Checks the mod in the game"
-    }
+    const NAME: &'static str = "In-Game Checklist";
+    const DESCRIPTION: &'static str = "Checks the mod in the game";
 
     type Globals = ();
     type Players = ();

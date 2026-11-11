@@ -9,13 +9,8 @@ use wasm_bindgen::prelude::wasm_bindgen;
 struct HelloWorld;
 
 impl Workshop for HelloWorld {
-    fn mode_name(&self) -> &'static str {
-        "My Mode"
-    }
-
-    fn description(&self) -> &'static str {
-        "Made with ow-workshop"
-    }
+    const NAME: &'static str = "My Mode";
+    const DESCRIPTION: &'static str = "Made with ow-workshop";
 
     type Globals = ();
     type Players = ();
