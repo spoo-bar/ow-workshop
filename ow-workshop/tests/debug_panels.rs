@@ -38,25 +38,34 @@ impl Workshop for Mode {
     type Globals = Globals;
     type Players = Players;
 
-    fn build(&self, ws: &mut Builder, g: &Globals, p: &Players) {
-        ws.rule("Run", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a Globals, p: &'a Players) -> Vec<RuleDef<'a>> {
+        mode_rules(self.filler, g, p)
+    }
+}
+
+fn mode_rules<'a>(filler: usize, g: &'a Globals, p: &'a Players) -> Vec<RuleDef<'a>> {
+    {
+        let mut defs = Vec::new();
+
+        defs.push(rule("Run", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 b.set(g.wave, 1);
                 b.set(g.state, "playing");
                 b.set(g.spawns, [1, 2, 3]);
             });
-        });
-        ws.rule("Score", OngoingEachPlayer, |r, ev| {
+        }));
+        defs.push(rule("Score", OngoingEachPlayer, |r, ev| {
             r.actions(|b| {
                 b.set(ev.event_player().var(p.kills), 0);
                 b.set(ev.event_player().var(p.alive), true);
             });
-        });
-        for i in 0..self.filler {
-            ws.rule(format!("Filler {i}"), OngoingGlobal, |r, _| {
+        }));
+        for i in 0..filler {
+            defs.push(rule(format!("Filler {i}"), OngoingGlobal, move |r, _| {
                 r.actions(|b| b.big_message(u32::try_from(i).expect("small")));
-            });
+            }));
         }
+        defs
     }
 }
 
@@ -249,8 +258,8 @@ fn the_warning_can_be_suppressed() {
         type Globals = Globals;
         type Players = Players;
 
-        fn build(&self, ws: &mut Builder, g: &Globals, p: &Players) {
-            Mode { filler: self.0 }.build(ws, g, p);
+        fn rules<'a>(&'a self, g: &'a Globals, p: &'a Players) -> Vec<RuleDef<'a>> {
+            mode_rules(self.0, g, p)
         }
 
         fn options(&self) -> CompileOptions {

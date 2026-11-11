@@ -13,25 +13,26 @@ impl Workshop for HelloWorld {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, (): &(), (): &()) {
-        ws.rule("Header", OngoingGlobal, |r, _| {
-            r.actions(|b| {
-                b.disable_inspector();
-                b.hud_header("Hello, Workshop!");
-            });
-        });
-
-        ws.rule("Welcome", OngoingEachPlayer, |r, ev| {
-            r.condition(ev.event_player().has_spawned());
-            r.actions(|b| {
-                b.small_message_with(
-                    ws_fmt!("Welcome, {}!", ev.event_player()),
-                    SmallMessageArgs {
-                        visible_to: ev.event_player().into(),
-                    },
-                );
-            });
-        });
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![
+            rule("Header", OngoingGlobal, |r, _| {
+                r.actions(|b| {
+                    b.disable_inspector();
+                    b.hud_header("Hello, Workshop!");
+                });
+            }),
+            rule("Welcome", OngoingEachPlayer, |r, ev| {
+                r.condition(ev.event_player().has_spawned());
+                r.actions(|b| {
+                    b.small_message_with(
+                        ws_fmt!("Welcome, {}!", ev.event_player()),
+                        SmallMessageArgs {
+                            visible_to: ev.event_player().into(),
+                        },
+                    );
+                });
+            }),
+        ]
     }
 
     fn settings(&self) -> Settings {

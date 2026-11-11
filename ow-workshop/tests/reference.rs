@@ -104,24 +104,26 @@ impl Workshop for Variables {
     type Globals = VarGlobals;
     type Players = VarPlayers;
 
-    fn build(&self, ws: &mut Builder, g: &VarGlobals, p: &VarPlayers) {
-        ws.rule("variables", OngoingEachPlayer, |r, ev| {
-            r.actions(|b| {
-                b.set(g.foo, g.bar.get() + g.a.get() + g.e.get());
-                let me = ev.event_player();
-                b.set(
-                    me.var(p.foo),
-                    me.var(p.bar).get() + me.var(p.a).get() + me.var(p.e).get(),
-                );
-            });
-        });
-        ws.rule("numbers", OngoingGlobal, |r, _| {
-            r.actions(|b| {
-                for n in [74940.0, -74940.0, -292.0, 74940.0, 292.0, 1e10] {
-                    b.set(g.a, n);
-                }
-            });
-        });
+    fn rules<'a>(&'a self, g: &'a VarGlobals, p: &'a VarPlayers) -> Vec<RuleDef<'a>> {
+        vec![
+            rule("variables", OngoingEachPlayer, move |r, ev| {
+                r.actions(|b| {
+                    b.set(g.foo, g.bar.get() + g.a.get() + g.e.get());
+                    let me = ev.event_player();
+                    b.set(
+                        me.var(p.foo),
+                        me.var(p.bar).get() + me.var(p.a).get() + me.var(p.e).get(),
+                    );
+                });
+            }),
+            rule("numbers", OngoingGlobal, move |r, _| {
+                r.actions(|b| {
+                    for n in [74940.0, -74940.0, -292.0, 74940.0, 292.0, 1e10] {
+                        b.set(g.a, n);
+                    }
+                });
+            }),
+        ]
     }
 
     fn options(&self) -> CompileOptions {
@@ -158,34 +160,48 @@ impl Workshop for Subroutines {
     type Globals = SubGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &SubGlobals, (): &()) {
-        let main_sub =
-            ws.declare_subroutine_with("foo", SubroutineOptions::new().rule_name("my subroutine"));
-        let bar = ws.declare_subroutine_with("bar", SubroutineOptions::new().index(1));
-        // Declared in this order: automatic indices follow declaration order here, where the
-        // reference allocated them alphabetically.
-        let sub0 = ws.declare_subroutine_with("Sub0", SubroutineOptions::new().index(0));
-        let with_wait = ws.declare_subroutine("sub_with_wait");
-        let nested = ws.declare_subroutine("sub_with_wait_nested");
+    fn rules<'a>(&'a self, g: &'a SubGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
 
-        ws.define(main_sub, |b, _| {
-            b.add_to(g.a, 1);
-            b.call(bar);
-            b.start_rule(sub0, StartRuleBehavior::Noop);
-            b.start_rule(nested, StartRuleBehavior::Noop);
-            b.comment("should throw warning");
-            b.start_rule(nested, StartRuleBehavior::Restart);
-        });
-        ws.define(bar, |b, _| b.pass());
-        ws.define(sub0, |b, _| b.add_to(g.b, 1));
-        ws.define(with_wait, |b, _| {
+        // Named in this order: automatic indices follow it here, where the reference allocated
+        // them alphabetically.
+        let main_sub = Sub::named("foo");
+        let bar = Sub::named("bar");
+        let sub0 = Sub::named("Sub0");
+        let with_wait = Sub::named("sub_with_wait");
+        let nested = Sub::named("sub_with_wait_nested");
+
+        defs.push(subroutine_with(
+            main_sub,
+            SubroutineOptions::new().rule_name("my subroutine"),
+            move |b, _| {
+                b.add_to(g.a, 1);
+                b.call(bar);
+                b.start_rule(sub0, StartRuleBehavior::Noop);
+                b.start_rule(nested, StartRuleBehavior::Noop);
+                b.comment("should throw warning");
+                b.start_rule(nested, StartRuleBehavior::Restart);
+            },
+        ));
+        defs.push(subroutine_with(
+            bar,
+            SubroutineOptions::new().index(1),
+            move |b, _| b.pass(),
+        ));
+        defs.push(subroutine_with(
+            sub0,
+            SubroutineOptions::new().index(0),
+            move |b, _| b.add_to(g.b, 1),
+        ));
+        defs.push(subroutine(with_wait, move |b, _| {
             b.set(g.a, 2);
             b.wait(0);
-        });
-        ws.define(nested, |b, _| {
+        }));
+        defs.push(subroutine(nested, move |b, _| {
             b.set(g.a, 3);
             b.call(with_wait);
-        });
+        }));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -238,56 +254,58 @@ impl Workshop for Switches {
     type Globals = SwitchGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &SwitchGlobals, (): &()) {
-        ws.rule("switches", OngoingGlobal, |r, _| {
-            r.actions(|b| {
-                b.switch::<Num>(g.a.get())
-                    .case(1, |b| {
-                        b.add_to(g.b, 1);
-                        b.break_();
-                    })
-                    .case(2, |b| {
-                        b.add_to(g.c, 1);
-                        b.break_();
-                    });
-                b.switch::<Any>(g.b.get().erase())
-                    .case(Expr::<Num>::from(1.0).erase(), |b| b.add_to(g.b, 1))
-                    .case(Expr::<Num>::from(2.0).erase(), |_| {})
-                    .case(Expr::<Num>::from(3.0).erase(), |b| b.add_to(g.c, 1))
-                    .default(|_| {})
-                    .case(IntoExpr::<Heroes>::into_expr(Hero::Brigitte).erase(), |b| {
-                        b.add_to(g.d, 1);
-                    });
-            });
-        });
-        ws.rule("nested switches", OngoingGlobal, |r, _| {
-            r.actions(|b| {
-                b.if_(g.a.get().erase().cast::<Bool>(), |b| {
-                    b.switch::<Num>(g.b.get())
+    fn rules<'a>(&'a self, g: &'a SwitchGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![
+            rule("switches", OngoingGlobal, move |r, _| {
+                r.actions(|b| {
+                    b.switch::<Num>(g.a.get())
                         .case(1, |b| {
-                            b.add_to(g.c, 1);
+                            b.add_to(g.b, 1);
                             b.break_();
                         })
                         .case(2, |b| {
-                            b.add_to(g.d, 1);
+                            b.add_to(g.c, 1);
                             b.break_();
-                        })
-                        .case(3, |b| {
-                            b.switch::<Num>(g.c.get())
-                                .case(1, |b| {
-                                    b.add_to(g.a, 1);
-                                    b.add_to(g.b, 1);
-                                    b.break_();
-                                })
-                                .case(2, |b| b.add_to(g.c, 1))
-                                .default(|b| {
-                                    b.add_to(g.d, 1);
-                                });
                         });
-                })
-                .else_(|b| b.add_to(g.e, 1));
-            });
-        });
+                    b.switch::<Any>(g.b.get().erase())
+                        .case(Expr::<Num>::from(1.0).erase(), |b| b.add_to(g.b, 1))
+                        .case(Expr::<Num>::from(2.0).erase(), |_| {})
+                        .case(Expr::<Num>::from(3.0).erase(), |b| b.add_to(g.c, 1))
+                        .default(|_| {})
+                        .case(IntoExpr::<Heroes>::into_expr(Hero::Brigitte).erase(), |b| {
+                            b.add_to(g.d, 1);
+                        });
+                });
+            }),
+            rule("nested switches", OngoingGlobal, move |r, _| {
+                r.actions(|b| {
+                    b.if_(g.a.get().erase().cast::<Bool>(), |b| {
+                        b.switch::<Num>(g.b.get())
+                            .case(1, |b| {
+                                b.add_to(g.c, 1);
+                                b.break_();
+                            })
+                            .case(2, |b| {
+                                b.add_to(g.d, 1);
+                                b.break_();
+                            })
+                            .case(3, |b| {
+                                b.switch::<Num>(g.c.get())
+                                    .case(1, |b| {
+                                        b.add_to(g.a, 1);
+                                        b.add_to(g.b, 1);
+                                        b.break_();
+                                    })
+                                    .case(2, |b| b.add_to(g.c, 1))
+                                    .default(|b| {
+                                        b.add_to(g.d, 1);
+                                    });
+                            });
+                    })
+                    .else_(|b| b.add_to(g.e, 1));
+                });
+            }),
+        ]
     }
 
     fn options(&self) -> CompileOptions {
@@ -344,101 +362,103 @@ impl Workshop for Conditions {
     type Globals = CondGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, v: &CondGlobals, (): &()) {
-        ws.rule("if/else", OngoingGlobal, |r, _| {
-            r.actions(|b| {
-                b.if_(v.a.get().eq(v.b.get()), |b| b.add_to(v.a, 1))
-                    .else_(|b| b.add_to(v.b, 1));
-                b.add_to(v.c, 1);
-            });
-        });
-        ws.rule("if/elif/else", OngoingGlobal, |r, _| {
-            r.actions(|b| {
-                b.if_(v.a.get().eq(v.b.get()), |b| b.add_to(v.a, 1))
-                    .elif(v.b.get().eq(v.c.get()), |b| b.add_to(v.b, 1))
-                    .elif(v.c.get().eq(v.d.get()), |b| b.add_to(v.c, 1))
-                    .else_(|b| b.add_to(v.d, 1));
-                b.add_to(v.e, 1);
-            });
-        });
-        ws.rule("nested if/elif/else", OngoingGlobal, |r, _| {
-            r.actions(|b| {
-                b.if_(v.a.get().eq(v.b.get()), |b| {
-                    b.add_to(v.a, 1);
-                    b.if_(v.b.get().eq(v.c.get()), |b| b.add_to(v.b, 1))
+    fn rules<'a>(&'a self, v: &'a CondGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![
+            rule("if/else", OngoingGlobal, move |r, _| {
+                r.actions(|b| {
+                    b.if_(v.a.get().eq(v.b.get()), |b| b.add_to(v.a, 1))
+                        .else_(|b| b.add_to(v.b, 1));
+                    b.add_to(v.c, 1);
+                });
+            }),
+            rule("if/elif/else", OngoingGlobal, move |r, _| {
+                r.actions(|b| {
+                    b.if_(v.a.get().eq(v.b.get()), |b| b.add_to(v.a, 1))
+                        .elif(v.b.get().eq(v.c.get()), |b| b.add_to(v.b, 1))
                         .elif(v.c.get().eq(v.d.get()), |b| b.add_to(v.c, 1))
                         .else_(|b| b.add_to(v.d, 1));
-                })
-                .elif(v.b.get().eq(v.c.get()), |b| b.add_to(v.b, 1))
-                .else_(|b| b.add_to(v.c, 1));
-                b.add_to(v.d, 1);
-            });
-        });
-        ws.rule(
-            "optimized out empty ifs & if/elif false/true",
-            OngoingGlobal,
-            |r, _| {
-                r.actions(|b| {
-                    b.if_(false, |b| {
-                        b.set(v.a, 2);
-                        b.set(v.a, 2);
-                    });
-                    b.if_(true, |b| {
-                        b.set(v.a, 2);
-                        b.set(v.a, 2);
-                    });
-                    b.set(v.b, 3);
-                    b.if_(false, |b| b.set(v.b, 5)).else_(|b| {
-                        b.set(v.c, 6);
-                        b.if_(true, |b| b.add_to(v.d, 1))
-                            .else_(|b| b.add_to(v.e, 1));
-                    });
-
-                    b.if_(true, |b| b.set(v.a, 2))
-                        .elif(truthy(v.a), |b| b.set(v.a, 3));
-                    b.set(v.b, 4);
-                    b.if_(false, |b| b.set(v.b, 5))
-                        .elif(truthy(v.a), |b| b.set(v.b, 6))
-                        .elif(false, |b| b.add_to(v.h, 1))
-                        .else_(|b| b.add_to(v.k, 1));
-
-                    b.if_(false, |b| b.add_to(v.b, 1))
-                        .elif(false, |b| b.add_to(v.c, 1))
-                        .elif(true, |b| b.add_to(v.d, 1));
-
-                    b.if_(truthy(v.a), |b| b.add_to(v.b, 1))
-                        .elif(truthy(v.c), |b| b.add_to(v.d, 1))
-                        .elif(true, |b| b.add_to(v.e, 1))
-                        .elif(truthy(v.f), |b| b.add_to(v.g, 1));
-
-                    b.set(v.c, 4);
-                    b.if_(false, |b| b.set(v.b, 4));
-                    b.if_(false, |_| {});
-                    b.set(v.a, 3);
-                    b.if_(truthy(v.g), |_| {});
+                    b.add_to(v.e, 1);
                 });
-            },
-        );
-        ws.rule(
-            "optimized out empty if at end of rule",
-            OngoingGlobal,
-            |r, _| {
+            }),
+            rule("nested if/elif/else", OngoingGlobal, move |r, _| {
                 r.actions(|b| {
-                    b.add_to(v.a, 1);
-                    b.if_(truthy(v.b), |b| b.set(v.a, v.a.get()));
+                    b.if_(v.a.get().eq(v.b.get()), |b| {
+                        b.add_to(v.a, 1);
+                        b.if_(v.b.get().eq(v.c.get()), |b| b.add_to(v.b, 1))
+                            .elif(v.c.get().eq(v.d.get()), |b| b.add_to(v.c, 1))
+                            .else_(|b| b.add_to(v.d, 1));
+                    })
+                    .elif(v.b.get().eq(v.c.get()), |b| b.add_to(v.b, 1))
+                    .else_(|b| b.add_to(v.c, 1));
+                    b.add_to(v.d, 1);
                 });
-            },
-        );
-        ws.rule(
-            "optimized out elif false at end of rule",
-            OngoingGlobal,
-            |r, _| {
-                r.actions(|b| {
-                    b.if_(false, |b| b.set(v.a, 1))
-                        .elif(false, |b| b.set(v.a, 2));
-                });
-            },
-        );
+            }),
+            rule(
+                "optimized out empty ifs & if/elif false/true",
+                OngoingGlobal,
+                move |r, _| {
+                    r.actions(|b| {
+                        b.if_(false, |b| {
+                            b.set(v.a, 2);
+                            b.set(v.a, 2);
+                        });
+                        b.if_(true, |b| {
+                            b.set(v.a, 2);
+                            b.set(v.a, 2);
+                        });
+                        b.set(v.b, 3);
+                        b.if_(false, |b| b.set(v.b, 5)).else_(|b| {
+                            b.set(v.c, 6);
+                            b.if_(true, |b| b.add_to(v.d, 1))
+                                .else_(|b| b.add_to(v.e, 1));
+                        });
+
+                        b.if_(true, |b| b.set(v.a, 2))
+                            .elif(truthy(v.a), |b| b.set(v.a, 3));
+                        b.set(v.b, 4);
+                        b.if_(false, |b| b.set(v.b, 5))
+                            .elif(truthy(v.a), |b| b.set(v.b, 6))
+                            .elif(false, |b| b.add_to(v.h, 1))
+                            .else_(|b| b.add_to(v.k, 1));
+
+                        b.if_(false, |b| b.add_to(v.b, 1))
+                            .elif(false, |b| b.add_to(v.c, 1))
+                            .elif(true, |b| b.add_to(v.d, 1));
+
+                        b.if_(truthy(v.a), |b| b.add_to(v.b, 1))
+                            .elif(truthy(v.c), |b| b.add_to(v.d, 1))
+                            .elif(true, |b| b.add_to(v.e, 1))
+                            .elif(truthy(v.f), |b| b.add_to(v.g, 1));
+
+                        b.set(v.c, 4);
+                        b.if_(false, |b| b.set(v.b, 4));
+                        b.if_(false, |_| {});
+                        b.set(v.a, 3);
+                        b.if_(truthy(v.g), |_| {});
+                    });
+                },
+            ),
+            rule(
+                "optimized out empty if at end of rule",
+                OngoingGlobal,
+                move |r, _| {
+                    r.actions(|b| {
+                        b.add_to(v.a, 1);
+                        b.if_(truthy(v.b), |b| b.set(v.a, v.a.get()));
+                    });
+                },
+            ),
+            rule(
+                "optimized out elif false at end of rule",
+                OngoingGlobal,
+                move |r, _| {
+                    r.actions(|b| {
+                        b.if_(false, |b| b.set(v.a, 1))
+                            .elif(false, |b| b.set(v.a, 2));
+                    });
+                },
+            ),
+        ]
     }
 
     fn options(&self) -> CompileOptions {
@@ -494,9 +514,11 @@ impl Workshop for OperatorsStrict {
     type Globals = OpGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &OpGlobals, (): &()) {
+    fn rules<'a>(&'a self, g: &'a OpGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let b = || g.b.get();
-        ws.rule("strict optimizations", OngoingGlobal, |r, _| {
+        defs.push(rule("strict optimizations", OngoingGlobal, move |r, _| {
             r.actions(|bl| {
                 bl.comment("Unless specified otherwise, none of these should be optimized");
                 put(bl, g.a, Expr::<Str>::from("am").eq("**"));
@@ -515,7 +537,8 @@ impl Workshop for OperatorsStrict {
                 put(bl, g.a, b().or(true));
                 put(bl, g.a, b().or(!b().erase().cast::<Bool>()));
             });
-        });
+        }));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -552,10 +575,12 @@ impl Workshop for Operators {
     type Globals = OpGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &OpGlobals, (): &()) {
+    fn rules<'a>(&'a self, g: &'a OpGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let (a, b, c, d) = (|| g.a.get(), || g.b.get(), || g.c.get(), || g.d.get());
         let hero = || IntoExpr::<Heroes>::into_expr(Hero::Ana).erase();
-        ws.rule("comparison", OngoingGlobal, |r, _| {
+        defs.push(rule("comparison", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, b().eq(c()));
                 put_c(x, g.a, "false", n(1).eq(0));
@@ -612,8 +637,8 @@ impl Workshop for Operators {
                 put_c(x, g.a, "false", n(1).lt(0));
                 put_c(x, g.a, "false", b().lt(b()));
             });
-        });
-        ws.rule("add", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("add", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, b() + c());
                 put_c(x, g.a, "B", b() + 0);
@@ -638,8 +663,8 @@ impl Workshop for Operators {
                     vector_right() + vector_up() + vector_forward(),
                 );
             });
-        });
-        ws.rule("subtract", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("subtract", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, b() - c());
                 put(x, g.a, b() - c() - d());
@@ -650,8 +675,8 @@ impl Workshop for Operators {
                 put(x, g.a, vect(b(), c(), d()) - vect(1, 2, 3));
                 put_c(x, g.a, "vect(-3,-3,-3)", vect(1, 2, 3) - vect(4, 5, 6));
             });
-        });
-        ws.rule("negate", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("negate", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, -b());
                 put(x, g.a, -b() % c());
@@ -669,8 +694,8 @@ impl Workshop for Operators {
                 put(x, g.a, !truth(-c()));
                 put(x, g.a, b() * -c());
             });
-        });
-        ws.rule("multiply", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("multiply", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, b() * c());
                 put_c(x, g.a, "B", b() * 1);
@@ -681,8 +706,8 @@ impl Workshop for Operators {
                 put_c(x, g.a, "vect(6,8,10)", vect(3, 4, 5) * 2);
                 put_c(x, g.a, "vect(4,10,18)", vect(1, 2, 3) * vect(4, 5, 6));
             });
-        });
-        ws.rule("divide", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("divide", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, b() / c());
                 put_c(x, g.a, "B", b() / 1);
@@ -693,8 +718,8 @@ impl Workshop for Operators {
                 put_c(x, g.a, "vect(3,1.5,1)", vect(3, 3, 3) / vect(1, 2, 3));
                 put_c(x, g.a, "vect(0.5,1,1.5)", vect(1, 2, 3) / 2);
             });
-        });
-        ws.rule("modulo", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("modulo", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, b() % c());
                 put_c(x, g.a, "0", b() % 0);
@@ -705,8 +730,8 @@ impl Workshop for Operators {
                 put_c(x, g.a, "-1", n(-7) % -3);
                 put_c(x, g.a, "1", n(7) % -3);
             });
-        });
-        ws.rule("power", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("power", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, b().pow(c()));
                 put(x, g.a, b().pow(c().pow(d())));
@@ -717,8 +742,8 @@ impl Workshop for Operators {
                 put_c(x, g.a, "8", n(2).pow(3));
                 put_c(x, g.a, "0", n(-2).pow(3));
             });
-        });
-        ws.rule("and", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("and", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, a().and(b()));
                 put_c(x, g.a, "B", b().and(true));
@@ -727,8 +752,8 @@ impl Workshop for Operators {
                 put_c(x, g.a, "false", b().and(!truth(b())));
                 put_c(x, g.a, "not (B or C)", (!truth(b())).and(!truth(c())));
             });
-        });
-        ws.rule("or", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("or", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, a().or(b()));
                 put_c(x, g.a, "B", b().or(b()));
@@ -737,8 +762,8 @@ impl Workshop for Operators {
                 put_c(x, g.a, "true", b().or(!truth(b())));
                 put_c(x, g.a, "not (B and C)", (!truth(b())).or(!truth(c())));
             });
-        });
-        ws.rule("not", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("not", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, !truth(b()));
                 put_c(x, g.a, "not not B", !!truth(b()));
@@ -753,8 +778,8 @@ impl Workshop for Operators {
                 put_c(x, g.a, "B >= C", !b().lt(c()));
                 put_c(x, g.a, "B <= C", !b().gt(c()));
             });
-        });
-        ws.rule("in", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("in", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, b().erase().cast::<Array<Any>>().contains(a()));
                 put_c(
@@ -772,8 +797,8 @@ impl Workshop for Operators {
                 );
                 put(x, g.a, !c().erase().cast::<Array<Any>>().contains(b()));
             });
-        });
-        ws.rule("ternaries", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("ternaries", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 put(x, g.a, if_then_else(truth(c()), b(), d()));
                 put_c(x, g.a, "B", if_then_else(true, b(), d()));
@@ -792,7 +817,8 @@ impl Workshop for Operators {
                     if_then_else(false, b(), if_then_else(false, c(), d())),
                 );
             });
-        });
+        }));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -841,9 +867,11 @@ impl Workshop for OperatorsAssign {
     type Globals = AssignGlobals;
     type Players = AssignPlayers;
 
-    fn build(&self, ws: &mut Builder, g: &AssignGlobals, p: &AssignPlayers) {
+    fn rules<'a>(&'a self, g: &'a AssignGlobals, p: &'a AssignPlayers) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let b = || arr(g.b.get());
-        ws.rule("assignment", OngoingEachPlayer, |r, ev| {
+        defs.push(rule("assignment", OngoingEachPlayer, move |r, ev| {
             r.actions(|x| {
                 let me = ev.event_player();
                 x.set(g.a, b());
@@ -864,17 +892,22 @@ impl Workshop for OperatorsAssign {
                 x.add_to(g.a, arr(n(1)));
                 x.sub_from(g.a, arr(n(1)));
             });
-        });
-        ws.rule("handling random values", OngoingGlobal, |r, _| {
-            let pick = || random::choice(all_players()).erase().cast::<Player>();
-            r.actions(|x| {
-                x.add_to(pick().var(p.a), arr(n(0)));
-                x.add_to(pick().var(p.a), arr(n(1)));
-                let current = pick().var(p.a).get().erase().cast::<Num>();
-                x.set(pick().var(p.a), arr(current + 1));
-                x.max_with(pick().var(p.a), b());
-            });
-        });
+        }));
+        defs.push(rule(
+            "handling random values",
+            OngoingGlobal,
+            move |r, _| {
+                let pick = || random::choice(all_players()).erase().cast::<Player>();
+                r.actions(|x| {
+                    x.add_to(pick().var(p.a), arr(n(0)));
+                    x.add_to(pick().var(p.a), arr(n(1)));
+                    let current = pick().var(p.a).get().erase().cast::<Num>();
+                    x.set(pick().var(p.a), arr(current + 1));
+                    x.max_with(pick().var(p.a), b());
+                });
+            },
+        ));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -944,7 +977,9 @@ impl Workshop for ElementSaving {
     type Globals = EsGlobals;
     type Players = EsPlayers;
 
-    fn build(&self, ws: &mut Builder, g: &EsGlobals, p: &EsPlayers) {
+    fn rules<'a>(&'a self, g: &'a EsGlobals, p: &'a EsPlayers) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let (a, b, c) = (|| g.a.get(), || g.b.get(), || g.c.get());
         let player_b = || as_::<Player>(g.b.get());
         let any = |v: i32| Expr::<Num>::from(v).erase();
@@ -956,7 +991,7 @@ impl Workshop for ElementSaving {
             spec_visibility: SpecVisibility::Always.into(),
             ..HudArgs::default()
         };
-        ws.rule("0 to null", OngoingGlobal, |r, _| {
+        defs.push(rule("0 to null", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 set_a(x, g, b().gt(0));
                 set_a(x, g, n(0).gt(b()));
@@ -980,8 +1015,8 @@ impl Workshop for ElementSaving {
                 x.set(player_b().var(p.a), 0);
                 x.small_message(0);
             });
-        });
-        ws.rule("0 to false", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("0 to false", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 set_a(x, g, max(0, b()));
                 set_a(x, g, max(b(), 0));
@@ -1010,8 +1045,8 @@ impl Workshop for ElementSaving {
                 x.wait(0.016);
                 x.wait(0);
             });
-        });
-        ws.rule("1 to true", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("1 to true", OngoingGlobal, move |r, _| {
             r.condition(b().gt(1))
                 .comment("should not be changed, inequalities with true/false no longer work");
             r.condition(n(1).gt(b()));
@@ -1060,8 +1095,8 @@ impl Workshop for ElementSaving {
                 x.for_range(player_b().var(p.a), range(1, 1).step(1), |_| {});
                 x.wait(1);
             });
-        });
-        ws.rule("null vector to null", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("null vector to null", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 let facing = as_::<Direction>(vect(0, 0, 0).erase().cast::<Num>());
                 x.create_dummy_with(
@@ -1072,8 +1107,8 @@ impl Workshop for ElementSaving {
                     CreateDummyArgs { facing },
                 );
             });
-        });
-        ws.rule("empty string", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("empty string", OngoingGlobal, move |r, _| {
             let (bs, cs) = (|| as_::<Str>(b()), || as_::<Str>(c()));
             let empty = || Expr::<Str>::from("");
             r.actions(|x| {
@@ -1105,8 +1140,8 @@ impl Workshop for ElementSaving {
                 set_a(x, g, str_contains(bs(), ""));
                 set_a(x, g, empty());
             });
-        });
-        ws.rule("if to skip if", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("if to skip if", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.comment("should be skip if");
                 x.if_(a().eq(b()), |x| x.set(g.d, 4));
@@ -1130,44 +1165,50 @@ impl Workshop for ElementSaving {
                 x.comment("should stay if");
                 x.if_(a().eq(b()), |x| x.set(g.d, 4));
             });
-        });
-        ws.rule("auto array compression", OngoingGlobal, |r, _| {
-            let items = |v: Vec<Expr<Num>>| Expr::<Array<Num>>::from(v);
-            r.actions(|x| {
-                x.comment("shouldn't be compressed");
-                set_a(
-                    x,
-                    g,
-                    items(vec![b(), b(), b(), b(), b(), b(), b(), b(), c()]),
-                );
-                x.comment("shouldn't be compressed, can't nest mapped arrays");
-                set_a(
-                    x,
-                    g,
-                    as_::<Array<Num>>(b()).map(|e, _| {
-                        e.erase().cast::<Vector>() + items(vec![c(); 7]).erase().cast::<Vector>()
-                    }),
-                );
-                x.comment("should be compressed");
-                set_a(x, g, items(vec![b(); 9]));
-                set_a(
-                    x,
-                    g,
-                    IntoExpr::<Array<Str>>::into_expr(["abc", "def", "ghi"]),
-                );
-                x.comment("shouldn't be compressed");
-                let tail = ws_fmt!("ghi{}", b());
-                set_a(
-                    x,
-                    g,
-                    Expr::<Array<Str>>::from(vec![
-                        Expr::<Str>::from("abc"),
-                        Expr::<Str>::from("def"),
-                        tail,
-                    ]),
-                );
-            });
-        });
+        }));
+        defs.push(rule(
+            "auto array compression",
+            OngoingGlobal,
+            move |r, _| {
+                let items = |v: Vec<Expr<Num>>| Expr::<Array<Num>>::from(v);
+                r.actions(|x| {
+                    x.comment("shouldn't be compressed");
+                    set_a(
+                        x,
+                        g,
+                        items(vec![b(), b(), b(), b(), b(), b(), b(), b(), c()]),
+                    );
+                    x.comment("shouldn't be compressed, can't nest mapped arrays");
+                    set_a(
+                        x,
+                        g,
+                        as_::<Array<Num>>(b()).map(|e, _| {
+                            e.erase().cast::<Vector>()
+                                + items(vec![c(); 7]).erase().cast::<Vector>()
+                        }),
+                    );
+                    x.comment("should be compressed");
+                    set_a(x, g, items(vec![b(); 9]));
+                    set_a(
+                        x,
+                        g,
+                        IntoExpr::<Array<Str>>::into_expr(["abc", "def", "ghi"]),
+                    );
+                    x.comment("shouldn't be compressed");
+                    let tail = ws_fmt!("ghi{}", b());
+                    set_a(
+                        x,
+                        g,
+                        Expr::<Array<Str>>::from(vec![
+                            Expr::<Str>::from("abc"),
+                            Expr::<Str>::from("def"),
+                            tail,
+                        ]),
+                    );
+                });
+            },
+        ));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -1208,10 +1249,12 @@ impl Workshop for ElementSavingIndex {
     type Globals = EsIndexGlobals;
     type Players = EsIndexPlayers;
 
-    fn build(&self, ws: &mut Builder, g: &EsIndexGlobals, p: &EsIndexPlayers) {
+    fn rules<'a>(&'a self, g: &'a EsIndexGlobals, p: &'a EsIndexPlayers) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let player_b = || as_::<Player>(g.b.get());
         for (name, index) in [("0 to null", 0), ("0 to false", 0), ("1 to true", 1)] {
-            ws.rule(name, OngoingGlobal, |r, _| {
+            defs.push(rule(name, OngoingGlobal, move |r, _| {
                 r.actions(|x| {
                     if name == "0 to null" {
                         x.set(g.a.at(g.b.get()), 0);
@@ -1221,8 +1264,9 @@ impl Workshop for ElementSavingIndex {
                         x.set(player_b().var(p.a).at(index), g.c.get());
                     }
                 });
-            });
+            }));
         }
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -1271,8 +1315,8 @@ impl Workshop for Dicts {
     type Globals = DictGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &DictGlobals, (): &()) {
-        ws.rule("dicts", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a DictGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("dicts", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 let table = || {
                     dict::<Any, Num, _, _>([
@@ -1286,7 +1330,7 @@ impl Workshop for Dicts {
                 x.comment("2");
                 x.set(g.a, table().get(Expr::<Hero>::from(Hero::Pharah).erase()));
             });
-        });
+        })]
     }
 
     fn options(&self) -> CompileOptions {
@@ -1342,8 +1386,8 @@ impl Workshop for BuiltinEnums {
     type Globals = EnumGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &EnumGlobals, (): &()) {
-        ws.rule("enums", OngoingEachPlayer, |r, ev| {
+    fn rules<'a>(&'a self, g: &'a EnumGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("enums", OngoingEachPlayer, move |r, ev| {
             let me = ev.event_player();
             r.condition(me.is_holding_button(Button::Interact));
             r.condition(truth(g.a.get()));
@@ -1372,7 +1416,7 @@ impl Workshop for BuiltinEnums {
                 put(x, g.k, Expr::<Color>::from(Color::Blue));
                 put(x, g.s, Expr::<Str>::from(math::LOTS_OF_SPACES));
             });
-        });
+        })]
     }
 
     fn options(&self) -> CompileOptions {
@@ -1408,9 +1452,11 @@ impl Workshop for BuiltinMacros {
     type Globals = MacroGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &MacroGlobals, (): &()) {
+    fn rules<'a>(&'a self, g: &'a MacroGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         for name in ["splitDictArray", "tabular"] {
-            ws.rule(name, OngoingGlobal, |r, _| {
+            defs.push(rule(name, OngoingGlobal, move |r, _| {
                 r.actions(|x| {
                     x.columns(
                         (g.wave_heroes, g.wave_lengths),
@@ -1421,8 +1467,9 @@ impl Workshop for BuiltinMacros {
                         ],
                     );
                 });
-            });
+            }));
         }
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -1460,12 +1507,14 @@ impl Workshop for GetCurrentMap {
     type Globals = MapGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &MapGlobals, (): &()) {
+    fn rules<'a>(&'a self, g: &'a MapGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let map = |m: Map| Expr::<Map>::from(m);
-        ws.rule(
+        defs.push(rule(
             "test current map workaround for colosseo/esperança/samoa",
             OngoingGlobal,
-            |r, _| {
+            move |r, _| {
                 r.actions(|x| {
                     x.set(g.a, current_map());
                     x.set(g.b, g.a.get().eq(map(Map::Samoa)));
@@ -1475,7 +1524,8 @@ impl Workshop for GetCurrentMap {
                     x.set(g.c, map(Map::Colosseo).eq(current_map()));
                 });
             },
-        );
+        ));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -1514,39 +1564,46 @@ impl Workshop for EventVars {
     type Globals = EventGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &EventGlobals, (): &()) {
-        let ep_sub2 = ws.declare_subroutine("epSub2");
-        let ep_sub = ws.declare_subroutine("epSub");
-        let global_sub = ws.declare_subroutine("globalSub");
-        let actually_ep_sub = ws.declare_subroutine("actuallyEpSub");
-        let recursion2 = ws.declare_subroutine("recursion2");
-        let recursion1 = ws.declare_subroutine("recursion1");
+    fn rules<'a>(&'a self, g: &'a EventGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
 
-        ws.define(ep_sub2, |b, ev| put(b, g.a, ev.event_player()));
-        ws.define(ep_sub, |b, ev| put(b, g.a, ev.event_player()));
-        ws.define(global_sub, |b, _| b.call(ep_sub2));
-        ws.define(actually_ep_sub, |b, _| b.call(ep_sub2));
-        ws.define(recursion1, |b, _| b.call(recursion2));
-        ws.define(recursion2, |b, ev| {
+        let ep_sub2 = Sub::named("epSub2");
+        let ep_sub = Sub::named("epSub");
+        let global_sub = Sub::named("globalSub");
+        let actually_ep_sub = Sub::named("actuallyEpSub");
+        let recursion2 = Sub::named("recursion2");
+        let recursion1 = Sub::named("recursion1");
+
+        defs.push(subroutine(ep_sub2, move |b, ev| {
+            put(b, g.a, ev.event_player());
+        }));
+        defs.push(subroutine(ep_sub, move |b, ev| {
+            put(b, g.a, ev.event_player());
+        }));
+        defs.push(subroutine(global_sub, move |b, _| b.call(ep_sub2)));
+        defs.push(subroutine(actually_ep_sub, move |b, _| b.call(ep_sub2)));
+        defs.push(subroutine(recursion1, move |b, _| b.call(recursion2)));
+        defs.push(subroutine(recursion2, move |b, ev| {
             put(b, g.a, ev.event_damage());
             b.call(recursion1);
-        });
-        ws.rule("global", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("global", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.comment("should throw warning");
                 x.call(ep_sub);
                 x.comment("should also throw warning");
                 x.call(global_sub);
             });
-        });
-        ws.rule("ep", OngoingEachPlayer, |r, _| {
+        }));
+        defs.push(rule("ep", OngoingEachPlayer, move |r, _| {
             r.actions(|x| {
                 x.comment("should not throw warning");
                 x.call(actually_ep_sub);
                 x.comment("should throw warning");
                 x.call(recursion1);
             });
-        });
+        }));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -1630,7 +1687,9 @@ impl Workshop for Arrays {
     type Globals = ArrayGlobals;
     type Players = ArrayPlayers;
 
-    fn build(&self, ws: &mut Builder, g: &ArrayGlobals, p: &ArrayPlayers) {
+    fn rules<'a>(&'a self, g: &'a ArrayGlobals, p: &'a ArrayPlayers) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let (a, b, c, d, e) = (
             || g.a.get().erase(),
             || g.b.get(),
@@ -1649,7 +1708,7 @@ impl Workshop for Arrays {
         let num = |e: Expr<Any>| e.cast::<Num>();
         let players = all_players;
         let health_is_two = |pl: Expr<Player>, _: Expr<Num>| pl.var(p.a).get().eq(2);
-        ws.rule("array literals", OngoingGlobal, |r, _| {
+        defs.push(rule("array literals", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.comment("empty array");
                 set_a(x, items(vec![]));
@@ -1675,15 +1734,15 @@ impl Workshop for Arrays {
                 );
                 x.set(g.a.at(0), as_array(b()).get(0));
             });
-        });
-        ws.rule("last", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("last", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 sa!(x, as_array(b()).last());
                 x.comment("D");
                 sa!(x, items(vec![b(), c(), d()]).last());
             });
-        });
-        ws.rule("filtered array", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("filtered array", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 sa!(x, players().filter(health_is_two));
                 sa!(
@@ -1706,15 +1765,15 @@ impl Workshop for Arrays {
                         .map(|pl, _| pl.health())
                 );
             });
-        });
-        ws.rule("mapped array", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("mapped array", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 sa!(x, players().map(|pl, _| pl.health()));
                 x.comment("getAllPlayers()");
                 sa!(x, players().map(|pl, _| pl));
             });
-        });
-        ws.rule("index", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("index", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 sa!(x, as_array(b()).index_of(3));
                 x.comment("[A,B].index(B)");
@@ -1730,8 +1789,8 @@ impl Workshop for Arrays {
                 x.comment("should not be optimized");
                 sa!(x, items(vec![any(1), any(2), any(3), b()]).index_of(123));
             });
-        });
-        ws.rule("slice", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("slice", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 sa!(x, as_array(b()).slice(1, 3));
                 for (start, count, note) in [
@@ -1746,8 +1805,8 @@ impl Workshop for Arrays {
                     sa!(x, numbers(&[1, 2, 3, 4, 5]).slice(start, count));
                 }
             });
-        });
-        ws.rule("in", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("in", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.comment("true");
                 sa!(x, items(vec![any(432), c(), any(123), b()]).contains(123));
@@ -1763,8 +1822,8 @@ impl Workshop for Arrays {
                     items(vec![any(432), any(643), b(), any(124)]).contains(123)
                 );
             });
-        });
-        ws.rule("exclude", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("exclude", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 sa!(x, as_array(b()).without(3));
                 x.comment("should not be optimized");
@@ -1778,8 +1837,8 @@ impl Workshop for Arrays {
                 x.comment("[2,3].exclude([D])");
                 sa!(x, numbers(&[1, 2, 3]).exclude(items(vec![any(1), d()])));
             });
-        });
-        ws.rule("concat", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("concat", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 sa!(x, as_array(b()).with(2));
                 x.comment("[B,C,123]");
@@ -1789,8 +1848,8 @@ impl Workshop for Arrays {
                 x.comment("[B,C,D,E]");
                 sa!(x, items(vec![b(), c()]).concat(items(vec![d(), e()])));
             });
-        });
-        ws.rule("other array functions", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("other array functions", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 sa!(x, players().map(health_is_two).all_true());
                 sa!(x, players().map(health_is_two).any_true());
@@ -1818,42 +1877,46 @@ impl Workshop for Arrays {
                 sa!(x, items(vec![g.x.get(), g.y.get(), g.z.get()]).reversed());
                 sa!(x, as_array(b()).reversed());
             });
-        });
-        ws.rule("member array functions", OngoingGlobal, |r, _| {
-            r.actions(|x| {
-                let empty = || items(vec![]);
-                sa!(x, players().all(health_is_two));
-                sa!(x, players().all_true());
-                x.comment("true");
-                sa!(x, players().all(|_, _| true.into()));
-                x.comment("len(getAllPlayers()) == 0    =>    not len(getAllPlayers())");
-                sa!(x, players().all(|_, _| false.into()));
-                x.comment("true");
-                sa!(x, empty().all(|_, _| false.into()));
-                x.comment("true");
-                sa!(x, empty().all(|e, _| num(e).gt(2)));
+        }));
+        defs.push(rule(
+            "member array functions",
+            OngoingGlobal,
+            move |r, _| {
+                r.actions(|x| {
+                    let empty = || items(vec![]);
+                    sa!(x, players().all(health_is_two));
+                    sa!(x, players().all_true());
+                    x.comment("true");
+                    sa!(x, players().all(|_, _| true.into()));
+                    x.comment("len(getAllPlayers()) == 0    =>    not len(getAllPlayers())");
+                    sa!(x, players().all(|_, _| false.into()));
+                    x.comment("true");
+                    sa!(x, empty().all(|_, _| false.into()));
+                    x.comment("true");
+                    sa!(x, empty().all(|e, _| num(e).gt(2)));
 
-                sa!(x, players().any(health_is_two));
-                sa!(x, players().any_true());
-                x.comment("false");
-                sa!(x, players().any(|_, _| false.into()));
-                x.comment("len(getAllPlayers()) > 0");
-                sa!(x, players().any(|_, _| true.into()));
-                x.comment("false");
-                sa!(x, empty().any(|_, _| true.into()));
-                x.comment("false");
-                sa!(x, empty().any(|e, _| num(e).gt(2)));
+                    sa!(x, players().any(health_is_two));
+                    sa!(x, players().any_true());
+                    x.comment("false");
+                    sa!(x, players().any(|_, _| false.into()));
+                    x.comment("len(getAllPlayers()) > 0");
+                    sa!(x, players().any(|_, _| true.into()));
+                    x.comment("false");
+                    sa!(x, empty().any(|_, _| true.into()));
+                    x.comment("false");
+                    sa!(x, empty().any(|e, _| num(e).gt(2)));
 
-                sa!(x, players().filter(health_is_two));
-                sa!(x, players().map(|pl, _| pl.health()));
-                sa!(x, g.a.get().filter(|e, i| e.erase().ne(i)));
-                sa!(x, g.a.get().map(|e, i| num(e.erase()) + i));
-                sa!(x, players().all(|pl, _| num(pl.var(p.a).get()).gt(0)));
-                sa!(x, players().any(|pl, i| pl.var(p.a).get().eq(i.erase())));
-                sa!(x, players().filter(health_is_two).map(|pl, _| pl.health()));
-            });
-        });
-        ws.rule("array to string", OngoingGlobal, |r, _| {
+                    sa!(x, players().filter(health_is_two));
+                    sa!(x, players().map(|pl, _| pl.health()));
+                    sa!(x, g.a.get().filter(|e, i| e.erase().ne(i)));
+                    sa!(x, g.a.get().map(|e, i| num(e.erase()) + i));
+                    sa!(x, players().all(|pl, _| num(pl.var(p.a).get()).gt(0)));
+                    sa!(x, players().any(|pl, i| pl.var(p.a).get().eq(i.erase())));
+                    sa!(x, players().filter(health_is_two).map(|pl, _| pl.health()));
+                });
+            },
+        ));
+        defs.push(rule("array to string", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 set_a(x, numbers(&[10, 20, 30]));
                 x.set(g.b, numbers(&[100]));
@@ -1867,7 +1930,8 @@ impl Workshop for Arrays {
                     x.print(array_to_string(as_array(b()), max));
                 }
             });
-        });
+        }));
+        defs
     }
 }
 
@@ -1921,7 +1985,9 @@ impl Workshop for Functions {
     type Globals = FnGlobals;
     type Players = FnPlayers;
 
-    fn build(&self, ws: &mut Builder, g: &FnGlobals, p: &FnPlayers) {
+    fn rules<'a>(&'a self, g: &'a FnGlobals, p: &'a FnPlayers) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let (a, b, c, d, e) = (
             || g.a.get().erase(),
             || g.b.get().erase(),
@@ -1942,7 +2008,7 @@ impl Workshop for Functions {
             };
         }
         let team_args = |t: Expr<Any>| ty!(Team, t);
-        ws.rule("function", OngoingEachPlayer, |r, ev| {
+        defs.push(rule("function", OngoingEachPlayer, move |r, ev| {
             let me = ev.event_player();
             let hud = |value: i32, color: Color| HudArgs {
                 location: HudPosition::Left.into(),
@@ -2088,8 +2154,8 @@ impl Workshop for Functions {
                 sa!(x, rgb(255, 255, 0));
                 sa!(x, current_map());
             });
-        });
-        ws.rule("beams", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("beams", OngoingGlobal, move |r, _| {
             let beam = |kind: Beam, start: Expr<Position>, end: Expr<Position>| {
                 let opts = CreateBeamArgs {
                     color: Color::White.into(),
@@ -2127,8 +2193,8 @@ impl Workshop for Functions {
                 let end = vect(va.clone(), vd.clone(), vz.clone());
                 create(beam(Beam::Bad, ty!(Position, s), ty!(Position, end)));
             });
-        });
-        ws.rule("vectors", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("vectors", OngoingGlobal, move |r, _| {
             let [vb, vc, vd] = [b(), c(), d()].map(|v| ty!(Num, v));
             r.actions(|x| {
                 sa!(x, vect(vb.clone(), vc.clone(), vd.clone()));
@@ -2144,67 +2210,71 @@ impl Workshop for Functions {
                 x.comment("Vector.UP");
                 sa!(x, vect(0, 1, 0));
             });
-        });
-        ws.rule("optimizations with literals", OngoingGlobal, |r, _| {
-            r.actions(|x| {
-                macro_rules! app {
-                    ($note:literal, $v:expr) => {{
-                        x.comment($note);
-                        x.append(g.a, $v.erase());
-                    }};
-                }
-                let v = |a: i32, b: i32, c: i32| vect(a, b, c);
-                app!("4", math::ceil(3.3));
-                app!("3", math::floor(3.7));
-                app!("4", math::round(3.5));
-                app!("3", math::round(2.5));
-                app!("5", abs(-5));
-                app!("1.012", acos(0.53));
-                app!("3.1415", acos(-3));
-                app!("113.633", acos_deg(-0.4));
-                app!("-0.302", asin(-0.3));
-                app!("36.865", asin_deg(0.6));
-                app!("1.584", atan2(920, -12));
-                app!("140.057", atan2_deg(103, -123));
-                app!("0.996", cos(490));
-                app!("-0.934", cos_deg(921));
-                app!(
-                    "vect(3951, -3165, -6406)",
-                    cross_product(v(23, 53, -12), v(120, -2, 75))
-                );
-                app!(
-                    "vect(-0.182, 0.273, 0.945)",
-                    direction_towards(v(129, 23, -120), v(-75, 329, 938))
-                );
-                app!("1014.740", distance(v(329, -12, 643), v(-23, -125, -302)));
-                app!("43498", dot_product(v(129, -35, 239), v(-12, 345, 239)));
-                app!("Team 2", opposite_team(Team::One));
-                app!("Team 1", opposite_team(Team::Two));
-                app!("All Teams", opposite_team(Team::All));
-                app!("0", len(items(vec![])));
-                app!("3", len(items(vec![b(), c(), d()])));
-                app!("4", math::log(10000, 10));
-                app!("13.287", math::log(10000, 2));
-                app!("9.210", math::ln(10000));
-                app!("32", max(5, 32));
-                app!("-31", min(-31, 6));
-                app!("vect(-0.017, 0.433, 0.901)", normalize(v(-13, 324, 674)));
-                app!("0.704", sin(19.63));
-                app!("-0.218", sin_deg(-12.6));
-                app!("0", sqrt(-4));
-                app!("9.656", sqrt(93.23));
-                app!("1.364", tan(912));
-                app!("-36.648", tan_deg(91.563));
-                app!(
-                    "vect(342, -88, 68)",
-                    vector_towards(v(-123, 53, 64), v(219, -35, 132))
-                );
-            });
-        });
-        ws.rule(
+        }));
+        defs.push(rule(
+            "optimizations with literals",
+            OngoingGlobal,
+            move |r, _| {
+                r.actions(|x| {
+                    macro_rules! app {
+                        ($note:literal, $v:expr) => {{
+                            x.comment($note);
+                            x.append(g.a, $v.erase());
+                        }};
+                    }
+                    let v = |a: i32, b: i32, c: i32| vect(a, b, c);
+                    app!("4", math::ceil(3.3));
+                    app!("3", math::floor(3.7));
+                    app!("4", math::round(3.5));
+                    app!("3", math::round(2.5));
+                    app!("5", abs(-5));
+                    app!("1.012", acos(0.53));
+                    app!("3.1415", acos(-3));
+                    app!("113.633", acos_deg(-0.4));
+                    app!("-0.302", asin(-0.3));
+                    app!("36.865", asin_deg(0.6));
+                    app!("1.584", atan2(920, -12));
+                    app!("140.057", atan2_deg(103, -123));
+                    app!("0.996", cos(490));
+                    app!("-0.934", cos_deg(921));
+                    app!(
+                        "vect(3951, -3165, -6406)",
+                        cross_product(v(23, 53, -12), v(120, -2, 75))
+                    );
+                    app!(
+                        "vect(-0.182, 0.273, 0.945)",
+                        direction_towards(v(129, 23, -120), v(-75, 329, 938))
+                    );
+                    app!("1014.740", distance(v(329, -12, 643), v(-23, -125, -302)));
+                    app!("43498", dot_product(v(129, -35, 239), v(-12, 345, 239)));
+                    app!("Team 2", opposite_team(Team::One));
+                    app!("Team 1", opposite_team(Team::Two));
+                    app!("All Teams", opposite_team(Team::All));
+                    app!("0", len(items(vec![])));
+                    app!("3", len(items(vec![b(), c(), d()])));
+                    app!("4", math::log(10000, 10));
+                    app!("13.287", math::log(10000, 2));
+                    app!("9.210", math::ln(10000));
+                    app!("32", max(5, 32));
+                    app!("-31", min(-31, 6));
+                    app!("vect(-0.017, 0.433, 0.901)", normalize(v(-13, 324, 674)));
+                    app!("0.704", sin(19.63));
+                    app!("-0.218", sin_deg(-12.6));
+                    app!("0", sqrt(-4));
+                    app!("9.656", sqrt(93.23));
+                    app!("1.364", tan(912));
+                    app!("-36.648", tan_deg(91.563));
+                    app!(
+                        "vect(342, -88, 68)",
+                        vector_towards(v(-123, 53, 64), v(219, -35, 132))
+                    );
+                });
+            },
+        ));
+        defs.push(rule(
             "optimizations for function combinations",
             OngoingGlobal,
-            |r, _| {
+            move |r, _| {
                 let team = || ty!(Team, b());
                 let on_team = || all_players_with(GetPlayersArgs { team: team() });
                 r.actions(|x| {
@@ -2260,8 +2330,8 @@ impl Workshop for Functions {
                     );
                 });
             },
-        );
-        ws.rule("default arguments", OngoingGlobal, |r, _| {
+        ));
+        defs.push(rule("default arguments", OngoingGlobal, move |r, _| {
             let hud = |visible: Option<Expr<Players>>| {
                 let mut args = HudArgs::default();
                 if let Some(players) = visible {
@@ -2298,7 +2368,8 @@ impl Workshop for Functions {
                 x.set(g.e, ArrayExt::slice(&ty!(Array<Any>, e()), 5));
                 x.set(g.e, ty!(Array<Any>, e()).slice(5, 7));
             });
-        });
+        }));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -2341,8 +2412,8 @@ impl Workshop for Comments {
     type Globals = CommentGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &CommentGlobals, (): &()) {
-        ws.rule("comments", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a CommentGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("comments", OngoingGlobal, move |r, _| {
             r.condition(truth(g.a.get())).comment("A");
             r.condition(truth(g.b.get())).comment("B");
             r.actions(|x| {
@@ -2353,7 +2424,7 @@ impl Workshop for Comments {
                 x.comment("nothing\nsome array");
                 put(x, g.a, IntoExpr::<Array<Num>>::into_expr(vec![1, 2, 3]));
             });
-        });
+        })]
     }
 
     fn options(&self) -> CompileOptions {
@@ -2387,8 +2458,8 @@ impl Workshop for Gotos {
     type Globals = GotoGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &GotoGlobals, (): &()) {
-        ws.rule("gotos", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a GotoGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("gotos", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 let (lbl_0, lbl_1, lbl_2, lbl_3) = (x.label(), x.label(), x.label(), x.label());
                 x.comment("skip 3");
@@ -2416,7 +2487,7 @@ impl Workshop for Gotos {
                     x.set(g.a, 2);
                 });
             });
-        });
+        })]
     }
 
     fn options(&self) -> CompileOptions {
@@ -2469,9 +2540,11 @@ impl Workshop for Loops {
     type Globals = LoopGlobals;
     type Players = LoopPlayers;
 
-    fn build(&self, ws: &mut Builder, g: &LoopGlobals, p: &LoopPlayers) {
+    fn rules<'a>(&'a self, g: &'a LoopGlobals, p: &'a LoopPlayers) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let (a, b, c) = (|| g.a.get(), || g.b.get(), || g.c.get());
-        ws.rule("while loop", OngoingGlobal, |r, _| {
+        defs.push(rule("while loop", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.while_(a().eq(b()), |x| {
                     x.while_(b().eq(c()), |x| {
@@ -2481,37 +2554,41 @@ impl Workshop for Loops {
                 });
                 x.add_to(g.b, 1);
             });
-        });
-        ws.rule("while to the end", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("while to the end", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.while_(a().eq(b()), |x| {
                     x.if_(truth(g.c.get()), |x| x.continue_());
                     x.add_to(g.a, 1);
                 });
             });
-        });
-        ws.rule("while to the end nested", OngoingGlobal, |r, _| {
-            r.actions(|x| {
-                x.while_(a().eq(b()), |x| {
-                    x.while_(b().eq(c()), |x| x.add_to(g.a, 1));
+        }));
+        defs.push(rule(
+            "while to the end nested",
+            OngoingGlobal,
+            move |r, _| {
+                r.actions(|x| {
+                    x.while_(a().eq(b()), |x| {
+                        x.while_(b().eq(c()), |x| x.add_to(g.a, 1));
+                    });
                 });
-            });
-        });
-        ws.rule("while false", OngoingGlobal, |r, _| {
+            },
+        ));
+        defs.push(rule("while false", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.while_(false, |x| x.add_to(g.a, 1));
                 x.add_to(g.b, 1);
             });
-        });
-        ws.rule("for loop", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("for loop", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.for_range(g.i, range(1, 3).step(2), |x| x.add_to(g.a, 1));
                 x.for_range(g.i, range(1, 3), |x| x.add_to(g.a, 1));
                 x.for_range(g.i, 0..3, |x| x.add_to(g.a, 1));
                 x.for_range(host_player().var(p.i), 0..3, |x| x.add_to(g.a, 1));
             });
-        });
-        ws.rule("do/while", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("do/while", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.do_while(a().eq(b()), |x| {
                     x.add_to(g.a, 1);
@@ -2519,20 +2596,25 @@ impl Workshop for Loops {
                 });
                 x.add_to(g.b, 1);
             });
-        });
-        ws.rule("do/while rule condition", OngoingGlobal, |r, _| {
-            r.condition(a().eq(b()));
-            r.actions(|x| {
-                x.do_while(rule_condition(), |x| {
-                    x.wait(0);
-                    x.add_to(g.a, 1);
-                    let players = number_of_players_with(GetNumberOfPlayersArgs {
-                        team: Team::Two.into(),
+        }));
+        defs.push(rule(
+            "do/while rule condition",
+            OngoingGlobal,
+            move |r, _| {
+                r.condition(a().eq(b()));
+                r.actions(|x| {
+                    x.do_while(rule_condition(), |x| {
+                        x.wait(0);
+                        x.add_to(g.a, 1);
+                        let players = number_of_players_with(GetNumberOfPlayersArgs {
+                            team: Team::Two.into(),
+                        });
+                        x.if_(a().gt(players), |x| x.set(g.a, 0));
                     });
-                    x.if_(a().gt(players), |x| x.set(g.a, 0));
                 });
-            });
-        });
+            },
+        ));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -2590,49 +2672,63 @@ impl Workshop for Rules {
     type Globals = RuleGlobals;
     type Players = RulePlayers;
 
-    fn build(&self, ws: &mut Builder, g: &RuleGlobals, p: &RulePlayers) {
+    fn rules<'a>(&'a self, g: &'a RuleGlobals, p: &'a RulePlayers) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let t = |v: Global<Num>| truth(v.get());
-        ws.rule("normal", OngoingGlobal, |r, _| {
+        defs.push(rule("normal", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.add_to(g.a, 1);
                 x.add_to(g.b, 1);
             });
-        });
-        ws.rule("event player", OngoingEachPlayer, |r, ev| {
+        }));
+        defs.push(rule("event player", OngoingEachPlayer, move |r, ev| {
             r.actions(|x| x.add_to(ev.event_player().var(p.a), 1));
-        });
-        ws.rule("filter on team+hero", PlayerTookDamage, |r, ev| {
-            r.team(TeamFilter::Team1);
-            r.hero(Hero::Ana);
-            r.actions(|x| x.add_to(ev.victim().var(p.a), 1));
-        });
-        ws.rule("filter on team+slot", PlayerReceivedHealing, |r, ev| {
-            r.team(TeamFilter::All);
-            r.slot(3);
-            r.actions(|x| x.add_to(ev.healer().var(p.b), 1));
-        });
-        ws.rule("other directives", PlayerDied, |r, _| {
+        }));
+        defs.push(rule(
+            "filter on team+hero",
+            PlayerTookDamage,
+            move |r, ev| {
+                r.team(TeamFilter::Team1);
+                r.hero(Hero::Ana);
+                r.actions(|x| x.add_to(ev.victim().var(p.a), 1));
+            },
+        ));
+        defs.push(rule(
+            "filter on team+slot",
+            PlayerReceivedHealing,
+            move |r, ev| {
+                r.team(TeamFilter::All);
+                r.slot(3);
+                r.actions(|x| x.add_to(ev.healer().var(p.b), 1));
+            },
+        ));
+        defs.push(rule("other directives", PlayerDied, move |r, _| {
             r.disabled();
             r.suppress(Warning::TypeCheck);
             r.delimiter();
-        });
-        ws.rule("conditions", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("conditions", OngoingGlobal, move |r, _| {
             r.condition(t(g.a).and(t(g.b)));
             r.condition(t(g.x).and(t(g.y)).and(t(g.z).and(t(g.w))));
             r.condition(t(g.c));
             r.actions(|x| x.add_to(g.b, 1));
-        });
-        ws.rule("condition that is always true", OngoingGlobal, |r, _| {
-            r.condition(g.a.get().eq(g.a.get()));
-            r.actions(|x| x.add_to(g.b, 1));
-        });
-        ws.rule("rule condition test 1", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule(
+            "condition that is always true",
+            OngoingGlobal,
+            move |r, _| {
+                r.condition(g.a.get().eq(g.a.get()));
+                r.actions(|x| x.add_to(g.b, 1));
+            },
+        ));
+        defs.push(rule("rule condition test 1", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.comment("true");
                 put(x, g.a, rule_condition());
             });
-        });
-        ws.rule("rule condition test 2", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("rule condition test 2", OngoingGlobal, move |r, _| {
             r.condition(t(g.a));
             r.condition(t(g.b).and(t(g.c)));
             r.condition(g.d.get().eq(2));
@@ -2640,11 +2736,12 @@ impl Workshop for Rules {
                 x.comment("A and B and C and D == 2");
                 put(x, g.a, rule_condition());
             });
-        });
-        ws.rule("rule condition test 3", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("rule condition test 3", OngoingGlobal, move |r, _| {
             r.condition(t(g.a));
             r.actions(|x| put(x, g.a, rule_condition()));
-        });
+        }));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -2661,56 +2758,6 @@ fn rules() {
     // `condition that is always false` rule is not ported: the reference output drops it, as it
     // can never run.
     check!("rules", Rules);
-}
-
-// rulePrefix: the reference prefixes rules with their source file; the groups below spell
-// the same prefixes.
-#[derive(GlobalVars)]
-struct PrefixGlobals {
-    #[ow(name = "A", index = 0)]
-    a: Global<Num>,
-}
-
-struct RulePrefix;
-
-impl Workshop for RulePrefix {
-    const NAME: &'static str = "Test";
-    const DESCRIPTION: &'static str = "Test mode";
-
-    fn settings(&self) -> ow_workshop::Settings {
-        ow_workshop::Settings::unchecked()
-    }
-
-    type Globals = PrefixGlobals;
-    type Players = ();
-
-    fn build(&self, ws: &mut Builder, g: &PrefixGlobals, (): &()) {
-        let rule = |ws: &mut Builder, name: &str, value: i32| {
-            ws.rule(name, OngoingGlobal, |r, _| r.actions(|x| x.set(g.a, value)));
-        };
-        ws.group("RulePrefix", |ws| {
-            rule(ws, "rule 1", 1);
-            rule(ws, "rule 2", 2);
-            rule(ws, "", 3);
-            rule(ws, "rule 4", 4);
-        });
-        ws.group("Test Include/Test Prefix", |ws| {
-            rule(ws, "rule 5", 5);
-            rule(ws, "rule 6", 6);
-        });
-        ws.group("RulePrefix", |ws| rule(ws, "rule 7", 7));
-        ws.group("Test Include/Include4", |ws| rule(ws, "4", 4));
-        ws.group("RulePrefix", |ws| {
-            rule(ws, "rule 8", 8);
-            ws.rule("---- DELIMITER ----", OngoingGlobal, |r, _| r.delimiter());
-        });
-    }
-}
-
-#[test]
-#[wasm_bindgen_test]
-fn ruleprefix() {
-    check!("ruleprefix", RulePrefix);
 }
 
 // strings
@@ -2756,7 +2803,9 @@ impl Workshop for Strings {
     type Globals = StringGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &StringGlobals, (): &()) {
+    fn rules<'a>(&'a self, g: &'a StringGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let (a, b, c, d, e) = (
             || g.a.get(),
             || g.b.get(),
@@ -2766,7 +2815,7 @@ impl Workshop for Strings {
         );
         let (f, gg, h) = (|| g.f.get(), || g.g.get(), || g.h.get());
         let no_args = || Vec::<Expr<Any>>::new();
-        ws.rule("strings", OngoingGlobal, |r, _| {
+        defs.push(rule("strings", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.print("custom 'string'");
                 x.print("new\nline");
@@ -2911,8 +2960,8 @@ impl Workshop for Strings {
                     ws_fmt!("{0}fgFFFFFFF0>{1}{1}{1}{1}", a(), ws_fmt!("{0}TX C0000000002DD21>", a())),
                 );
             });
-        });
-        ws.rule("optimizations", OngoingGlobal, |r, _| {
+        }));
+        defs.push(rule("optimizations", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 let lit = Expr::<Str>::from;
                 x.comment("3");
@@ -2981,7 +3030,8 @@ impl Workshop for Strings {
                     Expr::<Array<Str>>::from(vec![lit("0(1.00, 0.00, 0.00)"), lit("123")]),
                 );
             });
-        });
+        }));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -3054,7 +3104,9 @@ impl Workshop for StringsArgs {
     type Globals = ArgsGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &ArgsGlobals, (): &()) {
+    fn rules<'a>(&'a self, g: &'a ArgsGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let vars = [g.a, g.b, g.c, g.d, g.e, g.f];
         for len in 1..=7 {
             let name = if len == 1 {
@@ -3062,7 +3114,7 @@ impl Workshop for StringsArgs {
             } else {
                 format!("{len} args")
             };
-            ws.rule(name, OngoingGlobal, |r, _| {
+            defs.push(rule(name, OngoingGlobal, move |r, _| {
                 r.actions(|x| {
                     for (i, pattern) in arg_patterns(len).iter().enumerate() {
                         let letters: Vec<String> = pattern
@@ -3084,8 +3136,9 @@ impl Workshop for StringsArgs {
                         put(x, g.a, template(&pieces, args));
                     }
                 });
-            });
+            }));
         }
+        defs
     }
 }
 
@@ -3117,8 +3170,8 @@ impl Workshop for Lowercase {
     type Globals = LowerGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &LowerGlobals, (): &()) {
-        ws.rule("", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a LowerGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.set(g.a, 1234);
                 x.cased_progress_bar_text_with(
@@ -3138,7 +3191,7 @@ impl Workshop for Lowercase {
                 .expect("a literal text");
                 x.set(g.b, 567);
             });
-        });
+        })]
     }
 
     fn options(&self) -> CompileOptions {
@@ -3190,13 +3243,15 @@ impl Workshop for Compression {
     type Globals = CompressGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &CompressGlobals, (): &()) {
+    fn rules<'a>(&'a self, g: &'a CompressGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let packed = |v: Global<Array<Any>>| v.get().erase().cast::<Str>();
         // The reference variables are untyped; these hold a packed string, then an array.
         let store = |x: &mut Block, v: Global<Array<Any>>, value: Expr<Any>| {
             x.set(v, value.cast::<Array<Any>>());
         };
-        ws.rule("compression", OngoingGlobal, |r, _| {
+        defs.push(rule("compression", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 let numbers = || vec![1.0, 2.53, 3.0, -543.0];
                 let vectors = || {
@@ -3260,7 +3315,8 @@ impl Workshop for Compression {
                     x.debug_value(name, var.get());
                 }
             });
-        });
+        }));
+        defs
     }
 }
 
@@ -3283,7 +3339,9 @@ impl Workshop for ShionSettings {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, _: &mut Builder, (): &(), (): &()) {}
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        Vec::new()
+    }
 
     fn settings(&self) -> Settings {
         let shion = Values::new()
@@ -3328,8 +3386,8 @@ impl Workshop for Extensions {
     type Globals = ExtGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &ExtGlobals, (): &()) {
-        ws.rule("Rule 1", OngoingEachPlayer, |r, ev| {
+    fn rules<'a>(&'a self, g: &'a ExtGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Rule 1", OngoingEachPlayer, move |r, ev| {
             let me = ev.event_player();
             let as_position = || me.clone().erase().cast::<Position>();
             r.actions(|x| {
@@ -3361,7 +3419,7 @@ impl Workshop for Extensions {
                     1,
                 );
             });
-        });
+        })]
     }
 
     fn settings(&self) -> Settings {
@@ -3415,9 +3473,11 @@ impl Workshop for WorkshopSettings {
     type Globals = WsGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &WsGlobals, (): &()) {
+    fn rules<'a>(&'a self, g: &'a WsGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
         use workshop_setting as w;
-        ws.rule("workshop settings", OngoingGlobal, |r, _| {
+        let mut defs = Vec::new();
+
+        defs.push(rule("workshop settings", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.comment("bools");
                 put(x, g.a, Expr::<Bool>::from(w::toggle("", "boolean", true)));
@@ -3527,7 +3587,8 @@ impl Workshop for WorkshopSettings {
                     )),
                 );
             });
-        });
+        }));
+        defs
     }
 
     fn options(&self) -> CompileOptions {
@@ -3557,7 +3618,9 @@ impl Workshop for CustomGameSettings {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, _: &mut Builder, (): &(), (): &()) {}
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        Vec::new()
+    }
 
     fn settings(&self) -> Settings {
         let pct = SettingValue::Percent;
@@ -3767,11 +3830,13 @@ impl Workshop for Translated {
     type Globals = TrGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &TrGlobals, (): &()) {
+    fn rules<'a>(&'a self, g: &'a TrGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        let mut defs = Vec::new();
+
         let (a, b, c, e) = (|| g.a.get(), || g.b.get(), || g.c.get(), || g.e.get());
         let (y, z) = (|| g.y.get().cast::<Num>(), || g.z.get().cast::<Num>());
         let source = |x: &mut Block, text: &str, value: Expr<Str>| x.debug_value(text, value);
-        ws.rule("owo\nuwu", OngoingGlobal, |r, _| {
+        defs.push(rule("owo\nuwu", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 x.set(g.a, t!("some string"));
                 source(x, "t\"some string\"", t!("some string"));
@@ -3824,15 +3889,16 @@ impl Workshop for Translated {
                 ]);
                 x.big_message(tr(strings.get(z())));
             });
-        });
-        ws.rule("", OngoingEachPlayer, |r, ev| {
+        }));
+        defs.push(rule("", OngoingEachPlayer, move |r, ev| {
             r.condition(ev.event_player().is_holding_button(Button::Interact));
             r.actions(|x| {
                 let text = || ws_fmt!("{}{}", tr(a()), input_binding_string(Button::Interact));
                 x.big_message(text());
                 x.small_message(text());
             });
-        });
+        }));
+        defs
     }
 
     fn settings(&self) -> Settings {
@@ -3905,27 +3971,29 @@ impl Workshop for Translated2 {
     type Globals = Tr2Globals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &Tr2Globals, (): &()) {
-        ws.rule("owo\nuwu", OngoingGlobal, |r, _| {
-            r.actions(|x| {
-                x.set(g.a, t!("host player: {}", host_player()));
-                x.debug_value("t\"some string\"", t!("some string"));
-            });
-        });
-        ws.rule("", OngoingEachPlayer, |r, ev| {
-            r.condition(ev.event_player().is_holding_button(Button::Interact));
-            r.actions(|x| {
-                let text = || {
-                    ws_fmt!(
-                        "{}{}",
-                        tr(g.a.get()),
-                        input_binding_string(Button::Interact)
-                    )
-                };
-                x.big_message(text());
-                x.small_message(text());
-            });
-        });
+    fn rules<'a>(&'a self, g: &'a Tr2Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![
+            rule("owo\nuwu", OngoingGlobal, move |r, _| {
+                r.actions(|x| {
+                    x.set(g.a, t!("host player: {}", host_player()));
+                    x.debug_value("t\"some string\"", t!("some string"));
+                });
+            }),
+            rule("", OngoingEachPlayer, move |r, ev| {
+                r.condition(ev.event_player().is_holding_button(Button::Interact));
+                r.actions(|x| {
+                    let text = || {
+                        ws_fmt!(
+                            "{}{}",
+                            tr(g.a.get()),
+                            input_binding_string(Button::Interact)
+                        )
+                    };
+                    x.big_message(text());
+                    x.small_message(text());
+                });
+            }),
+        ]
     }
 
     fn settings(&self) -> Settings {
@@ -4003,8 +4071,8 @@ impl Workshop for UserEnums {
     type Globals = UserEnumGlobals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &UserEnumGlobals, (): &()) {
-        ws.rule("", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a UserEnumGlobals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("", OngoingGlobal, move |r, _| {
             r.actions(|x| {
                 // GameStatus: AA = 1, BB = 2, CC = 6, DD = 7, EE = "psqdoj\"fidqs", FF = A.
                 x.comment("1");
@@ -4041,7 +4109,7 @@ impl Workshop for UserEnums {
                     2,
                 );
             });
-        });
+        })]
     }
 
     fn options(&self) -> CompileOptions {

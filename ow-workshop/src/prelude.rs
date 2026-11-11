@@ -2,7 +2,6 @@
 
 pub use crate::array_to_string::array_to_string;
 pub use crate::block::Block;
-pub use crate::builder::Builder;
 pub use crate::cased::{CasedTextArgs, CasedTextError};
 pub use crate::colors;
 pub use crate::columns::Columns;
@@ -31,12 +30,13 @@ pub use crate::players::{
 };
 pub use crate::raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use crate::rule::{ConditionRef, Rule};
+pub use crate::rule_def::{RuleDef, rule};
 pub use crate::rule_name::{RuleMeta, default_rule_name};
 pub use crate::settings::{
     HeroSelection, HeroSettings, HeroTeam, Lobby, MapRef, MapSelection, ModeKey, ModeSettings,
     SettingValue, Settings, Values, WorkshopValue,
 };
-pub use crate::subroutine::{Sub, SubroutineOptions};
+pub use crate::subroutine::{Sub, SubroutineOptions, subroutine, subroutine_with};
 pub use crate::switch::SwitchBuilder;
 pub use crate::text::{button_to_string, time_to_string};
 pub use crate::translate::{tr, tr_raw, tr_spectator};

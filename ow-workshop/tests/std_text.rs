@@ -20,14 +20,14 @@ impl Workshop for Mode {
     type Globals = Globals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-        ws.rule("Show", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Show", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 b.set(g.text, array_to_string([1, 2, 3], 3));
                 b.set(g.text, time_to_string(match_time()));
                 b.set(g.text, button_to_string(Button::Jump));
             });
-        });
+        })]
     }
 }
 

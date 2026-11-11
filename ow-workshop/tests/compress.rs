@@ -22,8 +22,8 @@ impl Workshop for Mode {
     type Globals = Globals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-        ws.rule("Init", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Init", OngoingGlobal, |r, _| {
             r.actions(|b| {
                 let points = compressed::<Vector>(vec![
                     vect(1, 2, 3),
@@ -33,7 +33,7 @@ impl Workshop for Mode {
                 .expect("compresses");
                 b.set(g.points, points);
             });
-        });
+        })]
     }
 
     fn options(&self) -> CompileOptions {

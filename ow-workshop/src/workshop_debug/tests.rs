@@ -205,17 +205,19 @@ fn registered_things_follow_the_variable_structs() {
         type Globals = Globals;
         type Players = Players;
 
-        fn build(&self, ws: &mut Builder, globals: &Globals, _: &Players) {
-            ws.debug(&Extra(globals.wave));
+        fn rules<'a>(&'a self, _: &'a Globals, _: &'a Players) -> Vec<RuleDef<'a>> {
+            Vec::new()
+        }
+
+        fn debug(&self, globals: &Globals, _: &Players) -> Vec<DebugField> {
+            Extra(globals.wave).debug_fields()
         }
     }
 
     let mut registry = VarRegistry::default();
     let globals = Globals::declare(&mut registry);
-    let mut ws = Builder::new();
-    Mode.build(&mut ws, &globals, &declare::<Globals, Players>().1);
-    let (program, _) = ws.finish(crate::ir::Program::default());
-    assert_eq!(labels(&program.debug_fields), ["extra"]);
+    let fields = Mode.debug(&globals, &declare::<Globals, Players>().1);
+    assert_eq!(labels(&fields), ["extra"]);
 }
 
 fn names_of(array: &crate::ir::Expr) -> Vec<String> {

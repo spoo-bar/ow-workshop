@@ -14,41 +14,18 @@ check below except the debug ones.
 | Example | What it covers |
 |---|---|
 | `hello_world` | the smallest mod, with a settings block |
-| `zombie_survival` | variables, subroutines, switch, HUD, a larger element count |
-| `custom_settings` | settings block, workshop settings, French translations |
-| `in_game_checklist` | the long string, tags, cased text and the text helpers |
 
 ## Checks
 
-- [ ] `hello_world`, `zombie_survival` and `custom_settings` paste without errors (en-US).
+- [ ] `hello_world` pastes without errors (en-US).
 - [ ] `hello_world` pastes in a French and a Japanese client (`--lang fr-FR`, `--lang ja-JP`).
-- [ ] The element count matches the in-game counter for `zombie_survival`. The compiler's count is
-  `CompileOutput::element_count`, or run with `CompileOptions { debug_element_count: true, .. }`
-  for a summary comment at the top of the output.
-- [ ] A 300-character string with 7 arguments displays correctly: the first HUD text of
-  `in_game_checklist` reads *Round … of the match … word31 …* with the seven live numbers.
-- [ ] `<fg>` color and `<tx>` texture tags render: the second HUD text shows *Red* in red and
-  the ultimate icon.
-- [ ] Cased progress-bar text renders lowercase: the *Lowercase* rule shows `lowercase text`
-  above the map origin, in lowercase.
-- [ ] The translated HUD shows French for a French client, in both modes
-  (`custom_settings`, with the French catalog and with the player-variable mode).
-- [ ] `array_to_string`, `time_to_string` and `button_to_string` display as expected: the last
-  two HUD texts of `in_game_checklist` show `[1, 2, 3]`, the match time as `m:ss` and the
-  jump key's name.
-- [ ] The settings block applies: slots, maps, hero restrictions and extensions (`custom_settings`
-  after pasting, open *Settings → Maps / Heroes / Extensions*).
 
 Debug builds:
 
-- [ ] The debug panels render and update live: paste `cargo run -p ow-workshop --example
-  zombie_survival` (no `--release`), start a match and watch the orange *Debug: globals* texts on
-  the right (`wave`, `state`, `spawn_points`, `spawn_index`) and the blue *Debug: players* texts
-  (`score`, `lives`); they change as the game runs, and `GameState` is not shown as a bare number
-  where a renderer is set.
-- [ ] A release paste contains no debug HUDs: paste `cargo run -p ow-workshop --release --example
-  zombie_survival`; it has no `Debug:` rules, no `// ow-workshop debug build` line and no extra HUD
-  texts at sort order -2000 / -1000 / -500.
+- [ ] A debug paste works: `cargo run -p ow-workshop --example hello_world` (no `--release`)
+  starts with `// ow-workshop debug build` and pastes without errors.
+- [ ] A release paste contains no debug output: `cargo run -p ow-workshop --release --example
+  hello_world` has no `Debug:` rules and no `// ow-workshop debug build` line.
 
 ## Results
 

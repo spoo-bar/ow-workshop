@@ -18,15 +18,16 @@
 //!     type Globals = ();
 //!     type Players = ();
 //!
-//!     fn build(&self, ws: &mut Builder, (): &(), (): &()) {
-//!         ws.rule("Header", OngoingGlobal, |r, _| {
-//!             r.actions(|b| b.hud_header("Hello, Workshop!"));
-//!         });
-//!
-//!         ws.rule("Welcome", OngoingEachPlayer, |r, ev| {
-//!             r.condition(ev.event_player().has_spawned());
-//!             r.actions(|b| b.small_message(ws_fmt!("Welcome, {}!", ev.event_player())));
-//!         });
+//!     fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+//!         vec![
+//!             rule("Header", OngoingGlobal, |r, _| {
+//!                 r.actions(|b| b.hud_header("Hello, Workshop!"));
+//!             }),
+//!             rule("Welcome", OngoingEachPlayer, |r, ev| {
+//!                 r.condition(ev.event_player().has_spawned());
+//!                 r.actions(|b| b.small_message(ws_fmt!("Welcome, {}!", ev.event_player())));
+//!             }),
+//!         ]
 //!     }
 //!
 //!     fn settings(&self) -> Settings {
@@ -52,17 +53,16 @@
 //!
 //! | Workshop concept | Rust API |
 //! |---|---|
-//! | Rules and events | [`Builder::rule`], event types such as [`OngoingGlobal`] and [`PlayerDied`] |
+//! | Rules and events | [`rule`], event types such as [`OngoingGlobal`] and [`PlayerDied`] |
 //! | Conditions | [`Rule::condition`], comparisons like [`Expr::eq`] |
 //! | Variables | `#[derive(GlobalVars)]`, `#[derive(PlayerVars)]`, [`Global`], [`PlayerVar`] |
-//! | Subroutines | [`Builder::declare_subroutine`], [`Builder::define`], [`Block::call`] |
+//! | Subroutines | [`Sub::named`], [`subroutine`], [`Block::call`] |
 //! | Skip and labels | [`Label`], [`Block::switch`], [`Block::break_`] |
 //! | Strings | [`ws_fmt!`](ws_fmt), [`CasedTextArgs`], [`spaces_for`] |
 //! | Settings | [`Workshop::settings`], [`Settings`], [`workshop_setting`] |
 //! | Translations | [`Workshop::translations`], [`t!`], [`Translations`] |
 //!
-//! The `examples` directory has runnable mods: `hello_world`, `zombie_survival` and
-//! `custom_settings`.
+//! The `examples` directory has a runnable mod: `hello_world`.
 //!
 //! # Debugging
 //!
@@ -122,8 +122,8 @@
 //!     type Globals = Globals;
 //!     type Players = ();
 //!
-//!     fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-//!         ws.rule("Run", OngoingGlobal, |r, _| {
+//!     fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+//!         vec![rule("Run", OngoingGlobal, |r, _| {
 //!             r.actions(|b| {
 //!                 b.set(g.state, State::Playing);
 //!                 b.set(g.boss_health, 100);
@@ -132,7 +132,7 @@
 //!                 b.print("started");
 //!                 b.debug_only(|b| b.set(g.boss_health, 1));
 //!             });
-//!         });
+//!         })]
 //!     }
 //!
 //!     fn settings(&self) -> Settings {
@@ -180,8 +180,8 @@
 //!     type Globals = ();
 //!     type Players = ();
 //!
-//!     fn build(&self, ws: &mut Builder, _: &(), _: &()) {
-//!         ws.rule("Init", OngoingGlobal, |_, _| {});
+//!     fn rules<'a>(&'a self, _: &'a (), _: &'a ()) -> Vec<RuleDef<'a>> {
+//!         vec![rule("Init", OngoingGlobal, |_, _| {})]
 //!     }
 //!
 //!     fn settings(&self) -> Settings {
@@ -249,6 +249,7 @@ mod players;
 pub mod prelude;
 mod raycast;
 mod rule;
+mod rule_def;
 mod rule_name;
 mod settings;
 mod subroutine;
@@ -272,7 +273,6 @@ mod wrap;
 
 pub use array_to_string::array_to_string;
 pub use block::Block;
-pub use builder::Builder;
 pub use cased::{CasedTextArgs, CasedTextError};
 pub use catalog::{Catalog, Entry};
 #[doc(hidden)]
@@ -323,12 +323,13 @@ pub mod __private {
 }
 pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
+pub use rule_def::{RuleDef, rule};
 pub use rule_name::{RuleMeta, default_rule_name};
 pub use settings::{
     HeroSelection, HeroSettings, HeroTeam, Lobby, MapRef, MapSelection, ModeKey, ModeSettings,
     SettingValue, Settings, Values, WorkshopValue,
 };
-pub use subroutine::{Sub, SubroutineOptions};
+pub use subroutine::{Sub, SubroutineOptions, subroutine, subroutine_with};
 pub use switch::SwitchBuilder;
 pub use text::{button_to_string, time_to_string};
 pub use translate::{tr, tr_raw, tr_spectator};

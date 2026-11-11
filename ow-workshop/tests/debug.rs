@@ -16,10 +16,10 @@ impl Workshop for Mode {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, (): &(), (): &()) {
-        ws.rule("Header", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Header", OngoingGlobal, |r, _| {
             r.actions(|b| b.hud_header("Hello"));
-        });
+        })]
     }
 }
 
@@ -36,7 +36,9 @@ impl Workshop for Empty {
     type Globals = ();
     type Players = ();
 
-    fn build(&self, _: &mut Builder, (): &(), (): &()) {}
+    fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+        Vec::new()
+    }
 }
 
 const HEADER: &str = "// ow-workshop debug build\n";

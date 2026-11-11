@@ -1,4 +1,4 @@
-//! The builder a mod records its rules and subroutines on.
+//! The recorder that turns a mod's rule definitions into IR; internal to the compiler.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -7,17 +7,16 @@ use crate::event::{Ev, EventType};
 use crate::ir::{Diagnostics, Location, Program, Rule};
 use crate::rule::Rule as RuleBuilder;
 use crate::rule_name::{RuleMeta, default_rule_name, module_path};
-use crate::workshop_debug::{DebugField, WorkshopDebug};
+use crate::workshop_debug::DebugField;
 
-/// Records the rules and subroutines of a mod in call order.
+/// Records the rules and subroutines of a mod in definition order.
 #[derive(Debug, Default)]
-pub struct Builder {
+pub(crate) struct Builder {
     rules: Vec<Rule>,
     diagnostics: Diagnostics,
     labels: Rc<Cell<u32>>,
     pub(crate) subs: crate::ir::Subs,
     pub(crate) sub_states: Vec<crate::subroutine::SubState>,
-    prefix: String,
     template: Option<fn(&RuleMeta) -> String>,
     /// Whether the mod enables text tags.
     pub(crate) tags: bool,
@@ -42,20 +41,10 @@ impl Builder {
         self
     }
 
-    /// Runs `build` with `prefix` on the names of the rules and subroutines it defines.
-    ///
-    /// Groups nest; the inner prefix replaces the outer one.
-    pub fn group(&mut self, prefix: impl Into<String>, build: impl FnOnce(&mut Builder)) {
-        let outer = std::mem::replace(&mut self.prefix, prefix.into());
-        build(self);
-        self.prefix = outer;
-    }
-
     /// The final name of a rule recorded at `loc` in the current group.
     pub(crate) fn resolve_name(&self, name: &str, is_delimiter: bool, loc: Location) -> String {
         let meta = RuleMeta {
             name: name.to_owned(),
-            prefix: self.prefix.clone(),
             is_delimiter,
             module_path: module_path(loc.file),
         };
@@ -72,27 +61,45 @@ impl Builder {
         Self::default()
     }
 
+    /// Records a rule listening to `event` that was defined at `loc`.
+    pub(crate) fn record_rule<E: EventType>(
+        &mut self,
+        loc: Location,
+        name: &str,
+        event: E,
+        build: impl FnOnce(&mut RuleBuilder<E>, Ev<E>),
+    ) {
+        let mut rule = RuleBuilder::new(Rc::clone(&self.labels));
+        rule.tags = self.tags;
+        build(&mut rule, Ev::new());
+        let name = self.resolve_name(name, rule.is_delimiter(), loc);
+        let rule = rule.finish(loc, name, event, &mut self.diagnostics);
+        self.rules.push(rule);
+    }
+
     /// Defines a rule listening to `event`; rules appear in output in call order.
     #[track_caller]
-    pub fn rule<E: EventType>(
+    pub(crate) fn rule<E: EventType>(
         &mut self,
         name: impl Into<String>,
         event: E,
         build: impl FnOnce(&mut RuleBuilder<E>, Ev<E>),
     ) {
-        let loc = Location::caller();
-        let mut rule = RuleBuilder::new(Rc::clone(&self.labels));
-        rule.tags = self.tags;
-        build(&mut rule, Ev::new());
-        let name = self.resolve_name(&name.into(), rule.is_delimiter(), loc);
-        let rule = rule.finish(name, event, &mut self.diagnostics);
-        self.rules.push(rule);
+        self.record_rule(Location::caller(), &name.into(), event, build);
     }
 
-    /// Adds the fields of `thing` to the debug panels, after those of the mod's `Globals` and
-    /// `Players`. Debug builds only; a release build ignores it.
-    pub fn debug(&mut self, thing: &impl WorkshopDebug) {
-        self.debug_fields.extend(thing.debug_fields());
+    /// Records every definition in `defs`, in order.
+    pub(crate) fn run(&mut self, defs: Vec<crate::rule_def::RuleDef<'_>>) {
+        crate::subroutine::declare_registered(self);
+        for def in defs {
+            def.run(self);
+        }
+    }
+
+    /// Adds the fields of `fields` to the debug panels, after those of the mod's `Globals` and
+    /// `Players`.
+    pub(crate) fn add_debug_fields(&mut self, fields: Vec<DebugField>) {
+        self.debug_fields.extend(fields);
     }
 
     /// Appends a finished rule.

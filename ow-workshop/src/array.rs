@@ -254,7 +254,7 @@ mod tests {
     }
 
     fn nested_errors(build: impl FnOnce(&mut Block)) -> Diagnostics {
-        let mut ws = Builder::new();
+        let mut ws = crate::builder::Builder::new();
         ws.rule("r", OngoingGlobal, |r, _| r.actions(build));
         let (program, _): (Program, _) = ws.finish(Program::default());
         let mut diags = Diagnostics::default();

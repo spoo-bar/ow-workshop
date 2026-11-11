@@ -5,9 +5,11 @@ use crate::ir::{Diagnostics, Program};
 use crate::options::{CompileOptions, DebugMode};
 use crate::output::CompileOutput;
 use crate::pipeline;
+use crate::rule_def::RuleDef;
 use crate::settings::{Main, Settings};
 use crate::translations::Translations;
 use crate::vars::{GlobalVars, PlayerVars, VarRegistry};
+use crate::workshop_debug::DebugField;
 use crate::workshop_debug::WorkshopDebug as _;
 use ow_workshop_data::Lang;
 
@@ -24,8 +26,19 @@ pub trait Workshop {
     /// The description of the mode.
     const DESCRIPTION: &'static str;
 
-    /// Records the rules and subroutines on `ws`, in output order.
-    fn build(&self, ws: &mut Builder, globals: &Self::Globals, players: &Self::Players);
+    /// The rules and subroutines of the mod; their order does not matter.
+    fn rules<'a>(
+        &'a self,
+        globals: &'a Self::Globals,
+        players: &'a Self::Players,
+    ) -> Vec<RuleDef<'a>>;
+
+    /// Extra fields for the debug panels, after those of `Globals` and `Players`.
+    /// Debug builds only; a release build ignores them.
+    fn debug(&self, globals: &Self::Globals, players: &Self::Players) -> Vec<DebugField> {
+        let _ = (globals, players);
+        Vec::new()
+    }
 
     /// Custom game settings.
     ///
@@ -69,6 +82,7 @@ impl<W: Workshop> WorkshopExt for W {
         lang: Lang,
         debug: Option<DebugMode>,
     ) -> Result<CompileOutput, Diagnostics> {
+        crate::subroutine::reset_registry();
         let mut global_reg = VarRegistry::default();
         let mut player_reg = VarRegistry::default();
         let globals = W::Globals::declare(&mut global_reg);
@@ -86,7 +100,8 @@ impl<W: Workshop> WorkshopExt for W {
             options.debug = debug;
         }
         let mut ws = Builder::with_template(options.rule_name_template).with_tags(options.tags);
-        self.build(&mut ws, &globals, &players);
+        ws.run(self.rules(&globals, &players));
+        ws.add_debug_fields(self.debug(&globals, &players));
 
         let mut debug_fields = globals.debug_fields();
         debug_fields.extend(players.debug_fields());
@@ -120,7 +135,9 @@ mod tests {
         type Globals = ();
         type Players = ();
 
-        fn build(&self, _: &mut Builder, (): &(), (): &()) {}
+        fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+            Vec::new()
+        }
     }
 
     #[test]
@@ -148,7 +165,9 @@ mod tests {
         type Globals = ();
         type Players = ();
 
-        fn build(&self, _: &mut Builder, (): &(), (): &()) {}
+        fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+            Vec::new()
+        }
 
         fn options(&self) -> CompileOptions {
             CompileOptions {

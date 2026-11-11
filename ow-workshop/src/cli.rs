@@ -64,8 +64,8 @@ fn parse(
 ///     type Globals = ();
 ///     type Players = ();
 ///
-///     fn build(&self, ws: &mut Builder, _: &(), _: &()) {
-///         ws.rule("Init", OngoingGlobal, |_, _| {});
+///     fn rules<'a>(&'a self, _: &'a (), _: &'a ()) -> Vec<RuleDef<'a>> {
+///         vec![rule("Init", OngoingGlobal, |_, _| {})]
 ///     }
 ///
 ///     fn settings(&self) -> Settings {

@@ -26,10 +26,10 @@ impl Workshop for Mode {
     type Globals = Globals;
     type Players = ();
 
-    fn build(&self, ws: &mut Builder, g: &Globals, (): &()) {
-        ws.rule("Show", OngoingGlobal, |r, _| {
+    fn rules<'a>(&'a self, g: &'a Globals, (): &'a ()) -> Vec<RuleDef<'a>> {
+        vec![rule("Show", OngoingGlobal, |r, _| {
             r.actions(|b| (self.body)(b, g));
-        });
+        })]
     }
 
     fn translations(&self) -> Option<Translations> {
@@ -325,10 +325,10 @@ fn detection_rule(mode: PlayerVarMode, optimize: OptLevel) -> String {
         type Globals = ();
         type Players = ();
 
-        fn build(&self, ws: &mut Builder, (): &(), (): &()) {
-            ws.rule("Show", OngoingGlobal, |r, _| {
+        fn rules<'a>(&'a self, (): &'a (), (): &'a ()) -> Vec<RuleDef<'a>> {
+            vec![rule("Show", OngoingGlobal, |r, _| {
                 r.actions(|b| b.big_message(t!("Hello")));
-            });
+            })]
         }
 
         fn options(&self) -> CompileOptions {
