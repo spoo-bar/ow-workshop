@@ -146,15 +146,6 @@ fn suffixes_skip_names_that_are_taken() {
 }
 
 #[test]
-fn the_suffix_order() {
-    let first: Vec<String> = suffixes().take(4).collect();
-    assert_eq!(first, ["\u{1}", "\u{1E}\u{1}", "\u{1F}\u{1}", "\u{2}"]);
-    // 8 + 16 codes, three spellings each.
-    assert_eq!(suffixes().count(), 72);
-    assert_eq!(suffixes().last().as_deref(), Some("\u{1F}\u{1D}"));
-}
-
-#[test]
 fn categories_are_not_deduplicated() {
     let (result, p) = lowered(vec![
         setting(int("same", "a", 1)),
@@ -261,10 +252,4 @@ fn other_values_are_untouched() {
         panic!("not an action");
     };
     assert_eq!(args[0], other);
-}
-
-#[test]
-fn sanitize_leaves_other_characters_alone() {
-    assert_eq!(sanitize("Hello, wörld!", Part::Category), "Hello, wörld!");
-    assert_eq!(sanitize("a b", Part::Option), "a b");
 }

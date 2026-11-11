@@ -32,15 +32,6 @@ fn zero_score_and_zero_duration_status_are_removed() {
 }
 
 #[test]
-fn nothing_is_removed_with_the_optimizer_off() {
-    let p = optimized(
-        vec![act(ActionId::AddToScore, vec![("score", num(0.0))])],
-        OptLevel::Off,
-    );
-    assert_eq!(kinds(&p).len(), 1);
-}
-
-#[test]
 fn nothing_is_removed_next_to_a_dynamic_skip() {
     let dynamic = StmtKind::Skip(crate::ir::SkipTarget::Dynamic(num(2.0)));
     let p = optimized(

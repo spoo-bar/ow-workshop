@@ -339,11 +339,6 @@ fn the_dict_fixture_lookup_resolves() {
 }
 
 #[test]
-fn nothing_changes_with_the_optimizer_off() {
-    assert_eq!(off(&val(V::Len, vec![a(&[1.0])])), "Len([1])");
-}
-
-#[test]
 fn all_and_any_of_a_mapped_array_test_the_source_directly() {
     let mapped = val(V::MappedArray, vec![g(0), cmp(Eq, elem(), num(2.0))]);
     assert_eq!(

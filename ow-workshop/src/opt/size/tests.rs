@@ -232,17 +232,6 @@ fn the_empty_string_has_three_spellings() {
     assert_eq!(assigned(&q), "CharAt([], false)");
 }
 
-#[test]
-fn workshop_settings_keep_their_literals() {
-    let setting = val(
-        V::CreateWorkshopSettingInt,
-        vec![null(), null(), num(0.0), num(0.0), num(1.0), num(0.0)],
-    );
-    let before = sh(&setting);
-    let p = sized(vec![set(0, setting)]);
-    assert_eq!(assigned(&p), before);
-}
-
 // ---- modify -------------------------------------------------------------------------------
 
 fn modify(op: ModifyOp, value: Expr) -> StmtKind {

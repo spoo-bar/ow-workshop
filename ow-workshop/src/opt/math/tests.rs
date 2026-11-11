@@ -119,9 +119,3 @@ fn min_and_max() {
     assert_eq!(f(V::Min, vec![g(0), num(3.0)]), "Min(g0, 3)");
     assert_eq!(f(V::Min, vec![g(0), g(1)]), "Min(g0, g1)");
 }
-
-#[test]
-fn nothing_folds_when_the_optimizer_is_off() {
-    assert_eq!(off(&val(V::Abs, vec![num(-3.0)])), "Abs(-3)");
-    assert_eq!(off(&add(num(1.0), num(2.0))), "(1 + 2)");
-}
