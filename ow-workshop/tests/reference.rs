@@ -94,6 +94,13 @@ struct VarPlayers {
 struct Variables;
 
 impl Workshop for Variables {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = VarGlobals;
     type Players = VarPlayers;
 
@@ -141,6 +148,13 @@ struct SubGlobals {
 struct Subroutines;
 
 impl Workshop for Subroutines {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = SubGlobals;
     type Players = ();
 
@@ -214,6 +228,13 @@ struct SwitchGlobals {
 struct Switches;
 
 impl Workshop for Switches {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = SwitchGlobals;
     type Players = ();
 
@@ -313,6 +334,13 @@ fn truthy(var: Global<Num>) -> Expr<Bool> {
 struct Conditions;
 
 impl Workshop for Conditions {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = CondGlobals;
     type Players = ();
 
@@ -456,6 +484,13 @@ struct OpGlobals {
 struct OperatorsStrict;
 
 impl Workshop for OperatorsStrict {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = OpGlobals;
     type Players = ();
 
@@ -507,6 +542,13 @@ fn n(x: i32) -> Expr<Num> {
 struct Operators;
 
 impl Workshop for Operators {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = OpGlobals;
     type Players = ();
 
@@ -789,6 +831,13 @@ fn arr(e: Expr<Num>) -> Expr<Array<Num>> {
 struct OperatorsAssign;
 
 impl Workshop for OperatorsAssign {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = AssignGlobals;
     type Players = AssignPlayers;
 
@@ -885,6 +934,13 @@ fn as_<T: ValueType>(e: Expr<Num>) -> Expr<T> {
 struct ElementSaving;
 
 impl Workshop for ElementSaving {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = EsGlobals;
     type Players = EsPlayers;
 
@@ -1142,6 +1198,13 @@ struct EsIndexPlayers {
 struct ElementSavingIndex;
 
 impl Workshop for ElementSavingIndex {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = EsIndexGlobals;
     type Players = EsIndexPlayers;
 
@@ -1198,6 +1261,13 @@ struct DictGlobals {
 struct Dicts;
 
 impl Workshop for Dicts {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = DictGlobals;
     type Players = ();
 
@@ -1262,6 +1332,13 @@ struct EnumGlobals {
 struct BuiltinEnums;
 
 impl Workshop for BuiltinEnums {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = EnumGlobals;
     type Players = ();
 
@@ -1321,6 +1398,13 @@ struct MacroGlobals {
 struct BuiltinMacros;
 
 impl Workshop for BuiltinMacros {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = MacroGlobals;
     type Players = ();
 
@@ -1366,6 +1450,13 @@ struct MapGlobals {
 struct GetCurrentMap;
 
 impl Workshop for GetCurrentMap {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = MapGlobals;
     type Players = ();
 
@@ -1413,6 +1504,13 @@ struct EventGlobals {
 struct EventVars;
 
 impl Workshop for EventVars {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = EventGlobals;
     type Players = ();
 
@@ -1522,6 +1620,13 @@ fn as_array(e: Expr<Any>) -> Expr<Array<Any>> {
 struct Arrays;
 
 impl Workshop for Arrays {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ArrayGlobals;
     type Players = ArrayPlayers;
 
@@ -1806,6 +1911,13 @@ struct FnPlayers {
 struct Functions;
 
 impl Workshop for Functions {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = FnGlobals;
     type Players = FnPlayers;
 
@@ -2219,6 +2331,13 @@ struct CommentGlobals {
 struct Comments;
 
 impl Workshop for Comments {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = CommentGlobals;
     type Players = ();
 
@@ -2258,6 +2377,13 @@ struct GotoGlobals {
 struct Gotos;
 
 impl Workshop for Gotos {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = GotoGlobals;
     type Players = ();
 
@@ -2333,6 +2459,13 @@ struct LoopPlayers {
 struct Loops;
 
 impl Workshop for Loops {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = LoopGlobals;
     type Players = LoopPlayers;
 
@@ -2447,6 +2580,13 @@ struct RulePlayers {
 struct Rules;
 
 impl Workshop for Rules {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = RuleGlobals;
     type Players = RulePlayers;
 
@@ -2534,6 +2674,13 @@ struct PrefixGlobals {
 struct RulePrefix;
 
 impl Workshop for RulePrefix {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = PrefixGlobals;
     type Players = ();
 
@@ -2599,6 +2746,13 @@ const CHARS_120: &str = "|______________________________________________________
 struct Strings;
 
 impl Workshop for Strings {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = StringGlobals;
     type Players = ();
 
@@ -2890,6 +3044,13 @@ fn arg_patterns(len: usize) -> Vec<Vec<usize>> {
 struct StringsArgs;
 
 impl Workshop for StringsArgs {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ArgsGlobals;
     type Players = ();
 
@@ -2946,6 +3107,13 @@ struct LowerGlobals {
 struct Lowercase;
 
 impl Workshop for Lowercase {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = LowerGlobals;
     type Players = ();
 
@@ -3012,6 +3180,13 @@ struct CompressGlobals {
 struct Compression;
 
 impl Workshop for Compression {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = CompressGlobals;
     type Players = ();
 
@@ -3102,6 +3277,9 @@ fn compression() {
 struct ShionSettings;
 
 impl Workshop for ShionSettings {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
     type Globals = ();
     type Players = ();
 
@@ -3123,6 +3301,8 @@ impl Workshop for ShionSettings {
                 HeroTeam::AllTeams,
                 HeroSettings::default().hero(Hero::Shion, shion),
             )
+            // Compiled as exported; the game would ask for a map.
+            .without_checks()
     }
 }
 
@@ -3142,6 +3322,9 @@ struct ExtGlobals {
 struct Extensions;
 
 impl Workshop for Extensions {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
     type Globals = ExtGlobals;
     type Players = ();
 
@@ -3201,6 +3384,8 @@ impl Workshop for Extensions {
             .with_extension(Extension::BeamSounds)
             .with_extension(Extension::BuffAndDebuffSounds)
             .with_extension(Extension::SpawnMoreDummyBots)
+            // Compiled as exported; the game export has no `main` section.
+            .without_checks()
     }
 }
 
@@ -3220,6 +3405,13 @@ struct WsGlobals {
 struct WorkshopSettings;
 
 impl Workshop for WorkshopSettings {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = WsGlobals;
     type Players = ();
 
@@ -3356,7 +3548,12 @@ fn workshopsettings() {
 // equivalent (a mode is a `Gamemode`), so it is dropped from the expected output.
 struct CustomGameSettings;
 
+const CUSTOM_GAME_DESCRIPTION: &str = "Tower Meifense - BETA do not copy! by Zezombye v1.4.3\n\nThis is an extremely long string that takes advantage of the fact that the description can have up to 512 characters (not bytes). \u{a4}\u{a7}\u{20ac} Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat naz|";
+
 impl Workshop for CustomGameSettings {
+    const NAME: &'static str = "\u{ff34}\u{ff4f}\u{ff57}\u{ff45}\u{ff52}\u{2001}\u{ff2d}\u{ff45}\u{ff49}\u{ff46}\u{ff45}\u{ff4e}\u{ff53}\u{ff45}";
+    const DESCRIPTION: &'static str = CUSTOM_GAME_DESCRIPTION;
+
     type Globals = ();
     type Players = ();
 
@@ -3365,20 +3562,12 @@ impl Workshop for CustomGameSettings {
     fn settings(&self) -> Settings {
         let pct = SettingValue::Percent;
         let choice = |text: &str| SettingValue::Choice(text.to_owned());
-        let version = "1.4.3";
-        let description = format!(
-            "Tower Meifense - BETA do not copy! by Zezombye v{version}\n\nThis is an extremely long string that takes advantage of the fact that the description can have up to 512 characters (not bytes). \u{a4}\u{a7}\u{20ac} Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat naz|"
-        );
         let hero = |values: Vec<(&str, SettingValue)>| {
             values
                 .into_iter()
                 .fold(Values::new(), |all, (key, value)| all.with(key, value))
         };
         Settings::default()
-            .with_main(Main {
-                mode_name: Some("\u{ff34}\u{ff4f}\u{ff57}\u{ff45}\u{ff52}\u{2001}\u{ff2d}\u{ff45}\u{ff49}\u{ff46}\u{ff45}\u{ff4e}\u{ff53}\u{ff45}".to_owned()),
-                description: Some(description),
-            })
             .with_lobby(
                 Lobby::default()
                     .raw("mapRotation", choice("paused"))
@@ -3390,7 +3579,9 @@ impl Workshop for CustomGameSettings {
             .with_mode(
                 ModeKey::Mode(Gamemode::Assault),
                 ModeSettings::default()
-                    .maps(MapSelection::Enabled(vec![MapRef::new(Map::TempleOfAnubis)]))
+                    .maps(MapSelection::Enabled(vec![MapRef::new(
+                        Map::TempleOfAnubis,
+                    )]))
                     .raw("captureSpeed%", pct(60.0))
                     .raw("unknown value", 60),
             )
@@ -3444,7 +3635,10 @@ impl Workshop for CustomGameSettings {
                     )
                     .hero(
                         Hero::Ashe,
-                        hero(vec![("ammoClipSize%", pct(200.0)), ("ultDuration%", pct(400.0))]),
+                        hero(vec![
+                            ("ammoClipSize%", pct(200.0)),
+                            ("ultDuration%", pct(400.0)),
+                        ]),
                     )
                     .hero(Hero::Bastion, hero(vec![("ammoClipSize%", pct(200.0))]))
                     .hero(
@@ -3494,7 +3688,10 @@ impl Workshop for CustomGameSettings {
                     )
                     .hero(
                         Hero::Widowmaker,
-                        hero(vec![("damageDealt%", pct(120.0)), ("ability1Cooldown%", pct(10.0))]),
+                        hero(vec![
+                            ("damageDealt%", pct(120.0)),
+                            ("ability1Cooldown%", pct(10.0)),
+                        ]),
                     )
                     .hero(
                         Hero::JunkerQueen,
@@ -3557,11 +3754,16 @@ fn translation_settings() -> Settings {
                 Map::WorkshopChamber,
             )])),
         )
+        // Compiled as exported; the game export has no `main` section.
+        .without_checks()
 }
 
 struct Translated;
 
 impl Workshop for Translated {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
     type Globals = TrGlobals;
     type Players = ();
 
@@ -3697,6 +3899,9 @@ struct Tr2Globals {
 struct Translated2;
 
 impl Workshop for Translated2 {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
     type Globals = Tr2Globals;
     type Players = ();
 
@@ -3788,6 +3993,13 @@ struct UserEnumGlobals {
 struct UserEnums;
 
 impl Workshop for UserEnums {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = UserEnumGlobals;
     type Players = ();
 

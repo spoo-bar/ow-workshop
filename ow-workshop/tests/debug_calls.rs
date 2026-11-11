@@ -16,6 +16,13 @@ struct Mode {
 }
 
 impl Workshop for Mode {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = Globals;
     type Players = ();
 
@@ -115,6 +122,13 @@ fn stripped_calls_leave_no_variable_behind() {
     struct OnlyDebug;
 
     impl Workshop for OnlyDebug {
+        const NAME: &'static str = "Test";
+        const DESCRIPTION: &'static str = "Test mode";
+
+        fn settings(&self) -> ow_workshop::Settings {
+            ow_workshop::Settings::unchecked()
+        }
+
         type Globals = Globals;
         type Players = ();
 

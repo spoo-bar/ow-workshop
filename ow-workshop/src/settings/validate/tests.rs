@@ -10,11 +10,19 @@ fn check_with(settings: &mut Settings, options: &CompileOptions) -> Vec<Diagnost
     diags.0
 }
 
-fn check(mut settings: Settings) -> Vec<(Severity, &'static str)> {
+/// Everything reported, including `settings-no-maps`.
+fn check_all(mut settings: Settings) -> Vec<(Severity, &'static str)> {
     check_with(&mut settings, &CompileOptions::default())
         .iter()
         .map(|d| (d.severity, d.code()))
         .collect()
+}
+
+/// Like `check_all`, minus `settings-no-maps`: most tests build modes without maps.
+fn check(settings: Settings) -> Vec<(Severity, &'static str)> {
+    let mut all = check_all(settings);
+    all.retain(|(_, code)| *code != "settings-no-maps");
+    all
 }
 
 fn errors(settings: Settings) -> Vec<&'static str> {
@@ -41,8 +49,49 @@ fn workshop_maps() -> MapSelection {
 }
 
 #[test]
-fn no_settings_no_checks() {
-    assert_eq!(check(Settings::default()), []);
+fn empty_settings_are_an_error() {
+    assert_eq!(errors(Settings::default()), ["settings-no-modes"]);
+}
+
+#[test]
+fn unchecked_settings_are_not_checked() {
+    assert_eq!(check(Settings::unchecked()), []);
+}
+
+#[test]
+fn enabled_mode_needs_a_map() {
+    let errors = |settings: Settings| -> Vec<&'static str> {
+        check_all(settings)
+            .into_iter()
+            .filter(|(severity, _)| *severity == Severity::Error)
+            .map(|(_, code)| code)
+            .collect()
+    };
+    let no_maps = |maps: Option<MapSelection>| {
+        let mode = ModeSettings::default();
+        let mode = maps.map_or(mode.clone(), |m| mode.maps(m));
+        errors(Settings::default().with_mode(tdm(), mode))
+    };
+    assert_eq!(no_maps(None), ["settings-no-maps"]);
+    assert_eq!(
+        no_maps(Some(MapSelection::Enabled(vec![]))),
+        ["settings-no-maps"]
+    );
+    assert_eq!(
+        no_maps(Some(MapSelection::Disabled(vec![]))),
+        [] as [&str; 0]
+    );
+    // `General` holds shared settings and needs no map, but cannot be the only mode.
+    let general = Settings::default().with_mode(ModeKey::General, ModeSettings::default());
+    assert_eq!(errors(general), ["settings-no-modes"]);
+    let with_general = Settings::default()
+        .with_mode(tdm(), ModeSettings::default().maps(workshop_maps()))
+        .with_mode(ModeKey::General, ModeSettings::default());
+    assert_eq!(errors(with_general), [] as [&str; 0]);
+    let disabled = Settings::default()
+        .with_mode(tdm(), ModeSettings::default().disabled())
+        .with_mode(ModeKey::General, ModeSettings::default());
+    assert_eq!(errors(disabled), ["settings-no-modes"]);
 }
 
 #[test]
@@ -74,7 +123,11 @@ fn the_shared_settings_have_no_map_list() {
     );
     assert_eq!(
         errors(settings),
-        ["settings-unknown-map", "settings-unknown-map"]
+        [
+            "settings-no-modes",
+            "settings-unknown-map",
+            "settings-unknown-map"
+        ]
     );
 }
 
@@ -128,22 +181,24 @@ fn number_limits() {
 #[test]
 fn string_limits_count_scalars_and_bytes() {
     // The mode name allows 129 bytes; the description 512 characters.
-    let name = |text: &str| {
-        with_tdm(Settings::default()).with_main(Main {
-            mode_name: Some(text.to_owned()),
-            description: None,
-        })
+    let name = |text: &str| Settings {
+        main: Some(Main {
+            mode_name: text.to_owned(),
+            description: String::new(),
+        }),
+        ..with_tdm(Settings::default())
     };
     assert_eq!(errors(name(&"a".repeat(129))), [] as [&str; 0]);
     assert_eq!(errors(name(&"a".repeat(130))), ["settings-string-too-long"]);
     // 43 three-byte scalars are 129 bytes; 44 are 132.
     assert_eq!(errors(name(&"あ".repeat(43))), [] as [&str; 0]);
     assert_eq!(errors(name(&"あ".repeat(44))), ["settings-string-too-long"]);
-    let description = |text: String| {
-        with_tdm(Settings::default()).with_main(Main {
-            mode_name: None,
-            description: Some(text),
-        })
+    let description = |text: String| Settings {
+        main: Some(Main {
+            mode_name: String::new(),
+            description: text,
+        }),
+        ..with_tdm(Settings::default())
     };
     assert_eq!(errors(description("あ".repeat(512))), [] as [&str; 0]);
     assert_eq!(
@@ -196,11 +251,13 @@ fn unset_slots_default_to_the_largest_of_the_modes() {
 
 #[test]
 fn best_available_data_center_is_dropped() {
-    let mut settings = with_tdm(Settings::default()).with_lobby(
-        Lobby::default()
-            .data_center_preference("bestAvailable")
-            .map_rotation("paused"),
-    );
+    let mut settings = Settings::default()
+        .with_mode(tdm(), ModeSettings::default().maps(workshop_maps()))
+        .with_lobby(
+            Lobby::default()
+                .data_center_preference("bestAvailable")
+                .map_rotation("paused"),
+        );
     let diagnostics = check_with(&mut settings, &CompileOptions::default());
     assert_eq!(diagnostics, []);
     let lobby = settings.lobby.expect("lobby stays");
@@ -329,7 +386,9 @@ fn duplicate_extensions_are_paid_once() {
 
 #[test]
 fn extension_points_warning_can_be_suppressed() {
-    let mut settings = with_tdm(Settings::default()).with_extension(Extension::Projectiles);
+    let mut settings = Settings::default()
+        .with_mode(tdm(), ModeSettings::default().maps(workshop_maps()))
+        .with_extension(Extension::Projectiles);
     let mut options = CompileOptions::default();
     options.suppress.insert(Warning::ExtensionPoints);
     assert_eq!(check_with(&mut settings, &options), []);

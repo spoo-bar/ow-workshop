@@ -28,6 +28,13 @@ struct Mode {
 }
 
 impl Workshop for Mode {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = Globals;
     type Players = Players;
 
@@ -232,6 +239,13 @@ fn the_warning_can_be_suppressed() {
     struct Quiet(usize);
 
     impl Workshop for Quiet {
+        const NAME: &'static str = "Test";
+        const DESCRIPTION: &'static str = "Test mode";
+
+        fn settings(&self) -> ow_workshop::Settings {
+            ow_workshop::Settings::unchecked()
+        }
+
         type Globals = Globals;
         type Players = Players;
 

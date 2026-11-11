@@ -76,12 +76,15 @@ mod json {
     }
 
     #[test]
+    fn main_cannot_be_set_from_json() {
+        let err = parse(r#"{"main": {"modeName": "Tower", "description": "Hold"}}"#)
+            .expect_err("rejected");
+        assert!(err.contains("Workshop::NAME"), "{err}");
+    }
+
+    #[test]
     fn builder_matches_json() {
         let built = Settings::default()
-            .with_main(Main {
-                mode_name: Some("Tower".into()),
-                description: Some("Hold the tower".into()),
-            })
             .with_lobby(
                 Lobby::default()
                     .map_rotation("paused")
@@ -122,7 +125,6 @@ mod json {
             .with_extension(Extension::BeamEffects);
         let parsed = parse(
             r#"{
-                "main": {"modeName": "Tower", "description": "Hold the tower"},
                 "lobby": {
                     "mapRotation": "paused",
                     "spectatorSlots": 6,

@@ -16,6 +16,13 @@ struct Mode {
 }
 
 impl Workshop for Mode {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = Globals;
     type Players = ();
 
@@ -308,6 +315,13 @@ fn leading_and_trailing_whitespace_is_kept_around_translations() {
 fn detection_rule(mode: PlayerVarMode, optimize: OptLevel) -> String {
     struct Detecting(PlayerVarMode, OptLevel);
     impl Workshop for Detecting {
+        const NAME: &'static str = "Test";
+        const DESCRIPTION: &'static str = "Test mode";
+
+        fn settings(&self) -> ow_workshop::Settings {
+            ow_workshop::Settings::unchecked()
+        }
+
         type Globals = ();
         type Players = ();
 

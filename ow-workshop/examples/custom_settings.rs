@@ -12,6 +12,9 @@ const FRENCH: &str = include_str!("data/custom_settings.fr.po");
 pub struct CustomSettings;
 
 impl Workshop for CustomSettings {
+    const NAME: &'static str = "Custom Settings";
+    const DESCRIPTION: &'static str = "Shows settings, workshop settings and translations";
+
     type Globals = ();
     type Players = ();
 
@@ -46,10 +49,6 @@ impl Workshop for CustomSettings {
     fn settings(&self) -> Settings {
         let reaper = Values::new().with("ability1Cooldown%", SettingValue::Percent(50.0));
         Settings::default()
-            .with_main(Main {
-                mode_name: Some("Custom Settings".to_owned()),
-                description: Some("Shows settings, workshop settings and translations".to_owned()),
-            })
             .with_lobby(Lobby::default().team1_slots(4).team2_slots(0))
             .with_mode(
                 ModeKey::Mode(Gamemode::TeamDeathmatch),

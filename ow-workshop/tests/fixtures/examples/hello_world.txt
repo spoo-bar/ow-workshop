@@ -1,5 +1,10 @@
 settings
 {
+	main
+	{
+		Mode Name: "Hello World"
+		Description: "The smallest useful mod"
+	}
 	modes
 	{
 		Team Deathmatch

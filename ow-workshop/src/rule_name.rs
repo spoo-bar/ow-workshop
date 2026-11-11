@@ -108,6 +108,13 @@ mod tests {
     fn options_carry_the_template() {
         struct Custom;
         impl Workshop for Custom {
+            const NAME: &'static str = "Test";
+            const DESCRIPTION: &'static str = "Test mode";
+
+            fn settings(&self) -> crate::settings::Settings {
+                crate::settings::Settings::unchecked()
+            }
+
             type Globals = ();
             type Players = ();
             fn build(&self, ws: &mut Builder, (): &(), (): &()) {

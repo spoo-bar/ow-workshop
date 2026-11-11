@@ -7,6 +7,13 @@ use ow_workshop::prelude::*;
 struct Tagged;
 
 impl Workshop for Tagged {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ();
     type Players = ();
 
@@ -29,6 +36,13 @@ impl Workshop for Tagged {
 struct Textured;
 
 impl Workshop for Textured {
+    const NAME: &'static str = "Test";
+    const DESCRIPTION: &'static str = "Test mode";
+
+    fn settings(&self) -> ow_workshop::Settings {
+        ow_workshop::Settings::unchecked()
+    }
+
     type Globals = ();
     type Players = ();
 

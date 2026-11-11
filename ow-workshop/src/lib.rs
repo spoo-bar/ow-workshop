@@ -7,10 +7,14 @@
 //!
 //! ```
 //! use ow_workshop::prelude::*;
+//! use ow_workshop::{Gamemode, Map};
 //!
 //! struct HelloWorld;
 //!
 //! impl Workshop for HelloWorld {
+//!     const NAME: &'static str = "My Mode";
+//!     const DESCRIPTION: &'static str = "Made with ow-workshop";
+//!
 //!     type Globals = ();
 //!     type Players = ();
 //!
@@ -23,6 +27,15 @@
 //!             r.condition(ev.event_player().has_spawned());
 //!             r.actions(|b| b.small_message(ws_fmt!("Welcome, {}!", ev.event_player())));
 //!         });
+//!     }
+//!
+//!     fn settings(&self) -> Settings {
+//!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
+//!         Settings::default()
+//!             .with_mode(
+//!                 ModeKey::Mode(Gamemode::TeamDeathmatch),
+//!                 ModeSettings::default().maps(maps),
+//!             )
 //!     }
 //! }
 //!
@@ -82,6 +95,7 @@
 //!
 //! ```
 //! use ow_workshop::prelude::*;
+//! use ow_workshop::{Gamemode, Map};
 //!
 //! #[derive(Clone, Copy, WorkshopEnum)]
 //! enum State {
@@ -102,6 +116,9 @@
 //! struct Mode;
 //!
 //! impl Workshop for Mode {
+//!     const NAME: &'static str = "My Mode";
+//!     const DESCRIPTION: &'static str = "Made with ow-workshop";
+//!
 //!     type Globals = Globals;
 //!     type Players = ();
 //!
@@ -116,6 +133,15 @@
 //!                 b.debug_only(|b| b.set(g.boss_health, 1));
 //!             });
 //!         });
+//!     }
+//!
+//!     fn settings(&self) -> Settings {
+//!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
+//!         Settings::default()
+//!             .with_mode(
+//!                 ModeKey::Mode(Gamemode::TeamDeathmatch),
+//!                 ModeSettings::default().maps(maps),
+//!             )
 //!     }
 //! }
 //!
@@ -143,15 +169,28 @@
 //!
 //! ```
 //! use ow_workshop::prelude::*;
+//! use ow_workshop::{Gamemode, Map};
 //!
 //! struct MyMode;
 //!
 //! impl Workshop for MyMode {
+//!     const NAME: &'static str = "My Mode";
+//!     const DESCRIPTION: &'static str = "Made with ow-workshop";
+//!
 //!     type Globals = ();
 //!     type Players = ();
 //!
 //!     fn build(&self, ws: &mut Builder, _: &(), _: &()) {
 //!         ws.rule("Init", OngoingGlobal, |_, _| {});
+//!     }
+//!
+//!     fn settings(&self) -> Settings {
+//!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
+//!         Settings::default()
+//!             .with_mode(
+//!                 ModeKey::Mode(Gamemode::TeamDeathmatch),
+//!                 ModeSettings::default().maps(maps),
+//!             )
 //!     }
 //! }
 //!
@@ -164,7 +203,7 @@
 //!         .map_err(|diagnostics| diagnostics.to_string())
 //! }
 //!
-//! assert_eq!(compile("en-US"), Ok(String::new()));
+//! assert!(compile("en-US").is_ok());
 //! assert!(compile("xx-XX").is_err());
 //! ```
 
@@ -286,8 +325,8 @@ pub use raycast::{RayCast, RayCastArgs, ray_cast, ray_cast_with};
 pub use rule::{ConditionRef, Rule};
 pub use rule_name::{RuleMeta, default_rule_name};
 pub use settings::{
-    HeroSelection, HeroSettings, HeroTeam, Lobby, Main, MapRef, MapSelection, ModeKey,
-    ModeSettings, SettingValue, Settings, Values, WorkshopValue,
+    HeroSelection, HeroSettings, HeroTeam, Lobby, MapRef, MapSelection, ModeKey, ModeSettings,
+    SettingValue, Settings, Values, WorkshopValue,
 };
 pub use subroutine::{Sub, SubroutineOptions};
 pub use switch::SwitchBuilder;

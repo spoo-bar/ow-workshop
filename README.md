@@ -5,6 +5,7 @@ Implement `Workshop` for a type and compile it to the text you paste into *Custo
 
 ```rust
 use ow_workshop::prelude::*;
+use ow_workshop::{Gamemode, Map};
 
 #[derive(GlobalVars)]
 struct Globals { round: Global<Num> }
@@ -15,6 +16,9 @@ struct Players { score: PlayerVar<Num> }
 struct Deathmatch;
 
 impl Workshop for Deathmatch {
+    const NAME: &'static str = "My Mode";
+    const DESCRIPTION: &'static str = "Made with ow-workshop";
+
     type Globals = Globals;
     type Players = Players;
 
@@ -27,6 +31,15 @@ impl Workshop for Deathmatch {
             r.condition(ev.attacker().ne(ev.victim()));
             r.actions(|b| b.add_to(ev.attacker().var(p.score), 1));
         });
+    }
+
+    fn settings(&self) -> Settings {
+        let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
+        Settings::default()
+            .with_mode(
+                ModeKey::Mode(Gamemode::TeamDeathmatch),
+                ModeSettings::default().maps(maps),
+            )
     }
 }
 ```

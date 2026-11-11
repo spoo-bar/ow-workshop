@@ -11,8 +11,8 @@ Subroutines
   (none)
 
 Rules
-    0  "Header"  Ongoing - Global  11 elements  at ow-workshop/examples/hello_world.rs:14:12
-    1  "Welcome"  Ongoing - Each Player  8 elements  at ow-workshop/examples/hello_world.rs:21:12
+    0  "Header"  Ongoing - Global  11 elements  at ow-workshop/examples/hello_world.rs:17:12
+    1  "Welcome"  Ongoing - Each Player  8 elements  at ow-workshop/examples/hello_world.rs:24:12
 
 Totals
   elements: 19 (19 without the debug panels)

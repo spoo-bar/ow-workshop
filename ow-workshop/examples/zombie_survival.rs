@@ -46,6 +46,9 @@ pub struct ZombieSurvival {
 }
 
 impl Workshop for ZombieSurvival {
+    const NAME: &'static str = "Zombie Survival";
+    const DESCRIPTION: &'static str = "Survive waves of zombies";
+
     type Globals = Globals;
     type Players = Players;
 

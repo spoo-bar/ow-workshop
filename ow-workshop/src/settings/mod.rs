@@ -20,7 +20,7 @@ pub use values::{SettingValue, Values};
 #[non_exhaustive]
 pub struct Settings {
     /// The `main` section.
-    pub main: Main,
+    pub(crate) main: Option<Main>,
     /// The `lobby` section, if the mod sets one.
     pub lobby: Option<Lobby>,
     /// Per game mode settings.
@@ -31,16 +31,11 @@ pub struct Settings {
     pub workshop: Vec<(String, WorkshopValue)>,
     /// Workshop extensions the mod turns on.
     pub extensions: Vec<Extension>,
+    /// Skips validation and prints nothing when empty; see [`Settings::unchecked`].
+    pub(crate) unchecked: bool,
 }
 
 impl Settings {
-    /// Sets the `main` section.
-    #[must_use]
-    pub fn with_main(mut self, main: Main) -> Self {
-        self.main = main;
-        self
-    }
-
     /// Sets the `lobby` section.
     #[must_use]
     pub fn with_lobby(mut self, lobby: Lobby) -> Self {
@@ -78,9 +73,32 @@ impl Settings {
         self
     }
 
+    /// Settings that skip validation and print no block while nothing is set.
+    ///
+    /// The game rejects code without a `settings` block, or with a game mode that has no map, so
+    /// a real mod must declare complete settings. This exists only for tests of other parts of the
+    /// compiler.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn unchecked() -> Self {
+        Self::default().without_checks()
+    }
+
+    /// These settings, skipping validation; see [`Settings::unchecked`]. For reference tests that
+    /// compile settings exported from the game as they are.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn without_checks(mut self) -> Self {
+        self.unchecked = true;
+        self
+    }
+
     /// Whether nothing is set, so no settings block is printed.
     pub(crate) fn is_empty(&self) -> bool {
-        *self == Self::default()
+        Self {
+            unchecked: false,
+            ..self.clone()
+        } == Self::default()
     }
 
     /// Whether the extension is on.
@@ -97,13 +115,12 @@ fn replace<K: PartialEq, V>(entries: &mut Vec<(K, V)>, key: K, value: V) {
     }
 }
 
-/// The `main` section.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Main {
-    /// The name of the mode.
-    pub mode_name: Option<String>,
-    /// The description of the mode.
-    pub description: Option<String>,
+/// The `main` section, filled from [`Workshop::NAME`](crate::Workshop::NAME) and
+/// [`Workshop::DESCRIPTION`](crate::Workshop::DESCRIPTION) when the mod is compiled.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Main {
+    pub(crate) mode_name: String,
+    pub(crate) description: String,
 }
 
 /// The `lobby` section. Typed setters, one per schema setting, are generated.

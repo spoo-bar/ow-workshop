@@ -1,6 +1,11 @@
 // ow-workshop debug build
 settings
 {
+	main
+	{
+		Mode Name: "Zombie Survival"
+		Description: "Survive waves of zombies"
+	}
 	modes
 	{
 		Team Deathmatch

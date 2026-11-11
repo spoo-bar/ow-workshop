@@ -1,7 +1,8 @@
 //! Reads settings from JSON (feature `serde`), using the schema's camelCase keys.
 //!
-//! The JSON has the shape of the reference format: `main`, `lobby`, `gamemodes` (or `modes`),
-//! `heroes`, `workshop` and `extensions`. Numbers are typed by the schema, so
+//! The JSON has the shape of the reference format: `lobby`, `gamemodes` (or `modes`), `heroes`,
+//! `workshop` and `extensions`; a `main` section is an error, as the mode's name and description
+//! come from `Workshop::NAME` and `Workshop::DESCRIPTION`. Numbers are typed by the schema, so
 //! `"respawnTime%": 50` becomes a percent. Keys the schema lacks are kept as given.
 
 use core::fmt;
@@ -13,8 +14,8 @@ use serde::de::{self, Deserializer, MapAccess, Visitor};
 
 use super::schema::{hero_sections, mode_sections};
 use super::{
-    HeroSelection, HeroSettings, HeroTeam, Lobby, Main, MapRef, MapSelection, ModeKey,
-    ModeSettings, SettingValue, Settings, Values, WorkshopValue,
+    HeroSelection, HeroSettings, HeroTeam, Lobby, MapRef, MapSelection, ModeKey, ModeSettings,
+    SettingValue, Settings, Values, WorkshopValue,
 };
 
 /// A JSON object that keeps its key order.
@@ -129,24 +130,18 @@ fn values<'a>(
     Ok(out)
 }
 
-fn string<'a>(key: &str, entry: &'a Entry) -> Res<&'a str> {
-    match entry {
-        Entry::Str(s) => Ok(s),
-        _ => Err(format!("`{key}` must be a string")),
+/// The mode's name and description come from `Workshop::NAME` and `Workshop::DESCRIPTION`, never
+/// from settings.
+fn reject_main(entries: &[(String, Entry)]) -> Res<()> {
+    if entries.is_empty() {
+        Ok(())
+    } else {
+        Err(
+            "`main` cannot be set in settings; declare `Workshop::NAME` and \
+             `Workshop::DESCRIPTION` instead"
+                .to_owned(),
+        )
     }
-}
-
-fn main_section(entries: &[(String, Entry)]) -> Res<Main> {
-    let mut main = Main::default();
-    for (key, entry) in entries {
-        let slot = match key.as_str() {
-            "modeName" => &mut main.mode_name,
-            "description" => &mut main.description,
-            _ => return Err(format!("unknown `main` setting `{key}`")),
-        };
-        *slot = Some(string(key, entry)?.to_owned());
-    }
-    Ok(main)
 }
 
 fn maps(key: &str, entry: &Entry) -> Res<Vec<MapRef>> {
@@ -278,10 +273,8 @@ fn workshop_value(key: &str, entry: &Entry) -> Res<WorkshopValue> {
 }
 
 fn convert(raw: &Raw) -> Res<Settings> {
-    let mut settings = Settings {
-        main: main_section(&raw.main.0)?,
-        ..Settings::default()
-    };
+    reject_main(&raw.main.0)?;
+    let mut settings = Settings::default();
     if let Some(Ordered(entries)) = &raw.lobby {
         settings.lobby = Some(Lobby {
             values: values(&[&LOBBY], entries)?,
