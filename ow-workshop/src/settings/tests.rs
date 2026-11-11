@@ -79,8 +79,8 @@ mod json {
     fn builder_matches_json() {
         let built = Settings::default()
             .with_main(Main {
-                mode_name: Some("Tower".into()),
-                description: Some("Hold the tower".into()),
+                mode_name: "Tower".into(),
+                description: "Hold the tower".into(),
             })
             .with_lobby(
                 Lobby::default()

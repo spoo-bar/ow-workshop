@@ -147,10 +147,15 @@ impl Workshop for ZombieSurvival {
 
     fn settings(&self) -> Settings {
         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
-        Settings::default().with_mode(
-            ModeKey::Mode(Gamemode::TeamDeathmatch),
-            ModeSettings::default().maps(maps),
-        )
+        Settings::default()
+            .with_main(Main {
+                mode_name: "Zombie Survival".to_owned(),
+                description: "Survive waves of zombies".to_owned(),
+            })
+            .with_mode(
+                ModeKey::Mode(Gamemode::TeamDeathmatch),
+                ModeSettings::default().maps(maps),
+            )
     }
 }
 

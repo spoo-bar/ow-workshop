@@ -18,10 +18,11 @@ fn check_all(mut settings: Settings) -> Vec<(Severity, &'static str)> {
         .collect()
 }
 
-/// Like `check_all`, minus `settings-no-maps`: most tests build modes without maps.
+/// Like `check_all`, minus `settings-no-main` and `settings-no-maps`: most tests build settings
+/// without a `main` section or maps.
 fn check(settings: Settings) -> Vec<(Severity, &'static str)> {
     let mut all = check_all(settings);
-    all.retain(|(_, code)| *code != "settings-no-maps");
+    all.retain(|(_, code)| !matches!(*code, "settings-no-main" | "settings-no-maps"));
     all
 }
 
@@ -31,6 +32,13 @@ fn errors(settings: Settings) -> Vec<&'static str> {
         .filter(|(severity, _)| *severity == Severity::Error)
         .map(|(_, code)| code)
         .collect()
+}
+
+fn main() -> Main {
+    Main {
+        mode_name: "Mode".to_owned(),
+        description: "About it".to_owned(),
+    }
 }
 
 fn tdm() -> ModeKey {
@@ -54,6 +62,19 @@ fn empty_settings_are_an_error() {
 }
 
 #[test]
+fn main_is_required() {
+    let complete = Settings::default()
+        .with_main(main())
+        .with_mode(tdm(), ModeSettings::default().maps(workshop_maps()));
+    assert_eq!(check_all(complete.clone()), []);
+    let without = Settings {
+        main: None,
+        ..complete
+    };
+    assert_eq!(check_all(without), [(Severity::Error, "settings-no-main")]);
+}
+
+#[test]
 fn unchecked_settings_are_not_checked() {
     assert_eq!(check(Settings::unchecked()), []);
 }
@@ -63,7 +84,7 @@ fn enabled_mode_needs_a_map() {
     let errors = |settings: Settings| -> Vec<&'static str> {
         check_all(settings)
             .into_iter()
-            .filter(|(severity, _)| *severity == Severity::Error)
+            .filter(|(severity, code)| *severity == Severity::Error && *code != "settings-no-main")
             .map(|(_, code)| code)
             .collect()
     };
@@ -183,8 +204,8 @@ fn string_limits_count_scalars_and_bytes() {
     // The mode name allows 129 bytes; the description 512 characters.
     let name = |text: &str| {
         with_tdm(Settings::default()).with_main(Main {
-            mode_name: Some(text.to_owned()),
-            description: None,
+            mode_name: text.to_owned(),
+            description: String::new(),
         })
     };
     assert_eq!(errors(name(&"a".repeat(129))), [] as [&str; 0]);
@@ -194,8 +215,8 @@ fn string_limits_count_scalars_and_bytes() {
     assert_eq!(errors(name(&"あ".repeat(44))), ["settings-string-too-long"]);
     let description = |text: String| {
         with_tdm(Settings::default()).with_main(Main {
-            mode_name: None,
-            description: Some(text),
+            mode_name: String::new(),
+            description: text,
         })
     };
     assert_eq!(errors(description("あ".repeat(512))), [] as [&str; 0]);
@@ -250,6 +271,7 @@ fn unset_slots_default_to_the_largest_of_the_modes() {
 #[test]
 fn best_available_data_center_is_dropped() {
     let mut settings = Settings::default()
+        .with_main(main())
         .with_mode(tdm(), ModeSettings::default().maps(workshop_maps()))
         .with_lobby(
             Lobby::default()
@@ -385,6 +407,7 @@ fn duplicate_extensions_are_paid_once() {
 #[test]
 fn extension_points_warning_can_be_suppressed() {
     let mut settings = Settings::default()
+        .with_main(main())
         .with_mode(tdm(), ModeSettings::default().maps(workshop_maps()))
         .with_extension(Extension::Projectiles);
     let mut options = CompileOptions::default();

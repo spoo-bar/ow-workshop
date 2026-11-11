@@ -73,6 +73,9 @@ pub enum ErrorKind {
     /// A random value indexes a multi-dimensional array.
     #[error("a random value indexes a multi-dimensional array")]
     RandomInMultiDimIndex,
+    /// The settings have no mode name and description.
+    #[error("the settings have no mode name and description")]
+    SettingsNoMain,
     /// An enabled game mode has no map.
     #[error("an enabled game mode has no map")]
     SettingsNoMaps,
@@ -190,6 +193,7 @@ impl ErrorKind {
             Self::PoNewlines => "po-newlines",
             Self::PoSyntax => "po-syntax",
             Self::RandomInMultiDimIndex => "random-in-multi-dim-index",
+            Self::SettingsNoMain => "settings-no-main",
             Self::SettingsNoMaps => "settings-no-maps",
             Self::SettingsNoModes => "settings-no-modes",
             Self::SettingsNotInteger => "settings-not-integer",
@@ -247,6 +251,7 @@ impl ErrorKind {
         Self::PoNewlines,
         Self::PoSyntax,
         Self::RandomInMultiDimIndex,
+        Self::SettingsNoMain,
         Self::SettingsNoMaps,
         Self::SettingsNoModes,
         Self::SettingsNotInteger,

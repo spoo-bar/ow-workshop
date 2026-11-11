@@ -79,7 +79,8 @@ fn extensions_settings() {
         .with_extension(Extension::BeamEffects)
         .with_extension(Extension::BeamSounds)
         .with_extension(Extension::BuffAndDebuffSounds)
-        .with_extension(Extension::SpawnMoreDummyBots);
+        .with_extension(Extension::SpawnMoreDummyBots)
+        .without_checks();
     insta::assert_snapshot!("extensions", settings_of(settings));
 }
 
@@ -124,6 +125,23 @@ fn empty_settings_fail_the_compile() {
 }
 
 #[test]
+fn settings_without_main_fail_the_compile() {
+    let settings = Settings::default().with_mode(
+        ModeKey::Mode(Gamemode::TeamDeathmatch),
+        ModeSettings::default().maps(MapSelection::Enabled(vec![MapRef::new(
+            Map::WorkshopChamber,
+        )])),
+    );
+    let err = Mod(settings)
+        .compile_with_debug(Lang::EnUs, Some(DebugMode::Off))
+        .expect_err("the mode name and description are required");
+    assert!(
+        err.0.iter().any(|d| d.code() == "settings-no-main"),
+        "{err}"
+    );
+}
+
+#[test]
 fn a_mode_without_a_map_fails_the_compile() {
     let settings = Settings::default().with_mode(
         ModeKey::Mode(Gamemode::TeamDeathmatch),
@@ -141,6 +159,10 @@ fn a_mode_without_a_map_fails_the_compile() {
 #[test]
 fn extension_points_are_a_warning() {
     let settings = Settings::default()
+        .with_main(Main {
+            mode_name: "Mode".to_owned(),
+            description: "About it".to_owned(),
+        })
         .with_mode(
             ModeKey::Mode(Gamemode::TeamDeathmatch),
             ModeSettings::default().maps(MapSelection::Enabled(vec![MapRef::new(Map::Paris)])),

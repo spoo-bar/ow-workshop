@@ -47,8 +47,8 @@ impl Workshop for CustomSettings {
         let reaper = Values::new().with("ability1Cooldown%", SettingValue::Percent(50.0));
         Settings::default()
             .with_main(Main {
-                mode_name: Some("Custom Settings".to_owned()),
-                description: Some("Shows settings, workshop settings and translations".to_owned()),
+                mode_name: "Custom Settings".to_owned(),
+                description: "Shows settings, workshop settings and translations".to_owned(),
             })
             .with_lobby(Lobby::default().team1_slots(4).team2_slots(0))
             .with_mode(

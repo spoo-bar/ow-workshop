@@ -28,10 +28,15 @@
 //!
 //!     fn settings(&self) -> Settings {
 //!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
-//!         Settings::default().with_mode(
-//!             ModeKey::Mode(Gamemode::TeamDeathmatch),
-//!             ModeSettings::default().maps(maps),
-//!         )
+//!         Settings::default()
+//!             .with_main(Main {
+//!                 mode_name: "My Mode".to_owned(),
+//!                 description: "Made with ow-workshop".to_owned(),
+//!             })
+//!             .with_mode(
+//!                 ModeKey::Mode(Gamemode::TeamDeathmatch),
+//!                 ModeSettings::default().maps(maps),
+//!             )
 //!     }
 //! }
 //!
@@ -130,10 +135,15 @@
 //!
 //!     fn settings(&self) -> Settings {
 //!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
-//!         Settings::default().with_mode(
-//!             ModeKey::Mode(Gamemode::TeamDeathmatch),
-//!             ModeSettings::default().maps(maps),
-//!         )
+//!         Settings::default()
+//!             .with_main(Main {
+//!                 mode_name: "My Mode".to_owned(),
+//!                 description: "Made with ow-workshop".to_owned(),
+//!             })
+//!             .with_mode(
+//!                 ModeKey::Mode(Gamemode::TeamDeathmatch),
+//!                 ModeSettings::default().maps(maps),
+//!             )
 //!     }
 //! }
 //!
@@ -175,10 +185,15 @@
 //!
 //!     fn settings(&self) -> Settings {
 //!         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
-//!         Settings::default().with_mode(
-//!             ModeKey::Mode(Gamemode::TeamDeathmatch),
-//!             ModeSettings::default().maps(maps),
-//!         )
+//!         Settings::default()
+//!             .with_main(Main {
+//!                 mode_name: "My Mode".to_owned(),
+//!                 description: "Made with ow-workshop".to_owned(),
+//!             })
+//!             .with_mode(
+//!                 ModeKey::Mode(Gamemode::TeamDeathmatch),
+//!                 ModeSettings::default().maps(maps),
+//!             )
 //!     }
 //! }
 //!

@@ -19,8 +19,8 @@ fn print(settings: Settings, lang: Lang) -> String {
 fn sample() -> Settings {
     Settings::default()
         .with_main(Main {
-            mode_name: Some("Ｔｏｗｅｒ Ｍｅｉｆｅｎｓｅ".into()),
-            description: Some("Hold the tower".into()),
+            mode_name: "Ｔｏｗｅｒ Ｍｅｉｆｅｎｓｅ".into(),
+            description: "Hold the tower".into(),
         })
         .with_lobby(
             Lobby::default()
@@ -314,8 +314,8 @@ fn hero_list_comes_after_hero_objects() {
 #[test]
 fn string_settings_are_quoted_and_escaped() {
     let settings = Settings::default().with_main(Main {
-        mode_name: Some("a \"b\"\nc".into()),
-        description: None,
+        mode_name: "a \"b\"\nc".into(),
+        description: String::new(),
     });
     assert!(print(settings, Lang::EnUs).contains("Mode Name: \"a \\\"b\\\"\\nc\"\n"));
 }

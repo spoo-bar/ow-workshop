@@ -3303,6 +3303,8 @@ impl Workshop for Extensions {
             .with_extension(Extension::BeamSounds)
             .with_extension(Extension::BuffAndDebuffSounds)
             .with_extension(Extension::SpawnMoreDummyBots)
+            // Compiled as exported; the game export has no `main` section.
+            .without_checks()
     }
 }
 
@@ -3482,8 +3484,8 @@ impl Workshop for CustomGameSettings {
         };
         Settings::default()
             .with_main(Main {
-                mode_name: Some("\u{ff34}\u{ff4f}\u{ff57}\u{ff45}\u{ff52}\u{2001}\u{ff2d}\u{ff45}\u{ff49}\u{ff46}\u{ff45}\u{ff4e}\u{ff53}\u{ff45}".to_owned()),
-                description: Some(description),
+                mode_name: "\u{ff34}\u{ff4f}\u{ff57}\u{ff45}\u{ff52}\u{2001}\u{ff2d}\u{ff45}\u{ff49}\u{ff46}\u{ff45}\u{ff4e}\u{ff53}\u{ff45}".to_owned(),
+                description,
             })
             .with_lobby(
                 Lobby::default()
@@ -3663,6 +3665,8 @@ fn translation_settings() -> Settings {
                 Map::WorkshopChamber,
             )])),
         )
+        // Compiled as exported; the game export has no `main` section.
+        .without_checks()
 }
 
 struct Translated;

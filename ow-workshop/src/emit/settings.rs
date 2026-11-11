@@ -72,22 +72,19 @@ impl<O: Write> Writer<'_, O> {
     }
 
     fn main(&mut self, settings: &Settings) -> fmt::Result {
-        let main = &settings.main;
-        if main.mode_name.is_none() && main.description.is_none() {
+        let Some(main) = &settings.main else {
             return Ok(());
-        }
+        };
         self.open(MAIN.name(self.lang))?;
         for (key, text) in [
             ("modeName", &main.mode_name),
             ("description", &main.description),
         ] {
-            if let Some(text) = text {
-                self.tabs()?;
-                self.out.write_str(&key_name(&[&MAIN], key, self.lang))?;
-                self.out.write_str(": ")?;
-                write_censored_string(self.out, text)?;
-                self.out.write_char('\n')?;
-            }
+            self.tabs()?;
+            self.out.write_str(&key_name(&[&MAIN], key, self.lang))?;
+            self.out.write_str(": ")?;
+            write_censored_string(self.out, text)?;
+            self.out.write_char('\n')?;
         }
         self.close()
     }

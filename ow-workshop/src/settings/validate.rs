@@ -62,6 +62,12 @@ pub(crate) fn validate(settings: &mut Settings, options: &CompileOptions, diags:
     }
     drop_best_available(settings);
     let mut check = Check { diags };
+    if settings.main.is_none() {
+        check.error(
+            ErrorKind::SettingsNoMain,
+            "the settings have no `main`; set the mode's name and description".to_owned(),
+        );
+    }
     // `General` only holds settings shared by every mode; it is not a mode to play.
     let playable =
         |(key, mode): &&(ModeKey, ModeSettings)| mode.enabled && *key != ModeKey::General;
@@ -199,12 +205,11 @@ impl Check<'_> {
     }
 
     fn values(&mut self, settings: &Settings) {
-        let main = &settings.main;
-        for (key, text) in [
-            ("modeName", &main.mode_name),
-            ("description", &main.description),
-        ] {
-            if let Some(text) = text {
+        if let Some(main) = &settings.main {
+            for (key, text) in [
+                ("modeName", &main.mode_name),
+                ("description", &main.description),
+            ] {
                 self.string("main", &[&ow_workshop_data::settings::MAIN], key, text);
             }
         }

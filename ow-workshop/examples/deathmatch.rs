@@ -41,10 +41,15 @@ impl Workshop for Deathmatch {
 
     fn settings(&self) -> Settings {
         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
-        Settings::default().with_mode(
-            ModeKey::Mode(Gamemode::TeamDeathmatch),
-            ModeSettings::default().maps(maps),
-        )
+        Settings::default()
+            .with_main(Main {
+                mode_name: "Deathmatch".to_owned(),
+                description: "Score on every kill".to_owned(),
+            })
+            .with_mode(
+                ModeKey::Mode(Gamemode::TeamDeathmatch),
+                ModeSettings::default().maps(maps),
+            )
     }
 }
 

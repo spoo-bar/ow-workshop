@@ -59,10 +59,15 @@ impl Workshop for InGameChecklist {
 
     fn settings(&self) -> Settings {
         let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
-        Settings::default().with_mode(
-            ModeKey::Mode(Gamemode::TeamDeathmatch),
-            ModeSettings::default().maps(maps),
-        )
+        Settings::default()
+            .with_main(Main {
+                mode_name: "In-Game Checklist".to_owned(),
+                description: "Checks the mod in the game".to_owned(),
+            })
+            .with_mode(
+                ModeKey::Mode(Gamemode::TeamDeathmatch),
+                ModeSettings::default().maps(maps),
+            )
     }
 }
 

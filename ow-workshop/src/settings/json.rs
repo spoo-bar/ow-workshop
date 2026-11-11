@@ -136,17 +136,27 @@ fn string<'a>(key: &str, entry: &'a Entry) -> Res<&'a str> {
     }
 }
 
-fn main_section(entries: &[(String, Entry)]) -> Res<Main> {
-    let mut main = Main::default();
+fn main_section(entries: &[(String, Entry)]) -> Res<Option<Main>> {
+    if entries.is_empty() {
+        return Ok(None);
+    }
+    let (mut mode_name, mut description) = (None, None);
     for (key, entry) in entries {
         let slot = match key.as_str() {
-            "modeName" => &mut main.mode_name,
-            "description" => &mut main.description,
+            "modeName" => &mut mode_name,
+            "description" => &mut description,
             _ => return Err(format!("unknown `main` setting `{key}`")),
         };
         *slot = Some(string(key, entry)?.to_owned());
     }
-    Ok(main)
+    match (mode_name, description) {
+        (Some(mode_name), Some(description)) => Ok(Some(Main {
+            mode_name,
+            description,
+        })),
+        (None, _) => Err("`main` needs a `modeName`".to_owned()),
+        (_, None) => Err("`main` needs a `description`".to_owned()),
+    }
 }
 
 fn maps(key: &str, entry: &Entry) -> Res<Vec<MapRef>> {
