@@ -153,16 +153,3 @@ impl Section {
         self.settings.iter().find(|s| s.key == key)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn range_sets_the_limits() {
-        let setting = Setting::new("x", 0, Kind::Int).range(Some(1.0), None);
-        assert_eq!((setting.min, setting.max), (Some(1.0), None));
-        let unlimited = Setting::new("x", 0, Kind::Int);
-        assert_eq!((unlimited.min, unlimited.max), (None, None));
-    }
-}

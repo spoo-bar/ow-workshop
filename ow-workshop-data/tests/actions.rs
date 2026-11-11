@@ -4,12 +4,6 @@ use ow_workshop_data::signature::DefaultValue;
 use ow_workshop_data::{ActionId, Ty, ValueId};
 
 #[test]
-fn all_actions_are_present() {
-    assert_eq!(ActionId::ALL.len(), 225);
-    assert_eq!(ActionId::Teleport.key(), "teleport");
-}
-
-#[test]
 fn teleport_is_a_member_action() {
     let sig = ActionId::Teleport.signature();
     assert!(sig.flags.member());

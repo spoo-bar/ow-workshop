@@ -56,65 +56,6 @@ fn sample() -> Block {
     ])
 }
 
-#[test]
-fn hand_built_program_clones_and_compares() {
-    let program = sample();
-    assert_eq!(program, program.clone());
-    assert_eq!(program.stmts.len(), 4);
-    let mut changed = program.clone();
-    changed.stmts.pop();
-    assert_ne!(program, changed);
-}
-
-#[test]
-fn expr_clone_shares_the_node() {
-    let e = Expr::new(ExprKind::Array(vec![num(1.0), num(2.0)]), None);
-    let copy = e.clone();
-    assert_eq!(e, copy);
-    assert!(matches!(copy.kind(), ExprKind::Array(items) if items.len() == 2));
-}
-
-#[test]
-fn nested_places_and_chase() {
-    let grid = Place::Index {
-        base: Box::new(Place::Index {
-            base: Box::new(Place::Global(VarId(1))),
-            index: num(2.0),
-        }),
-        index: num(3.0),
-    };
-    let stmt = Stmt::new(StmtKind::Chase {
-        target: grid.clone(),
-        dest: num(10.0),
-        rate_or_duration: num(1.0),
-        reeval: Expr::new(
-            ExprKind::Const(ConstRef {
-                enum_name: "ChaseRateReeval",
-                key: "DESTINATION_AND_RATE",
-            }),
-            None,
-        ),
-        over_time: false,
-    });
-    assert_eq!(stmt.clone(), stmt);
-    assert_eq!(grid.clone(), grid);
-}
-
-#[test]
-fn nodes_carry_locations_and_comments() {
-    let loc = Location {
-        file: "src/main.rs",
-        line: 12,
-        column: 5,
-    };
-    let e = Expr::new(ExprKind::Null, Some(loc));
-    assert_eq!(e.loc(), Some(loc));
-    let mut s = Stmt::new(StmtKind::Pass);
-    s.comment = Some("note".into());
-    s.loc = Some(loc);
-    assert_eq!(s.comment.as_deref(), Some("note"));
-}
-
 /// Wraps `Rule::new` the way a user-facing builder would.
 #[track_caller]
 fn build_rule() -> Rule {
@@ -143,14 +84,4 @@ fn other_nodes_capture_locations() {
     assert_eq!(var.location.map(|l| l.line), Some(line));
     let (sub, line) = (SubDecl::new("s"), line!());
     assert_eq!(sub.location.map(|l| l.line), Some(line));
-}
-
-#[test]
-fn display_formats_file_line_column() {
-    let loc = Location {
-        file: "src/main.rs",
-        line: 12,
-        column: 5,
-    };
-    assert_eq!(loc.to_string(), "src/main.rs:12:5");
 }

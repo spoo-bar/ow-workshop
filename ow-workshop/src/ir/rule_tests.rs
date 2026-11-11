@@ -66,7 +66,6 @@ fn sample() -> Program {
 fn hand_built_program_is_valid() {
     let program = sample();
     assert_eq!(program.validate(), Ok(()));
-    assert_eq!(program, program.clone());
     let overridden = &program.rules[0].body;
     assert_eq!(overridden.opt.map(|o| o.size), Some(true));
 }

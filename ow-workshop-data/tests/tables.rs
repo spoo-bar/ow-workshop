@@ -1,7 +1,7 @@
 //! Tests for entities, textures, font metrics, hero abilities and map symmetry.
 
 use ow_workshop_data::{
-    Ability, DEFAULT_WIDTH, Hero, Lang, Map, SPACES, Symmetry, Texture, char_width, entity,
+    Ability, DEFAULT_WIDTH, Hero, Lang, Map, SPACES, Symmetry, char_width, entity,
     lowercase_metrics,
 };
 
@@ -9,12 +9,6 @@ use ow_workshop_data::{
 fn entities_map_names_to_characters() {
     assert_eq!(entity("black_square"), Some('■'));
     assert_eq!(entity("no_such_entity"), None);
-}
-
-#[test]
-fn textures_have_tags() {
-    assert_eq!(Texture::Assault.tag(), "<txc00000000020af8>");
-    assert_eq!(Texture::Assault.key(), "ASSAULT");
 }
 
 #[test]

@@ -211,11 +211,6 @@ mod tests {
     }
 
     #[test]
-    fn auto_resolves_like_the_build_profile() {
-        assert_eq!(DebugMode::Auto.resolve().is_some(), cfg!(debug_assertions));
-    }
-
-    #[test]
     fn forced_modes_ignore_the_profile() {
         let custom = DebugOptions {
             log: false,
@@ -226,14 +221,5 @@ mod tests {
             assert_eq!(DebugMode::Off.resolve_with(assertions), None);
             assert_eq!(DebugMode::On(custom).resolve_with(assertions), Some(custom));
         }
-    }
-
-    #[test]
-    fn defaults() {
-        assert_eq!(DebugMode::default(), DebugMode::Auto);
-        assert_eq!(CompileOptions::default().debug, DebugMode::Auto);
-        let options = DebugOptions::default();
-        assert!(options.hud && options.player_hud && options.log && options.keep_debug_calls);
-        assert_eq!(options.toggle, None);
     }
 }

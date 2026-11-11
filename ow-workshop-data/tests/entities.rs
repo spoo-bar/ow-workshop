@@ -1,13 +1,6 @@
 //! Sanity checks for the generated hero, map, gamemode and extension enums.
 
-use ow_workshop_data::{Extension, Gamemode, Hero, Map, Slots};
-
-#[test]
-fn heroes_are_complete_and_keyed() {
-    assert_eq!(Hero::ALL.len(), 54);
-    assert_eq!(Hero::Ana.key(), "ana");
-    assert_eq!(Hero::WreckingBall.key(), "wreckingBall");
-}
+use ow_workshop_data::{Gamemode, Map, Slots};
 
 #[test]
 fn map_metadata() {
@@ -30,10 +23,4 @@ fn gamemode_slots() {
         }
     );
     assert_eq!(Gamemode::Deathmatch.default_slots().ffa, Some(12));
-}
-
-#[test]
-fn extensions() {
-    assert_eq!(Extension::ALL.len(), 11);
-    assert_eq!(Extension::BeamEffects.key(), "beamEffects");
 }

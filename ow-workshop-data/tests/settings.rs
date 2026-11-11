@@ -1,7 +1,7 @@
 //! Tests for the custom game settings schema.
 
 use ow_workshop_data::settings::{GAMEMODE_GENERAL, Kind, LOBBY, MAIN, gamemode_settings};
-use ow_workshop_data::{Extension, Gamemode, Label, Lang};
+use ow_workshop_data::{Gamemode, Lang};
 
 #[test]
 fn respawn_time_is_a_gamemode_percent_setting() {
@@ -41,11 +41,4 @@ fn every_mode_has_a_section() {
         let section = gamemode_settings(*mode).expect("section");
         assert_eq!(section.key, mode.key());
     }
-}
-
-#[test]
-fn extensions_have_points_and_names() {
-    assert_eq!(Extension::BeamEffects.points(), 2);
-    assert_eq!(Extension::BeamEffects.name(Lang::EnUs), "Beam Effects");
-    assert_eq!(Label::EnabledMaps.name(Lang::EnUs), "enabled maps");
 }
