@@ -2,9 +2,9 @@
 //!
 //! Data only; names are stored once in a shared table and referenced by index.
 
+use crate::Hero;
 use crate::generated::setting_names::NAMES;
 use crate::generated::settings::HERO_SETS;
-use crate::{Hero, Lang, Names};
 
 pub use crate::generated::hero_settings::{HERO_GENERAL, hero_settings};
 pub use crate::generated::settings::{GAMEMODE_GENERAL, LOBBY, MAIN, gamemode_settings};
@@ -22,9 +22,9 @@ impl Choice {
         Self { key, name }
     }
 
-    /// The option's name in `lang`.
-    pub fn name(&self, lang: Lang) -> &'static str {
-        Names(NAMES[self.name as usize]).get(lang)
+    /// The option's name as written in workshop code.
+    pub fn name(&self) -> &'static str {
+        NAMES[self.name as usize]
     }
 }
 
@@ -42,7 +42,7 @@ pub enum Kind {
     BoolOnOff,
     /// `true` is written `Off`.
     BoolReverseOnOff,
-    /// One of a set of localized choices.
+    /// One of a set of named choices.
     Combo(&'static [Choice]),
     /// A number printed with `%`.
     Percent,
@@ -112,9 +112,9 @@ impl Setting {
         self
     }
 
-    /// The setting's name in `lang`.
-    pub fn name(&self, lang: Lang) -> &'static str {
-        Names(NAMES[self.name as usize]).get(lang)
+    /// The setting's name as written in workshop code.
+    pub fn name(&self) -> &'static str {
+        NAMES[self.name as usize]
     }
 
     /// Whether the setting exists for `hero`.
@@ -143,9 +143,9 @@ impl Section {
         }
     }
 
-    /// The section's name in `lang`.
-    pub fn name(&self, lang: Lang) -> &'static str {
-        Names(NAMES[self.name as usize]).get(lang)
+    /// The section's name as written in workshop code.
+    pub fn name(&self) -> &'static str {
+        NAMES[self.name as usize]
     }
 
     /// The setting with this key.

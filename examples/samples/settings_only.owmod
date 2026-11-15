@@ -1,0 +1,69 @@
+settings
+{
+	lobby
+	{
+		Data Center Preference: Netherlands
+		Map Rotation: After A Game
+		Match Voice Chat: Enabled
+		Pause Game On Player Disconnect: Yes
+		Return To Lobby: After A Game
+		Team Balancing: After A Game
+	}
+
+	modes
+	{
+		disabled Capture the Flag
+		{
+			Damage Interrupts Flag Interaction: Enabled
+			Enable Perks: On
+			Flag Dropped Lock Time: 5.0
+			Flag Return Time: 4.0
+			Flag Score Respawn Time: 15.0
+			Perk Elimination Catchup Level Amount: 33%
+			Perk Generation: 175%
+			Team Needs Flag At Base To Score: Yes
+		}
+
+		Clash
+		{
+			Capture Speed Modifier: 45%
+			Perk Elimination Catchup Level Amount: 46%
+			Perk Generation: 249%
+		}
+
+		Control
+		{
+			Perk Elimination Catchup Level Amount: 47%
+			Perk Generation: 248%
+		}
+
+		Push
+		{
+			Perk Elimination Catchup Level Amount: 47%
+			Perk Generation: 242%
+			TS-1 Walk Speed Modifier: 101%
+		}
+
+		General
+		{
+			Health Pack Respawn Time Scalar: 49%
+			Hero Limit: 2 Per Team
+			Limit Roles: 2 Of Each Role Per Team
+			Spawn Health Packs: Enabled
+			Team Overlay: Enabled
+		}
+	}
+
+	heroes
+	{
+		General
+		{
+			Ability Cooldown Time: 101%
+			Ammunition Clip Size Scalar: 106%
+			Ultimate Duration: 252%
+			Ultimate Generation: 215%
+			Ultimate Generation - Combat: 216%
+			Ultimate Generation - Passive: 208%
+		}
+	}
+}

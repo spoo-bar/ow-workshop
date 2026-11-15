@@ -1,56 +1,73 @@
 # ow-workshop
 
-Write Overwatch Workshop mods in Rust.
-Implement `Workshop` for a type and compile it to the text you paste into *Custom Game → Settings → Workshop*.
+Write Overwatch Workshop mods in Rust. `cargo build` writes the script you paste into *Custom Game → Settings → Workshop*.
+
+The library is being rewritten. [The epic](https://github.com/spoo-bar/ow-workshop/issues/244) lists what is done and what is open.
+
+## A mod
+
+A mod is one type implementing `Workshop`. Its rules are types implementing `Rule`, in any file or crate.
 
 ```rust
-use ow_workshop::prelude::*;
-use ow_workshop::{Gamemode, Map};
+use ow_workshop::{Hero, Lobby, Mode, Rule, Workshop, utils};
 
-#[derive(GlobalVars)]
-struct Globals { round: Global<Num> }
+#[derive(Default)]
+pub struct MyMod;
 
-#[derive(PlayerVars)]
-struct Players { score: PlayerVar<Num> }
-
-struct Deathmatch;
-
-impl Workshop for Deathmatch {
+impl Workshop for MyMod {
     const NAME: &'static str = "My Mode";
     const DESCRIPTION: &'static str = "Made with ow-workshop";
 
-    type Globals = Globals;
-    type Players = Players;
+    type Globals = ();
+    type Players = ();
 
-    fn rules<'a>(&'a self, g: &'a Globals, p: &'a Players) -> Vec<RuleDef<'a>> {
-        vec![
-            rule("Init", OngoingGlobal, |r, _| {
-                r.actions(|b| b.set(g.round, 1));
-            }),
-            rule("Score on kill", PlayerDied, |r, ev| {
-                r.condition(ev.attacker().ne(ev.victim()));
-                r.actions(|b| b.add_to(ev.attacker().var(p.score), 1));
-            }),
-        ]
+    fn lobby() -> Lobby {
+        Lobby::new().set("Max Team 1 Players", 5)
     }
 
-    fn settings(&self) -> Settings {
-        let maps = MapSelection::Enabled(vec![Map::WorkshopChamber.into()]);
-        Settings::default()
-            .with_mode(
-                ModeKey::Mode(Gamemode::TeamDeathmatch),
-                ModeSettings::default().maps(maps),
-            )
+    fn modes() -> Vec<Mode> {
+        vec![Mode::new("Team Deathmatch").enabled_maps(["Workshop Island"])]
+    }
+
+    fn heroes() -> Vec<Hero> {
+        Vec::new()
+    }
+
+    fn rules(&self, _: &(), _: &()) -> Vec<Box<dyn Rule>> {
+        vec![Box::new(utils::DisableDamageAndHealing)]
     }
 }
 ```
 
-## Examples
+The mod crate's `build.rs` pulls the mod in and writes the script:
 
-Run it with `cargo run -p ow-workshop --release --example hello_world` to get the workshop code as is.
-Without `--release` it is a debug build: the code also shows a live variable panel in game, and a
-debug log is printed to stderr (see "Debugging" in the crate docs):
+```rust
+#[path = "src/my_mod/mod.rs"]
+mod my_mod;
 
-- [`hello_world`](ow-workshop/examples/hello_world.rs): the smallest useful mod.
+fn main() {
+    ow_workshop::build::emit::<my_mod::MyMod>();
+}
+```
+
+`ow-workshop` goes in both `[dependencies]` and `[build-dependencies]`.
+
+## Building
+
+```bash
+cargo build -p my-mod
+```
+
+writes `target/debug/my-mod.owmod` with every rule (disabled ones as `disabled rule`), comments, and debug helpers: a HUD line for each variable marked `#[debug(...)]`, and an inspector log line for each rule marked `#[debug(log_to_inspector)]`.
+
+```bash
+cargo build -p my-mod --release
+```
+
+writes `target/release/my-mod.owmod` with only what the mod needs to run.
+
+## Example
+
+[`examples/src/hello`](examples/src/hello) is a small mod spread over three files. `cargo build -p examples` writes `target/debug/hello.owmod`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) to get involved. Licensed under GPL-3.0.

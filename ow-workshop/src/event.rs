@@ -1,222 +1,116 @@
-//! Event types and the values each event provides.
+use ow_workshop_data::Hero;
 
-use std::marker::PhantomData;
-
-use ow_workshop_data::{Button, ValueId};
-
-use crate::expr::Expr;
-use crate::ir::{self, ExprKind};
-use crate::ty::{Bool, Direction, Num, Player};
-
-mod sealed {
-    pub trait Sealed {}
-}
-
-/// An untyped event.
-#[derive(Clone, Copy, Debug)]
-pub struct RawEvent(pub(crate) ir::Event);
-
-/// The event a rule listens to; one zero-sized type per event.
-pub trait EventType: Copy + sealed::Sealed {
-    /// The untyped event.
-    fn raw(self) -> RawEvent;
-}
-
-/// Events of rules that may filter by team, slot or hero.
-pub trait PlayerEvent: EventType {}
-/// Events that provide `Event Player`.
-pub trait HasEventPlayer: EventType {}
-/// Events that provide the damage values.
-pub trait HasDamage: EventType {}
-/// Events that provide the healing values.
-pub trait HasHealing: EventType {}
-/// Events that provide the values shared by damage and healing.
-pub trait HasDamageOrHealing: EventType {}
-
-macro_rules! events {
-    ($($(#[$doc:meta])* $name:ident => $variant:ident: [$($cap:ident),*];)*) => {$(
-        $(#[$doc])*
-        #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-        pub struct $name;
-        impl sealed::Sealed for $name {}
-        impl EventType for $name {
-            fn raw(self) -> RawEvent {
-                RawEvent(ir::Event::$variant)
-            }
-        }
-        $( impl $cap for $name {} )*
-    )*};
-}
-
-events! {
+/// What triggers a rule.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Event {
     /// `Ongoing - Global`.
-    OngoingGlobal => OngoingGlobal: [];
-    /// `Ongoing - Each Player`.
-    OngoingEachPlayer => OngoingEachPlayer: [PlayerEvent, HasEventPlayer];
-    /// `Player Joined Match`.
-    PlayerJoinedMatch => PlayerJoinedMatch: [PlayerEvent, HasEventPlayer];
-    /// `Player Left Match`.
-    PlayerLeftMatch => PlayerLeftMatch: [PlayerEvent, HasEventPlayer];
-    /// `Player Dealt Damage`.
-    PlayerDealtDamage => PlayerDealtDamage: [PlayerEvent, HasEventPlayer, HasDamage, HasDamageOrHealing];
-    /// `Player Took Damage`.
-    PlayerTookDamage => PlayerTookDamage: [PlayerEvent, HasEventPlayer, HasDamage, HasDamageOrHealing];
-    /// `Player Dealt Final Blow`.
-    PlayerDealtFinalBlow => PlayerDealtFinalBlow: [PlayerEvent, HasEventPlayer, HasDamage, HasDamageOrHealing];
-    /// `Player Died`.
-    PlayerDied => PlayerDied: [PlayerEvent, HasEventPlayer, HasDamage, HasDamageOrHealing];
-    /// `Player Earned Elimination`.
-    PlayerEarnedElimination => PlayerEarnedElimination: [PlayerEvent, HasEventPlayer, HasDamage, HasDamageOrHealing];
-    /// `Player Dealt Healing`.
-    PlayerDealtHealing => PlayerDealtHealing: [PlayerEvent, HasEventPlayer, HasHealing, HasDamageOrHealing];
-    /// `Player Received Healing`.
-    PlayerReceivedHealing => PlayerReceivedHealing: [PlayerEvent, HasEventPlayer, HasHealing, HasDamageOrHealing];
-    /// `Player Dealt Knockback`.
-    PlayerDealtKnockback => PlayerDealtKnockback: [PlayerEvent, HasEventPlayer, HasDamage, HasHealing, HasDamageOrHealing];
-    /// `Player Received Knockback`.
-    PlayerReceivedKnockback => PlayerReceivedKnockback: [PlayerEvent, HasEventPlayer, HasDamage, HasHealing, HasDamageOrHealing];
+    OngoingGlobal,
+    /// An event that runs once per matching player.
+    Player {
+        /// Which player event.
+        kind: PlayerEvent,
+        /// Which team's players it applies to.
+        team: TeamFilter,
+        /// Which players it applies to.
+        player: PlayerFilter,
+    },
 }
 
-/// The event of a subroutine body: it sees the caller's event values, which are checked at the
-/// call sites instead.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct SubroutineEvent;
-impl sealed::Sealed for SubroutineEvent {}
-impl EventType for SubroutineEvent {
-    fn raw(self) -> RawEvent {
-        // The subroutine's id is only known to `Builder::define`, which sets the real event.
-        RawEvent(ir::Event::Subroutine(ir::SubId(u32::MAX)))
+impl Event {
+    /// `Ongoing - Each Player; All; All;`.
+    pub fn each_player() -> Self {
+        Self::player(PlayerEvent::OngoingEachPlayer)
     }
-}
-impl HasEventPlayer for SubroutineEvent {}
-impl HasDamage for SubroutineEvent {}
-impl HasHealing for SubroutineEvent {}
-impl HasDamageOrHealing for SubroutineEvent {}
 
-/// Proof that a rule has event `E`; its methods are the values that event provides.
-pub struct Ev<E> {
-    _event: PhantomData<fn() -> E>,
-}
-
-impl<E> Clone for Ev<E> {
-    fn clone(&self) -> Self {
-        *self
+    /// A player event for every team and player.
+    pub fn player(kind: PlayerEvent) -> Self {
+        Self::Player {
+            kind,
+            team: TeamFilter::All,
+            player: PlayerFilter::All,
+        }
     }
-}
 
-impl<E> Copy for Ev<E> {}
-
-impl<E> std::fmt::Debug for Ev<E> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Ev")
-    }
-}
-
-impl<E> Ev<E> {
-    /// The marker for a rule of event `E`.
-    pub(crate) fn new() -> Self {
-        Self {
-            _event: PhantomData,
+    /// Restricts a player event to one hero. No effect on `Ongoing - Global`.
+    #[must_use]
+    pub fn hero(self, hero: Hero) -> Self {
+        match self {
+            Self::OngoingGlobal => self,
+            Self::Player { kind, team, .. } => Self::Player {
+                kind,
+                team,
+                player: PlayerFilter::Hero(hero),
+            },
         }
     }
 }
 
-#[track_caller]
-fn event_value<T>(id: ValueId) -> Expr<T> {
-    Expr::from_ir(ir::Expr::here(ExprKind::Value {
-        id,
-        args: Vec::new(),
-    }))
+/// The player events.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PlayerEvent {
+    /// `Ongoing - Each Player`.
+    OngoingEachPlayer,
+    /// `Player Earned Elimination`.
+    PlayerEarnedElimination,
+    /// `Player Dealt Final Blow`.
+    PlayerDealtFinalBlow,
+    /// `Player Dealt Damage`.
+    PlayerDealtDamage,
+    /// `Player Took Damage`.
+    PlayerTookDamage,
+    /// `Player Died`.
+    PlayerDied,
+    /// `Player Dealt Healing`.
+    PlayerDealtHealing,
+    /// `Player Received Healing`.
+    PlayerReceivedHealing,
+    /// `Player Joined Match`.
+    PlayerJoinedMatch,
+    /// `Player Left Match`.
+    PlayerLeftMatch,
+    /// `Player Dealt Knockback`.
+    PlayerDealtKnockback,
+    /// `Player Received Knockback`.
+    PlayerReceivedKnockback,
 }
 
-impl<E: HasEventPlayer> Ev<E> {
-    /// `Event Player`.
-    #[track_caller]
-    #[must_use]
-    pub fn event_player(self) -> Expr<Player> {
-        event_value(ValueId::EventPlayer)
-    }
-}
-
-impl<E: HasDamage> Ev<E> {
-    /// `Attacker`.
-    #[track_caller]
-    #[must_use]
-    pub fn attacker(self) -> Expr<Player> {
-        event_value(ValueId::Attacker)
-    }
-
-    /// `Victim`.
-    #[track_caller]
-    #[must_use]
-    pub fn victim(self) -> Expr<Player> {
-        event_value(ValueId::Victim)
-    }
-
-    /// `Event Damage`.
-    #[track_caller]
-    #[must_use]
-    pub fn event_damage(self) -> Expr<Num> {
-        event_value(ValueId::EventDamage)
-    }
-
-    /// `Event Was Environment`.
-    #[track_caller]
-    #[must_use]
-    pub fn was_environment(self) -> Expr<Bool> {
-        event_value(ValueId::EventWasEnvironment)
-    }
-}
-
-impl<E: HasHealing> Ev<E> {
-    /// `Healer`.
-    #[track_caller]
-    #[must_use]
-    pub fn healer(self) -> Expr<Player> {
-        event_value(ValueId::Healer)
-    }
-
-    /// `Healee`.
-    #[track_caller]
-    #[must_use]
-    pub fn healee(self) -> Expr<Player> {
-        event_value(ValueId::Healee)
-    }
-
-    /// `Event Healing`.
-    #[track_caller]
-    #[must_use]
-    pub fn event_healing(self) -> Expr<Num> {
-        event_value(ValueId::EventHealing)
-    }
-
-    /// `Event Was Health Pack`.
-    #[track_caller]
-    #[must_use]
-    pub fn was_health_pack(self) -> Expr<Bool> {
-        event_value(ValueId::EventWasHealthPack)
+impl PlayerEvent {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::OngoingEachPlayer => "Ongoing - Each Player",
+            Self::PlayerEarnedElimination => "Player Earned Elimination",
+            Self::PlayerDealtFinalBlow => "Player Dealt Final Blow",
+            Self::PlayerDealtDamage => "Player Dealt Damage",
+            Self::PlayerTookDamage => "Player Took Damage",
+            Self::PlayerDied => "Player Died",
+            Self::PlayerDealtHealing => "Player Dealt Healing",
+            Self::PlayerReceivedHealing => "Player Received Healing",
+            Self::PlayerJoinedMatch => "Player Joined Match",
+            Self::PlayerLeftMatch => "Player Left Match",
+            Self::PlayerDealtKnockback => "Player Dealt Knockback",
+            Self::PlayerReceivedKnockback => "Player Received Knockback",
+        }
     }
 }
 
-impl<E: HasDamageOrHealing> Ev<E> {
-    /// `Event Was Critical Hit`.
-    #[track_caller]
-    #[must_use]
-    pub fn was_critical_hit(self) -> Expr<Bool> {
-        event_value(ValueId::EventWasCriticalHit)
-    }
+/// The team line of a player event.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TeamFilter {
+    /// `All`.
+    All,
+    /// `Team 1`.
+    Team1,
+    /// `Team 2`.
+    Team2,
+}
 
-    /// `Event Ability`.
-    #[track_caller]
-    #[must_use]
-    pub fn event_ability(self) -> Expr<Button> {
-        event_value(ValueId::EventAbility)
-    }
-
-    /// `Event Direction`.
-    #[track_caller]
-    #[must_use]
-    pub fn event_direction(self) -> Expr<Direction> {
-        event_value(ValueId::EventDirection)
-    }
+/// The player line of a player event.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PlayerFilter {
+    /// `All`.
+    All,
+    /// `Slot N`, 0 to 11.
+    Slot(u8),
+    /// One hero.
+    Hero(Hero),
 }

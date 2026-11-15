@@ -1,7 +1,6 @@
 //! Custom game settings tables.
-use crate::lang::localized;
 use crate::settings::{Choice, Kind, Section, Setting};
-use crate::{Gamemode, Hero, Lang};
+use crate::{Gamemode, Hero};
 /// Hero sets used by `Setting::only` and `Setting::except`.
 pub static HERO_SETS: [&[Hero]; 20usize] = [
     &[
@@ -386,23 +385,23 @@ impl Label {
             Self::Extensions => "extensions",
         }
     }
-    /// The name as written in workshop code of the given language.
-    pub fn name(self, lang: Lang) -> &'static str {
+    /// The name as written in workshop code.
+    pub fn name(self) -> &'static str {
         static NAMES: [&str; 12usize] = [
-            "modi\u{1f}modes\u{1f}modos\u{1f}modos\u{1f}\u{1f}modalità\u{1f}モード\u{1f}\u{1f}tryby gry\u{1f}modos\u{1f}\u{1f}โหมด\u{1f}modlar\u{1f}模式\u{1f}模式",
-            "verfügbare karten\u{1f}enabled maps\u{1f}mapas permitidos\u{1f}mapas habilitados\u{1f}cartes activées\u{1f}mappe abilitate\u{1f}有効なマップ\u{1f}\u{1f}dostępne mapy\u{1f}mapas ativados\u{1f}\u{1f}แผนท\u{e35}\u{e48}ท\u{e35}\u{e48}เป\u{e34}ดใช\u{e49}งานแล\u{e49}ว\u{1f}açık haritalar\u{1f}启用地图\u{1f}啟用的地圖",
-            "deaktivierte karten\u{1f}disabled maps\u{1f}mapas no permitidos\u{1f}mapas deshabilitados\u{1f}cartes désactivées\u{1f}mappe disabilitate\u{1f}無効なマップ\u{1f}\u{1f}niedostępne mapy\u{1f}mapas desativados\u{1f}\u{1f}แผนท\u{e35}\u{e48}ท\u{e35}\u{e48}ป\u{e34}ดใช\u{e49}งานแล\u{e49}ว\u{1f}kapalı haritalar\u{1f}禁用地图\u{1f}停用的地圖",
-            "helden\u{1f}heroes\u{1f}héroes\u{1f}héroes\u{1f}Personnages\u{1f}eroi\u{1f}ヒーロー\u{1f}\u{1f}bohaterowie\u{1f}heróis\u{1f}\u{1f}ฮ\u{e35}โร\u{e48}\u{1f}kahramanlar\u{1f}英雄\u{1f}英雄",
-            "verfügbare helden\u{1f}enabled heroes\u{1f}héroes permitidos\u{1f}héroes habilitados\u{1f}héros activés\u{1f}eroi abilitati\u{1f}有効なヒーロー\u{1f}\u{1f}dostępni bohaterowie\u{1f}heróis ativados\u{1f}\u{1f}เป\u{e34}ดใช\u{e49}งานฮ\u{e35}โร\u{e48}แล\u{e49}ว\u{1f}etkin kahramanlar\u{1f}启用英雄\u{1f}啟用的英雄",
-            "deaktivierte helden\u{1f}disabled heroes\u{1f}héroes no permitidos\u{1f}héroes deshabilitados\u{1f}héros désactivés\u{1f}eroi disabilitati\u{1f}無効なヒーロー\u{1f}\u{1f}niedostępni bohaterowie\u{1f}heróis desativados\u{1f}\u{1f}ป\u{e34}ดใช\u{e49}งานฮ\u{e35}โร\u{e48}แล\u{e49}ว\u{1f}devre dışı kahramanlar\u{1f}禁用英雄\u{1f}停用的英雄",
-            "Allgemein\u{1f}General\u{1f}\u{1f}\u{1f}Général\u{1f}Generale\u{1f}一般\u{1f}일반\u{1f}Ogólne\u{1f}Geral\u{1f}Общие\u{1f}ท\u{e31}\u{e48}วไป\u{1f}Genel\u{1f}综合\u{1f}一般",
-            "\u{1f}Team 1\u{1f}Equipo 1\u{1f}Equipo 1\u{1f}Équipe 1\u{1f}Squadra 1\u{1f}チーム1\u{1f}1팀\u{1f}Drużyna 1\u{1f}Equipe 1\u{1f}Команда 1\u{1f}ท\u{e35}ม 1\u{1f}1. Takım\u{1f}队伍1\u{1f}隊伍1",
-            "\u{1f}Team 2\u{1f}Equipo 2\u{1f}Equipo 2\u{1f}Équipe 2\u{1f}Squadra 2\u{1f}チーム2\u{1f}2팀\u{1f}Drużyna 2\u{1f}Equipe 2\u{1f}Команда 2\u{1f}ท\u{e35}ม 2\u{1f}2. Takım\u{1f}队伍2\u{1f}隊伍2",
-            "Team-FFA\u{1f}Team FFA\u{1f}TcT por equipos\u{1f}Equipo TCT\u{1f}Combat à mort par équipe\u{1f}TCT a squadre\u{1f}チームFFA\u{1f}팀 개별 전투\u{1f}Drużynowe FFA\u{1f}TCT em equipe\u{1f}Командный FFA\u{1f}FFA แบบท\u{e35}ม\u{1f}Takımlı Her Şey Serbest\u{1f}团队混战\u{1f}隊伍自由混戰",
-            "\u{1f}workshop\u{1f}taller\u{1f}\u{1f}la Forge\u{1f}\u{1f}ワークショップ\u{1f}\u{1f}warsztat\u{1f}\u{1f}\u{1f}เว\u{e34}ร\u{e4c}คช\u{e47}อป\u{1f}atölye\u{1f}地图工坊",
-            "Erweiterungen\u{1f}extensions\u{1f}extensiones\u{1f}extensiones\u{1f}\u{1f}estensioni\u{1f}拡張\u{1f}\u{1f}rozszerzenia\u{1f}extensões\u{1f}\u{1f}ส\u{e48}วนต\u{e48}อขยาย\u{1f}eklentiler\u{1f}扩展",
+            "modes",
+            "enabled maps",
+            "disabled maps",
+            "heroes",
+            "enabled heroes",
+            "disabled heroes",
+            "General",
+            "Team 1",
+            "Team 2",
+            "Team FFA",
+            "workshop",
+            "extensions",
         ];
-        localized(NAMES[self as usize], lang)
+        NAMES[self as usize]
     }
 }
 /// The `main` section.
