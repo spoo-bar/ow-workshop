@@ -14,5 +14,8 @@ ow-workshop = { path = "../ow-workshop", version = "0.1.0", features = ["utils"]
 [build-dependencies]
 ow-workshop = { path = "../ow-workshop", version = "0.1.0", features = ["utils"] }
 
+[dev-dependencies]
+ow-workshop-golden = { path = "../ow-workshop-golden" }
+
 [lints]
 workspace = true

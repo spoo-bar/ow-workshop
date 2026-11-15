@@ -4,3 +4,4 @@
 //! Add `--release` for the script without debug helpers.
 
 pub mod hello;
+pub mod settings_only;
