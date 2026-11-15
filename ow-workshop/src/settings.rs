@@ -1,21 +1,172 @@
-//! Custom game settings. Keys and values are written as they appear in the script.
+//! Custom game settings, shareable fragments, and the merge that resolves them.
+//!
+//! [`Lobby`], [`Mode`] and [`Hero`] collect settings. Each accepts shared
+//! fragments through `.with(..)`: any type implementing [`LobbySettings`],
+//! [`ModeSettings`] or [`HeroSettings`]. Merging happens once per scope when
+//! the script is written; two sources setting the same key to different values
+//! is a [`SettingsConflict`].
 
-use std::fmt::Display;
+#![allow(clippy::result_large_err, clippy::needless_pass_by_value)]
 
-pub(crate) type Entries = Vec<(String, String)>;
+use std::any::type_name;
+use std::error::Error;
+use std::fmt::{self, Display};
 
-fn entry(key: &str, value: impl Display) -> (String, String) {
-    (key.to_owned(), value.to_string())
+use ow_workshop_data::settings::MAIN;
+
+/// One `Key: Value` line of a settings block.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Entry {
+    pub(crate) key: String,
+    pub(crate) value: String,
+    /// Who set it, for conflict messages.
+    pub(crate) source: String,
 }
 
-fn names(items: impl IntoIterator<Item = impl Display>) -> Vec<String> {
-    items.into_iter().map(|item| item.to_string()).collect()
+impl Entry {
+    /// `Entry::new("Perk Generation", SettingValue::percent(175))`.
+    pub fn new(key: impl Display, value: impl Display) -> Self {
+        Self {
+            key: key.to_string(),
+            value: value.to_string(),
+            source: String::new(),
+        }
+    }
+
+    fn from_source(key: &str, value: impl Display, source: &str) -> Self {
+        Self {
+            source: source.to_owned(),
+            ..Self::new(key, value)
+        }
+    }
+
+    fn sourced(mut self, source: &str) -> Self {
+        if self.source.is_empty() {
+            source.clone_into(&mut self.source);
+        }
+        self
+    }
 }
+
+/// A setting of a hero scope: for every hero, or for one named hero.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HeroEntry {
+    pub(crate) hero: Option<String>,
+    pub(crate) entry: Entry,
+}
+
+impl HeroEntry {
+    /// A setting for every hero in the scope.
+    pub fn all(key: impl Display, value: impl Display) -> Self {
+        Self {
+            hero: None,
+            entry: Entry::new(key, value),
+        }
+    }
+
+    /// A setting for a single hero.
+    pub fn of(hero: impl Display, key: impl Display, value: impl Display) -> Self {
+        Self {
+            hero: Some(hero.to_string()),
+            entry: Entry::new(key, value),
+        }
+    }
+}
+
+/// A reusable group of lobby settings.
+pub trait LobbySettings {
+    /// The settings to add.
+    fn entries(&self) -> Vec<Entry>;
+}
+
+/// A reusable group of settings for one game mode.
+pub trait ModeSettings {
+    /// The settings to add.
+    fn entries(&self) -> Vec<Entry>;
+}
+
+/// A reusable group of settings for one hero scope.
+pub trait HeroSettings {
+    /// The settings to add.
+    fn entries(&self) -> Vec<HeroEntry>;
+}
+
+/// A setting value in the form workshop code expects.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SettingValue(String);
+
+impl SettingValue {
+    /// `On` / `Off`.
+    pub fn on_off(on: bool) -> Self {
+        Self(if on { "On" } else { "Off" }.to_owned())
+    }
+
+    /// `Yes` / `No`.
+    pub fn yes_no(yes: bool) -> Self {
+        Self(if yes { "Yes" } else { "No" }.to_owned())
+    }
+
+    /// `Enabled` / `Disabled`.
+    pub fn enabled(enabled: bool) -> Self {
+        Self(if enabled { "Enabled" } else { "Disabled" }.to_owned())
+    }
+
+    /// A percentage, `175` is written `175%`.
+    pub fn percent(value: impl Into<f64>) -> Self {
+        Self(format!("{}%", value.into()))
+    }
+
+    /// An integer.
+    pub fn int(value: i64) -> Self {
+        Self(value.to_string())
+    }
+
+    /// A decimal, `5.0` is written `5.0`.
+    pub fn decimal(value: f64) -> Self {
+        Self(format!("{value:?}"))
+    }
+
+    /// A free-text choice, for example `2 Per Team`.
+    pub fn choice(text: impl Display) -> Self {
+        Self(text.to_string())
+    }
+}
+
+impl Display for SettingValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+/// Two sources set the same key of one scope to different values.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SettingsConflict {
+    /// Where the key lives, for example `modes > Clash`.
+    pub scope: String,
+    /// The setting's name.
+    pub key: String,
+    /// The first source and its value.
+    pub first: (String, String),
+    /// The second source and its value.
+    pub second: (String, String),
+}
+
+impl Display for SettingsConflict {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "conflicting settings in {}: `{}` is `{}` from {} but `{}` from {}",
+            self.scope, self.key, self.first.1, self.first.0, self.second.1, self.second.0
+        )
+    }
+}
+
+impl Error for SettingsConflict {}
 
 /// The `lobby` settings block.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Lobby {
-    pub(crate) settings: Entries,
+    entries: Vec<Entry>,
 }
 
 impl Lobby {
@@ -27,28 +178,44 @@ impl Lobby {
     /// Sets one setting, for example `set("Max Team 1 Players", 5)`.
     #[must_use]
     pub fn set(mut self, key: &str, value: impl Display) -> Self {
-        self.settings.push(entry(key, value));
+        self.entries
+            .push(Entry::from_source(key, value, "Lobby::set"));
         self
+    }
+
+    /// Adds a shared group of settings.
+    #[must_use]
+    pub fn with<F: LobbySettings>(mut self, fragment: F) -> Self {
+        let source = type_name::<F>();
+        self.entries
+            .extend(fragment.entries().into_iter().map(|e| e.sourced(source)));
+        self
+    }
+}
+
+impl LobbySettings for Lobby {
+    fn entries(&self) -> Vec<Entry> {
+        self.entries.clone()
     }
 }
 
 /// One game mode in the `modes` settings block.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Mode {
-    pub(crate) name: String,
-    pub(crate) enabled: bool,
-    pub(crate) settings: Entries,
-    pub(crate) enabled_maps: Vec<String>,
-    pub(crate) disabled_maps: Vec<String>,
+    name: String,
+    enabled: Option<bool>,
+    entries: Vec<Entry>,
+    enabled_maps: Vec<String>,
+    disabled_maps: Vec<String>,
 }
 
 impl Mode {
-    /// An enabled mode, for example `Mode::new("Team Deathmatch")`. `"General"` holds settings for all modes.
+    /// A mode, for example `Mode::new("Team Deathmatch")`. `"General"` holds settings for all modes.
     pub fn new(name: impl Display) -> Self {
         Self {
             name: name.to_string(),
-            enabled: true,
-            settings: Vec::new(),
+            enabled: None,
+            entries: Vec::new(),
             enabled_maps: Vec::new(),
             disabled_maps: Vec::new(),
         }
@@ -57,40 +224,84 @@ impl Mode {
     /// Turns the mode off.
     #[must_use]
     pub fn disabled(mut self) -> Self {
-        self.enabled = false;
+        self.enabled = Some(false);
+        self
+    }
+
+    /// Turns the mode on explicitly. Modes are on unless disabled.
+    #[must_use]
+    pub fn enabled(mut self) -> Self {
+        self.enabled = Some(true);
         self
     }
 
     /// Sets one setting of this mode.
     #[must_use]
     pub fn set(mut self, key: &str, value: impl Display) -> Self {
-        self.settings.push(entry(key, value));
+        let source = format!("Mode::set ({})", self.name);
+        self.entries.push(Entry::from_source(key, value, &source));
+        self
+    }
+
+    /// Adds a shared group of settings.
+    #[must_use]
+    pub fn with<F: ModeSettings>(mut self, fragment: F) -> Self {
+        let source = type_name::<F>();
+        self.entries
+            .extend(fragment.entries().into_iter().map(|e| e.sourced(source)));
         self
     }
 
     /// Allows only these maps.
     #[must_use]
     pub fn enabled_maps(mut self, maps: impl IntoIterator<Item = impl Display>) -> Self {
-        self.enabled_maps = names(maps);
+        self.enabled_maps.extend(names(maps));
+        self
+    }
+
+    /// Allows only this map, limited to the given variant ids.
+    #[must_use]
+    pub fn enabled_map(
+        mut self,
+        map: impl Display,
+        variants: impl IntoIterator<Item = impl Display>,
+    ) -> Self {
+        self.enabled_maps.push(map_line(&map, variants));
         self
     }
 
     /// Allows every map except these.
     #[must_use]
     pub fn disabled_maps(mut self, maps: impl IntoIterator<Item = impl Display>) -> Self {
-        self.disabled_maps = names(maps);
+        self.disabled_maps.extend(names(maps));
         self
+    }
+
+    /// Disables this map, limited to the given variant ids.
+    #[must_use]
+    pub fn disabled_map(
+        mut self,
+        map: impl Display,
+        variants: impl IntoIterator<Item = impl Display>,
+    ) -> Self {
+        self.disabled_maps.push(map_line(&map, variants));
+        self
+    }
+}
+
+impl ModeSettings for Mode {
+    fn entries(&self) -> Vec<Entry> {
+        self.entries.clone()
     }
 }
 
 /// One scope in the `heroes` settings block: `General`, `Team 1` or `Team 2`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hero {
-    pub(crate) scope: String,
-    pub(crate) settings: Entries,
-    pub(crate) overrides: Vec<(String, Entries)>,
-    pub(crate) enabled_heroes: Vec<String>,
-    pub(crate) disabled_heroes: Vec<String>,
+    scope: String,
+    entries: Vec<HeroEntry>,
+    enabled_heroes: Vec<String>,
+    disabled_heroes: Vec<String>,
 }
 
 impl Hero {
@@ -103,8 +314,7 @@ impl Hero {
     pub fn scope(scope: impl Display) -> Self {
         Self {
             scope: scope.to_string(),
-            settings: Vec::new(),
-            overrides: Vec::new(),
+            entries: Vec::new(),
             enabled_heroes: Vec::new(),
             disabled_heroes: Vec::new(),
         }
@@ -113,37 +323,248 @@ impl Hero {
     /// Sets one setting for every hero.
     #[must_use]
     pub fn set(mut self, key: &str, value: impl Display) -> Self {
-        self.settings.push(entry(key, value));
+        let source = format!("Hero::set ({})", self.scope);
+        self.entries.push(HeroEntry {
+            hero: None,
+            entry: Entry::from_source(key, value, &source),
+        });
         self
     }
 
     /// Sets one setting for a single hero.
     #[must_use]
     pub fn hero(mut self, hero: impl Display, key: &str, value: impl Display) -> Self {
-        let hero = hero.to_string();
-        let slot = self
-            .overrides
-            .iter()
-            .position(|(name, _)| *name == hero)
-            .unwrap_or_else(|| {
-                self.overrides.push((hero, Vec::new()));
-                self.overrides.len() - 1
-            });
-        self.overrides[slot].1.push(entry(key, value));
+        let source = format!("Hero::hero ({})", self.scope);
+        self.entries.push(HeroEntry {
+            hero: Some(hero.to_string()),
+            entry: Entry::from_source(key, value, &source),
+        });
+        self
+    }
+
+    /// Adds a shared group of settings.
+    #[must_use]
+    pub fn with<F: HeroSettings>(mut self, fragment: F) -> Self {
+        let source = type_name::<F>();
+        self.entries
+            .extend(fragment.entries().into_iter().map(|mut e| {
+                e.entry = e.entry.sourced(source);
+                e
+            }));
         self
     }
 
     /// Allows only these heroes.
     #[must_use]
     pub fn enabled_heroes(mut self, heroes: impl IntoIterator<Item = impl Display>) -> Self {
-        self.enabled_heroes = names(heroes);
+        self.enabled_heroes.extend(names(heroes));
         self
     }
 
     /// Allows every hero except these.
     #[must_use]
     pub fn disabled_heroes(mut self, heroes: impl IntoIterator<Item = impl Display>) -> Self {
-        self.disabled_heroes = names(heroes);
+        self.disabled_heroes.extend(names(heroes));
         self
     }
+}
+
+impl HeroSettings for Hero {
+    fn entries(&self) -> Vec<HeroEntry> {
+        self.entries.clone()
+    }
+}
+
+fn names(items: impl IntoIterator<Item = impl Display>) -> Vec<String> {
+    items.into_iter().map(|item| item.to_string()).collect()
+}
+
+fn map_line(map: &impl Display, variants: impl IntoIterator<Item = impl Display>) -> String {
+    let mut line = map.to_string();
+    for id in variants {
+        line.push(' ');
+        line.push_str(&id.to_string());
+    }
+    line
+}
+
+// ---- resolved settings, what the emitter prints ----
+
+pub(crate) struct ModeBlock {
+    pub name: String,
+    pub enabled: bool,
+    pub entries: Vec<Entry>,
+    pub enabled_maps: Vec<String>,
+    pub disabled_maps: Vec<String>,
+}
+
+pub(crate) struct HeroBlock {
+    pub scope: String,
+    pub entries: Vec<Entry>,
+    pub heroes: Vec<(String, Vec<Entry>)>,
+    pub enabled_heroes: Vec<String>,
+    pub disabled_heroes: Vec<String>,
+}
+
+pub(crate) struct Resolved {
+    pub main: Vec<Entry>,
+    pub lobby: Vec<Entry>,
+    pub modes: Vec<ModeBlock>,
+    pub heroes: Vec<HeroBlock>,
+}
+
+pub(crate) fn resolve(
+    name: &str,
+    description: &str,
+    lobby: &[Lobby],
+    modes: &[Mode],
+    heroes: &[Hero],
+) -> Result<Resolved, SettingsConflict> {
+    let main_key = |key: &str| MAIN.get(key).map_or(key, |s| s.name()).to_owned();
+    let main = vec![
+        Entry::new(main_key("description"), quoted(description)),
+        Entry::new(main_key("modeName"), quoted(name)),
+    ];
+    let lobby = merge(
+        "lobby",
+        lobby.iter().flat_map(LobbySettings::entries).collect(),
+    )?;
+    Ok(Resolved {
+        main,
+        lobby,
+        modes: resolve_modes(modes)?,
+        heroes: resolve_heroes(heroes)?,
+    })
+}
+
+fn resolve_modes(modes: &[Mode]) -> Result<Vec<ModeBlock>, SettingsConflict> {
+    let mut order: Vec<&str> = Vec::new();
+    for mode in modes {
+        if !order.contains(&mode.name.as_str()) {
+            order.push(&mode.name);
+        }
+    }
+    // `General` holds settings for all modes and goes last.
+    order.sort_by_key(|name| *name == "General");
+
+    order
+        .into_iter()
+        .map(|name| {
+            let group: Vec<&Mode> = modes.iter().filter(|m| m.name == name).collect();
+            let scope = format!("modes > {name}");
+            let mut flags = Vec::new();
+            for mode in &group {
+                if let Some(enabled) = mode.enabled {
+                    let flag = if enabled { "enabled" } else { "disabled" };
+                    flags.push(Entry::from_source("enabled", flag, "Mode::new"));
+                }
+            }
+            merge(&scope, flags)?;
+            Ok(ModeBlock {
+                name: name.to_owned(),
+                enabled: group.iter().all(|m| m.enabled != Some(false)),
+                entries: merge(
+                    &scope,
+                    group.iter().flat_map(|m| m.entries.clone()).collect(),
+                )?,
+                enabled_maps: union(group.iter().flat_map(|m| &m.enabled_maps)),
+                disabled_maps: union(group.iter().flat_map(|m| &m.disabled_maps)),
+            })
+        })
+        .collect()
+}
+
+fn resolve_heroes(heroes: &[Hero]) -> Result<Vec<HeroBlock>, SettingsConflict> {
+    let mut order: Vec<&str> = Vec::new();
+    for hero in heroes {
+        if !order.contains(&hero.scope.as_str()) {
+            order.push(&hero.scope);
+        }
+    }
+    let rank = |scope: &str| match scope {
+        "General" => 0,
+        "Team 1" => 1,
+        "Team 2" => 2,
+        _ => 3,
+    };
+    order.sort_by_key(|scope| rank(scope));
+
+    order
+        .into_iter()
+        .map(|scope| {
+            let group: Vec<&Hero> = heroes.iter().filter(|h| h.scope == scope).collect();
+            let all: Vec<&HeroEntry> = group.iter().flat_map(|h| &h.entries).collect();
+            let place = format!("heroes > {scope}");
+            let scalar = all
+                .iter()
+                .filter(|e| e.hero.is_none())
+                .map(|e| e.entry.clone())
+                .collect();
+            let mut names: Vec<&str> = Vec::new();
+            for hero in all.iter().filter_map(|e| e.hero.as_deref()) {
+                if !names.contains(&hero) {
+                    names.push(hero);
+                }
+            }
+            let per_hero = names
+                .into_iter()
+                .map(|hero| {
+                    let entries = all
+                        .iter()
+                        .filter(|e| e.hero.as_deref() == Some(hero))
+                        .map(|e| e.entry.clone())
+                        .collect();
+                    Ok((
+                        hero.to_owned(),
+                        merge(&format!("{place} > {hero}"), entries)?,
+                    ))
+                })
+                .collect::<Result<_, SettingsConflict>>()?;
+            Ok(HeroBlock {
+                scope: scope.to_owned(),
+                entries: merge(&place, scalar)?,
+                heroes: per_hero,
+                enabled_heroes: union(group.iter().flat_map(|h| &h.enabled_heroes)),
+                disabled_heroes: union(group.iter().flat_map(|h| &h.disabled_heroes)),
+            })
+        })
+        .collect()
+}
+
+/// Joins entries by key. Equal repeats collapse; different values conflict.
+fn merge(scope: &str, entries: Vec<Entry>) -> Result<Vec<Entry>, SettingsConflict> {
+    let mut merged: Vec<Entry> = Vec::new();
+    for entry in entries {
+        match merged.iter().find(|have| have.key == entry.key) {
+            None => merged.push(entry),
+            Some(have) if have.value == entry.value => {}
+            Some(have) => {
+                return Err(SettingsConflict {
+                    scope: scope.to_owned(),
+                    key: entry.key,
+                    first: (have.source.clone(), have.value.clone()),
+                    second: (entry.source, entry.value),
+                });
+            }
+        }
+    }
+    Ok(merged)
+}
+
+fn union<'a>(items: impl Iterator<Item = &'a String>) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for item in items {
+        if !out.contains(item) {
+            out.push(item.clone());
+        }
+    }
+    out
+}
+
+pub(crate) fn quoted(text: &str) -> String {
+    let escaped = text
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n");
+    format!("\"{escaped}\"")
 }

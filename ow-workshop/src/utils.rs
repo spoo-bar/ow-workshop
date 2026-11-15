@@ -3,7 +3,10 @@
 //! A shareable rule does not refer to any particular mod. If it needs a
 //! variable, it holds the handle as a field.
 
-use crate::{Action, ActionId, Condition, Event, Rule, Value, ValueId, WorkshopDebug};
+use crate::{
+    Action, ActionId, Condition, Event, HeroEntry, HeroSettings, Rule, SettingValue, Value,
+    ValueId, WorkshopDebug,
+};
 
 /// Players deal and take no damage and no healing.
 pub struct DisableDamageAndHealing;
@@ -33,5 +36,22 @@ impl Rule for DisableDamageAndHealing {
         .into_iter()
         .map(|id| Action::call(id, [Value::event_player(), 0.into()]))
         .collect()
+    }
+}
+
+/// Jetpack Cat's Frenetic Flight never runs out of fuel.
+///
+/// ```ignore
+/// Hero::general().with(utils::UnlimitedFlight)
+/// ```
+pub struct UnlimitedFlight;
+
+impl HeroSettings for UnlimitedFlight {
+    fn entries(&self) -> Vec<HeroEntry> {
+        vec![HeroEntry::of(
+            "Jetpack Cat",
+            "Frenetic Flight Unlimited Fuel",
+            SettingValue::on_off(true),
+        )]
     }
 }

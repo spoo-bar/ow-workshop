@@ -26,8 +26,11 @@ pub use ow_workshop_data as data;
 pub use ow_workshop_data::{ActionId, CompareOp, Extension, ValueId};
 pub use ow_workshop_macros::{Globals, Players, WorkshopDebug};
 pub use rule::{BasicRule, BasicSubroutine, Condition, Rule, Subroutine};
-pub use script::{Profile, script};
-pub use settings::{Hero, Lobby, Mode};
+pub use script::{Profile, script, try_script};
+pub use settings::{
+    Entry, Hero, HeroEntry, HeroSettings, Lobby, LobbySettings, Mode, ModeSettings, SettingValue,
+    SettingsConflict,
+};
 pub use value::Value;
 pub use vars::{Global, Globals, PlayerVar, Players};
 pub use workshop::Workshop;
