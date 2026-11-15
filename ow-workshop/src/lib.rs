@@ -29,7 +29,7 @@ pub use rule::{BasicRule, BasicSubroutine, Condition, Rule, Subroutine};
 pub use script::{Profile, script, try_script};
 pub use settings::{
     Entry, Hero, HeroEntry, HeroSettings, Lobby, LobbySettings, Mode, ModeSettings, SettingValue,
-    SettingsConflict,
+    SettingsConflict, SettingsError, UnknownSetting,
 };
 pub use value::Value;
 pub use vars::{Global, Globals, PlayerVar, Players};

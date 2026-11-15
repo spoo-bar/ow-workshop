@@ -2,7 +2,7 @@
 
 use crate::{
     Action, ActionId, Condition, Event, Extension, Global, Globals, PlayerVar, Players,
-    SettingsConflict, Value, ValueId, Workshop, emit, settings,
+    SettingsError, Value, ValueId, Workshop, emit, settings,
 };
 
 /// Which kind of script to produce.
@@ -40,7 +40,7 @@ pub(crate) struct Script {
 ///
 /// # Panics
 ///
-/// Panics with the [`SettingsConflict`] message when two settings sources disagree,
+/// Panics with the [`SettingsError`] message when two settings sources disagree or a name is unknown,
 /// which makes it a build error when called from a build script.
 pub fn script<M: Workshop>(workshop: &M, profile: Profile) -> String {
     try_script(workshop, profile).unwrap_or_else(|conflict| panic!("{conflict}"))
@@ -48,7 +48,7 @@ pub fn script<M: Workshop>(workshop: &M, profile: Profile) -> String {
 
 /// Like [`script`], returning a conflict between settings instead of panicking.
 #[allow(clippy::result_large_err)]
-pub fn try_script<M: Workshop>(workshop: &M, profile: Profile) -> Result<String, SettingsConflict> {
+pub fn try_script<M: Workshop>(workshop: &M, profile: Profile) -> Result<String, SettingsError> {
     let mut script = collect::<M>(workshop, profile)?;
     match profile {
         Profile::Debug => script.rules.extend(variable_panels(&script)),
@@ -63,7 +63,7 @@ pub fn try_script<M: Workshop>(workshop: &M, profile: Profile) -> Result<String,
 }
 
 #[allow(clippy::result_large_err)]
-fn collect<M: Workshop>(workshop: &M, profile: Profile) -> Result<Script, SettingsConflict> {
+fn collect<M: Workshop>(workshop: &M, profile: Profile) -> Result<Script, SettingsError> {
     let globals = M::Globals::declare();
     let players = M::Players::declare();
     let log = |name: &str, opts: Option<crate::DebugOpts>, actions: &mut Vec<Action>| {

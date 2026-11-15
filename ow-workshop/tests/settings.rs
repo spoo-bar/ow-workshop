@@ -2,7 +2,8 @@
 
 use ow_workshop::{
     Entry, Hero, HeroEntry, HeroSettings, Lobby, LobbySettings, Mode, ModeSettings, Profile, Rule,
-    SettingValue as V, Workshop, try_script, utils,
+    SettingValue as V, SettingsConflict, SettingsError, UnknownSetting, Workshop, try_script,
+    utils,
 };
 
 /// The `settings { .. }` block of a script as sorted, trimmed lines, without
@@ -23,6 +24,20 @@ fn settings_lines(text: &str) -> Vec<String> {
     }
     lines.sort();
     lines
+}
+
+fn conflict(result: Result<String, SettingsError>) -> SettingsConflict {
+    match result.unwrap_err() {
+        SettingsError::Conflict(conflict) => conflict,
+        other => panic!("expected a conflict, got {other}"),
+    }
+}
+
+fn unknown(result: Result<String, SettingsError>) -> UnknownSetting {
+    match result.unwrap_err() {
+        SettingsError::Unknown(unknown) => unknown,
+        other => panic!("expected an unknown setting, got {other}"),
+    }
 }
 
 fn sample(name: &str) -> Vec<String> {
@@ -246,7 +261,7 @@ fn equal_values_from_two_fragments_merge_into_one_block() {
 
 #[test]
 fn different_values_are_a_conflict_naming_both_sources() {
-    let error = try_script(&ModeConflict, Profile::Release).unwrap_err();
+    let error = conflict(try_script(&ModeConflict, Profile::Release));
     assert_eq!(error.scope, "modes > Clash");
     assert_eq!(error.key, "Perk Generation");
     let message = error.to_string();
@@ -262,9 +277,9 @@ fn different_values_are_a_conflict_naming_both_sources() {
 
 #[test]
 fn conflicts_are_found_in_hero_and_lobby_scopes() {
-    let hero = try_script(&HeroConflict, Profile::Release).unwrap_err();
+    let hero = conflict(try_script(&HeroConflict, Profile::Release));
     assert_eq!(hero.scope, "heroes > General > Ana");
-    let lobby = try_script(&LobbyConflict, Profile::Release).unwrap_err();
+    let lobby = conflict(try_script(&LobbyConflict, Profile::Release));
     assert!(lobby.first.0.ends_with("First"));
     assert_eq!(lobby.second.0, "Lobby::set");
 }
@@ -273,4 +288,58 @@ fn conflicts_are_found_in_hero_and_lobby_scopes() {
 #[should_panic(expected = "conflicting settings in modes > Clash")]
 fn script_panics_on_conflict() {
     let _ = ow_workshop::script(&ModeConflict, Profile::Release);
+}
+
+workshop!(
+    BadLobbyKey,
+    Lobby::new().set("Max Team 1 Plyers", 1),
+    Vec::new(),
+    Vec::new()
+);
+workshop!(
+    BadModeKey,
+    Lobby::new(),
+    vec![Mode::new("Clash").set("Max Team 1 Players", 3)],
+    Vec::new()
+);
+workshop!(
+    BadModeName,
+    Lobby::new(),
+    vec![Mode::new("Chess")],
+    Vec::new()
+);
+workshop!(
+    BadHeroKey,
+    Lobby::new(),
+    Vec::new(),
+    vec![Hero::general().hero("Jetpack Cat", "Perk Generation", "1%")]
+);
+workshop!(
+    BadHeroName,
+    Lobby::new(),
+    Vec::new(),
+    vec![Hero::general().hero("Jetpack Dog", "Health", "1%")]
+);
+
+#[test]
+fn unknown_names_are_errors_naming_the_scope() {
+    let lobby = unknown(try_script(&BadLobbyKey, Profile::Release));
+    assert_eq!(
+        (lobby.scope.as_str(), lobby.name.as_str()),
+        ("lobby", "Max Team 1 Plyers")
+    );
+    let mode = unknown(try_script(&BadModeKey, Profile::Release));
+    assert_eq!(
+        (mode.scope.as_str(), mode.name.as_str()),
+        ("modes > Clash", "Max Team 1 Players")
+    );
+    let name = unknown(try_script(&BadModeName, Profile::Release));
+    assert_eq!(
+        (name.scope.as_str(), name.name.as_str()),
+        ("modes", "Chess")
+    );
+    let key = unknown(try_script(&BadHeroKey, Profile::Release));
+    assert_eq!(key.scope, "heroes > General > Jetpack Cat");
+    let hero = unknown(try_script(&BadHeroName, Profile::Release));
+    assert_eq!(hero.name, "Jetpack Dog");
 }

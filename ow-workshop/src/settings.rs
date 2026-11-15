@@ -12,7 +12,10 @@ use std::any::type_name;
 use std::error::Error;
 use std::fmt::{self, Display};
 
-use ow_workshop_data::settings::MAIN;
+use ow_workshop_data::settings::{
+    GAMEMODE_GENERAL, HERO_GENERAL, LOBBY, MAIN, Section, gamemode_settings, hero_settings,
+};
+use ow_workshop_data::{Gamemode, Hero as DataHero};
 
 /// One `Key: Value` line of a settings block.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -162,6 +165,56 @@ impl Display for SettingsConflict {
 }
 
 impl Error for SettingsConflict {}
+
+/// A setting name or scope that `ow-workshop-data` does not know.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UnknownSetting {
+    /// Where the setting was written, for example `modes > Clash`.
+    pub scope: String,
+    /// The name that was not found. A scope name when the mode or hero itself is unknown.
+    pub name: String,
+}
+
+impl Display for UnknownSetting {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown setting `{}` in {}", self.name, self.scope)
+    }
+}
+
+impl Error for UnknownSetting {}
+
+/// Why the settings could not be resolved.
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SettingsError {
+    /// Two sources disagree.
+    Conflict(SettingsConflict),
+    /// A name is not in the game data.
+    Unknown(UnknownSetting),
+}
+
+impl Display for SettingsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Conflict(error) => error.fmt(f),
+            Self::Unknown(error) => error.fmt(f),
+        }
+    }
+}
+
+impl Error for SettingsError {}
+
+impl From<SettingsConflict> for SettingsError {
+    fn from(error: SettingsConflict) -> Self {
+        Self::Conflict(error)
+    }
+}
+
+impl From<UnknownSetting> for SettingsError {
+    fn from(error: UnknownSetting) -> Self {
+        Self::Unknown(error)
+    }
+}
 
 /// The `lobby` settings block.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -419,7 +472,7 @@ pub(crate) fn resolve(
     lobby: &[Lobby],
     modes: &[Mode],
     heroes: &[Hero],
-) -> Result<Resolved, SettingsConflict> {
+) -> Result<Resolved, SettingsError> {
     let main_key = |key: &str| MAIN.get(key).map_or(key, |s| s.name()).to_owned();
     let main = vec![
         Entry::new(main_key("description"), quoted(description)),
@@ -429,6 +482,7 @@ pub(crate) fn resolve(
         "lobby",
         lobby.iter().flat_map(LobbySettings::entries).collect(),
     )?;
+    check("lobby", &lobby, &[&LOBBY], None)?;
     Ok(Resolved {
         main,
         lobby,
@@ -437,7 +491,7 @@ pub(crate) fn resolve(
     })
 }
 
-fn resolve_modes(modes: &[Mode]) -> Result<Vec<ModeBlock>, SettingsConflict> {
+fn resolve_modes(modes: &[Mode]) -> Result<Vec<ModeBlock>, SettingsError> {
     let mut order: Vec<&str> = Vec::new();
     for mode in modes {
         if !order.contains(&mode.name.as_str()) {
@@ -460,13 +514,15 @@ fn resolve_modes(modes: &[Mode]) -> Result<Vec<ModeBlock>, SettingsConflict> {
                 }
             }
             merge(&scope, flags)?;
+            let entries = merge(
+                &scope,
+                group.iter().flat_map(|m| m.entries.clone()).collect(),
+            )?;
+            check_mode(&scope, name, &entries)?;
             Ok(ModeBlock {
                 name: name.to_owned(),
                 enabled: group.iter().all(|m| m.enabled != Some(false)),
-                entries: merge(
-                    &scope,
-                    group.iter().flat_map(|m| m.entries.clone()).collect(),
-                )?,
+                entries,
                 enabled_maps: union(group.iter().flat_map(|m| &m.enabled_maps)),
                 disabled_maps: union(group.iter().flat_map(|m| &m.disabled_maps)),
             })
@@ -474,7 +530,7 @@ fn resolve_modes(modes: &[Mode]) -> Result<Vec<ModeBlock>, SettingsConflict> {
         .collect()
 }
 
-fn resolve_heroes(heroes: &[Hero]) -> Result<Vec<HeroBlock>, SettingsConflict> {
+fn resolve_heroes(heroes: &[Hero]) -> Result<Vec<HeroBlock>, SettingsError> {
     let mut order: Vec<&str> = Vec::new();
     for hero in heroes {
         if !order.contains(&hero.scope.as_str()) {
@@ -514,21 +570,76 @@ fn resolve_heroes(heroes: &[Hero]) -> Result<Vec<HeroBlock>, SettingsConflict> {
                         .filter(|e| e.hero.as_deref() == Some(hero))
                         .map(|e| e.entry.clone())
                         .collect();
-                    Ok((
-                        hero.to_owned(),
-                        merge(&format!("{place} > {hero}"), entries)?,
-                    ))
+                    let place = format!("{place} > {hero}");
+                    let entries = merge(&place, entries)?;
+                    check_hero(&place, hero, &entries)?;
+                    Ok((hero.to_owned(), entries))
                 })
-                .collect::<Result<_, SettingsConflict>>()?;
+                .collect::<Result<_, SettingsError>>()?;
+            let entries = merge(&place, scalar)?;
+            check(&place, &entries, &[&HERO_GENERAL], None)?;
             Ok(HeroBlock {
                 scope: scope.to_owned(),
-                entries: merge(&place, scalar)?,
+                entries,
                 heroes: per_hero,
                 enabled_heroes: union(group.iter().flat_map(|h| &h.enabled_heroes)),
                 disabled_heroes: union(group.iter().flat_map(|h| &h.disabled_heroes)),
             })
         })
         .collect()
+}
+
+fn unknown(scope: &str, name: &str) -> UnknownSetting {
+    UnknownSetting {
+        scope: scope.to_owned(),
+        name: name.to_owned(),
+    }
+}
+
+/// Every key must be a setting of one of `sections`, limited to `hero` where given.
+fn check(
+    scope: &str,
+    entries: &[Entry],
+    sections: &[&Section],
+    hero: Option<DataHero>,
+) -> Result<(), UnknownSetting> {
+    for entry in entries {
+        let known = sections.iter().any(|section| {
+            section
+                .settings
+                .iter()
+                .any(|s| s.name() == entry.key && hero.is_none_or(|h| s.applies_to(h)))
+        });
+        if !known {
+            return Err(unknown(scope, &entry.key));
+        }
+    }
+    Ok(())
+}
+
+fn check_mode(scope: &str, name: &str, entries: &[Entry]) -> Result<(), UnknownSetting> {
+    if name == "General" {
+        return check(scope, entries, &[&GAMEMODE_GENERAL], None);
+    }
+    let mode = Gamemode::ALL
+        .iter()
+        .copied()
+        .find(|mode| mode.name().eq_ignore_ascii_case(name))
+        .ok_or_else(|| unknown("modes", name))?;
+    let mut sections = vec![&GAMEMODE_GENERAL];
+    sections.extend(gamemode_settings(mode));
+    check(scope, entries, &sections, None)
+}
+
+fn check_hero(scope: &str, name: &str, entries: &[Entry]) -> Result<(), UnknownSetting> {
+    let hero = DataHero::ALL
+        .iter()
+        .copied()
+        .find(|hero| hero.name().eq_ignore_ascii_case(name))
+        .ok_or_else(|| unknown(scope, name))?;
+    let mut sections = vec![&HERO_GENERAL];
+    sections.extend(hero_settings(hero));
+    check(scope, entries, &sections, Some(hero))
 }
 
 /// Joins entries by key. Equal repeats collapse; different values conflict.
