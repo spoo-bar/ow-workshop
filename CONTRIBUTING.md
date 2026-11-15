@@ -24,3 +24,14 @@ The tables in `ow-workshop-data` are the source of truth for spellings. Edit the
 - Hero: `ow-workshop-data/src/generated/heroes.rs`, plus hero settings in `hero_settings.rs`.
 - Map: `ow-workshop-data/src/generated/maps.rs`, and `gamemodes.rs` if it belongs to a mode.
 - Action or value: `ow-workshop-data/src/generated/actions.rs` or `values.rs`.
+
+## Golden tests
+`ow-workshop-golden` compares a generated release script to a reference script after normalizing it (`assert_same_script`). The rules are documented in `ow-workshop-golden/src/normalize.rs`.
+
+Some reference scripts have no licence file, so they are not vendored here (this repo is GPL-3.0-only). Tests that use them read them through `reference_file` and are skipped when `OW_REFERENCE_DIR` is unset. To run them, check out the reference repository listed in the epic and point the variable at it:
+
+```bash
+OW_REFERENCE_DIR=/path/to/reference-checkout cargo test -p ow-workshop-golden
+```
+
+The two owner-provided samples in `examples/samples/` are used directly.
