@@ -3,7 +3,7 @@
 use std::fmt::Write as _;
 
 use crate::script::{RuleData, Script, Trigger};
-use crate::settings::Entries;
+use crate::settings::{Entry, quoted};
 use crate::{Action, Event, PlayerFilter, TeamFilter, Value};
 
 pub(crate) fn write(script: &Script) -> String {
@@ -42,8 +42,8 @@ impl Tabbed<'_> {
         self.line("}");
     }
 
-    fn entries(&mut self, entries: &Entries) {
-        for (key, value) in entries {
+    fn entries(&mut self, entries: &[Entry]) {
+        for Entry { key, value, .. } in entries {
             self.line(&format!("{key}: {value}"));
         }
     }
@@ -56,33 +56,31 @@ impl Tabbed<'_> {
 }
 
 fn settings(out: &mut String, script: &Script) {
+    let resolved = &script.settings;
     let mut tabbed = Tabbed { out, depth: 0 };
     tabbed.block("settings", |t| {
-        t.block("main", |t| {
-            t.line(&format!("Description: {}", quoted(script.description)));
-            t.line(&format!("Mode Name: {}", quoted(script.name)));
-        });
-        if !script.lobby.settings.is_empty() {
-            t.block("lobby", |t| t.entries(&script.lobby.settings));
+        t.block("main", |t| t.entries(&resolved.main));
+        if !resolved.lobby.is_empty() {
+            t.block("lobby", |t| t.entries(&resolved.lobby));
         }
-        if !script.modes.is_empty() {
+        if !resolved.modes.is_empty() {
             t.block("modes", |t| {
-                for mode in &script.modes {
+                for mode in &resolved.modes {
                     let prefix = if mode.enabled { "" } else { "disabled " };
                     t.block(&format!("{prefix}{}", mode.name), |t| {
-                        t.entries(&mode.settings);
+                        t.entries(&mode.entries);
                         t.list("enabled maps", &mode.enabled_maps);
                         t.list("disabled maps", &mode.disabled_maps);
                     });
                 }
             });
         }
-        if !script.heroes.is_empty() {
+        if !resolved.heroes.is_empty() {
             t.block("heroes", |t| {
-                for scope in &script.heroes {
+                for scope in &resolved.heroes {
                     t.block(&scope.scope, |t| {
-                        t.entries(&scope.settings);
-                        for (hero, entries) in &scope.overrides {
+                        t.entries(&scope.entries);
+                        for (hero, entries) in &scope.heroes {
                             t.block(hero, |t| t.entries(entries));
                         }
                         t.list("enabled heroes", &scope.enabled_heroes);
@@ -239,12 +237,4 @@ fn call(name: &str, args: &[Value]) -> String {
     }
     let args: Vec<String> = args.iter().map(value).collect();
     format!("{name}({})", args.join(", "))
-}
-
-fn quoted(text: &str) -> String {
-    let escaped = text
-        .replace('\\', "\\\\")
-        .replace('"', "\\\"")
-        .replace('\n', "\\n");
-    format!("\"{escaped}\"")
 }

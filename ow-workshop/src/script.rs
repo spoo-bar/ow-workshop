@@ -1,8 +1,8 @@
 //! Turns a [`Workshop`] into plain data, applies the build profile, and prints it.
 
 use crate::{
-    Action, ActionId, Condition, Event, Extension, Global, Globals, Hero, Lobby, Mode, PlayerVar,
-    Players, Value, ValueId, Workshop, emit,
+    Action, ActionId, Condition, Event, Extension, Global, Globals, PlayerVar, Players,
+    SettingsError, Value, ValueId, Workshop, emit, settings,
 };
 
 /// Which kind of script to produce.
@@ -28,11 +28,7 @@ pub(crate) struct RuleData {
 }
 
 pub(crate) struct Script {
-    pub name: &'static str,
-    pub description: &'static str,
-    pub lobby: Lobby,
-    pub modes: Vec<Mode>,
-    pub heroes: Vec<Hero>,
+    pub settings: settings::Resolved,
     pub extensions: Vec<Extension>,
     pub globals: Vec<Global>,
     pub players: Vec<PlayerVar>,
@@ -41,8 +37,19 @@ pub(crate) struct Script {
 }
 
 /// The workshop script for `workshop` under `profile`.
+///
+/// # Panics
+///
+/// Panics with the [`SettingsError`] message when two settings sources disagree or a name is unknown,
+/// which makes it a build error when called from a build script.
 pub fn script<M: Workshop>(workshop: &M, profile: Profile) -> String {
-    let mut script = collect(workshop, profile);
+    try_script(workshop, profile).unwrap_or_else(|conflict| panic!("{conflict}"))
+}
+
+/// Like [`script`], returning a conflict between settings instead of panicking.
+#[allow(clippy::result_large_err)]
+pub fn try_script<M: Workshop>(workshop: &M, profile: Profile) -> Result<String, SettingsError> {
+    let mut script = collect::<M>(workshop, profile)?;
     match profile {
         Profile::Debug => script.rules.extend(variable_panels(&script)),
         Profile::Release => {
@@ -52,10 +59,11 @@ pub fn script<M: Workshop>(workshop: &M, profile: Profile) -> String {
             }
         }
     }
-    emit::write(&script)
+    Ok(emit::write(&script))
 }
 
-fn collect<M: Workshop>(workshop: &M, profile: Profile) -> Script {
+#[allow(clippy::result_large_err)]
+fn collect<M: Workshop>(workshop: &M, profile: Profile) -> Result<Script, SettingsError> {
     let globals = M::Globals::declare();
     let players = M::Players::declare();
     let log = |name: &str, opts: Option<crate::DebugOpts>, actions: &mut Vec<Action>| {
@@ -94,18 +102,28 @@ fn collect<M: Workshop>(workshop: &M, profile: Profile) -> Script {
         subroutines.push(name);
     }
 
-    Script {
-        name: M::NAME,
-        description: M::DESCRIPTION,
-        lobby: M::lobby(),
-        modes: M::modes(),
-        heroes: M::heroes(),
-        extensions: M::extensions(),
+    let mut extensions: Vec<Extension> = Vec::new();
+    for extension in M::extensions() {
+        if !extensions.contains(&extension) {
+            extensions.push(extension);
+        }
+    }
+    let settings = settings::resolve(
+        M::NAME,
+        M::DESCRIPTION,
+        &[M::lobby()],
+        &M::modes(),
+        &M::heroes(),
+    )?;
+
+    Ok(Script {
+        settings,
+        extensions,
         globals: globals.vars(),
         players: players.vars(),
         subroutines,
         rules,
-    }
+    })
 }
 
 fn strip_comments(actions: Vec<Action>) -> Vec<Action> {
