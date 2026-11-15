@@ -9,25 +9,12 @@ repository.workspace = true
 
 [features]
 default = []
-serde = ["dep:serde"]
+# Shared rules and settings that many mods reuse.
+utils = []
 
 [dependencies]
 ow-workshop-data = { path = "../ow-workshop-data", version = "0.1.0" }
 ow-workshop-macros = { path = "../ow-workshop-macros", version = "0.1.0" }
-ryu-js = "1"
-thiserror = "2"
-serde = { version = "1", default-features = false, features = ["derive", "std"], optional = true }
-
-[dev-dependencies]
-insta = "1"
-serde_json = "1"
-similar = "2"
-trybuild = "1"
-wasm-bindgen-test = "0.3"
-
-# Not on wasm: its random-number and process dependencies do not build there.
-[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-proptest = "1"
 
 [lints]
 workspace = true

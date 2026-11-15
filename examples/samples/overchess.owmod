@@ -1,0 +1,723 @@
+settings
+{
+	main
+	{
+		Mode Name: "Overchess"
+		Description: "Overchess v0.1.0"
+	}
+	lobby
+	{
+		Max Team 1 Players: 1
+		Max Team 2 Players: 1
+	}
+	modes
+	{
+		disabled Clash
+		{
+		}
+		Control
+		{
+			disabled maps
+			{
+				Antarctic Peninsula 972777519512068154 972777519512068153
+				Arena Victoriae 972777519512068292 972777519512068153
+				Busan 972777519512068153 972777519512068154 972777519512068194
+				Gogadoro 972777519512068153 972777519512068154
+				Ilios 972777519512068292 972777519512068154
+				Lijiang Tower 972777519512068153 972777519512068197
+				Lijiang Tower Lunar New Year 972777519512063901
+				Nepal 972777519512068292 972777519512068154
+				Oasis 972777519512068153 972777519512068292 972777519512068154
+			}
+			Capture Speed Modifier: 500%
+			Scoring Speed Modifier: 500%
+			Game Mode Start: Manual
+			Limit Roles: Off
+			Score To Win: 3
+		}
+		disabled Escort
+		{
+		}
+		disabled Flashpoint
+		{
+		}
+		disabled Hybrid
+		{
+		}
+		disabled Push
+		{
+		}
+	}
+	heroes
+	{
+		General
+		{
+			Jetpack Cat
+			{
+				Frenetic Flight Unlimited Fuel: On
+			}
+		}
+	}
+}
+
+variables {
+    global:
+        0: sellingActive
+        1: sellingRan
+        2: roundEnded
+        3: sellRemaining
+        4: roundsCompleted
+        5: roundWinner
+        6: lastScore1
+        7: lastScore2
+        8: roundPlayer
+        9: roundIndex
+        127: __holygrail__
+    player:
+        0: pointOffset
+        1: coins
+        2: receivedStartingCoins
+        3: members
+        4: turnIndex
+        5: chooser
+        6: messageIndex
+        7: options
+        8: optionIndex
+        9: optionPosition
+        10: facingAngle
+        11: rowCenter
+        12: botSlots
+        13: priceTextId
+        14: isShopBot
+        15: optionBots
+        16: optionPositions
+        17: purchased
+        18: isBuyer
+        19: targetBot
+        20: targetIndex
+        21: targetCost
+        22: placedCount
+        23: placePosition
+        24: placedPositions
+        25: markerEffect
+        26: confirmTextId
+        27: cleanupIndex
+        28: placedSlots
+        29: isSeller
+        30: sellBots
+        31: sellSlots
+        32: keptHeroes
+        33: purchasedLevels
+        34: keptLevels
+        35: mergeIndex
+        36: mateIndex
+        37: mergedLevel
+        38: mergedHero
+        39: botLevel
+        40: optionLevels
+        41: levelOrder
+        42: level2Count
+        43: targetLevel
+}
+
+rule ("OverPy <­tx> / <­fg> setup code") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        "By Zezombye"
+        Create Dummy Bot(All Heroes, If-Then-Else(Number Of Slots(Team 1), Team 1, If-Then-Else(Number Of Slots(Team 2), Team 2, True)), False, Null, Null);
+        "More info: https://workshop.codes/wiki/articles/tx-reference-sheet"
+        Start Forcing Dummy Bot Name(Last Created Entity, Custom String("______________________________________________________________________________________________________________________________〼"));
+        Set Global Variable(__holygrail__, String Split(First Of(Last Created Entity), Empty Array));
+        Start Forcing Dummy Bot Name(Last Created Entity, Custom String("______________________________________________________________________________________________________________________________ࡀ"));
+        Set Global Variable(__holygrail__, String Slice(String Replace(Custom String("______________________________________________________________________________________________________________________________〼"), Global.__holygrail__, First Of(Last Created Entity)), 126, True));
+        Destroy All Dummy Bots;
+    }
+}
+
+rule ("Disable damage and healing") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Has Spawned(Event Player) == True;
+    }
+    actions {
+        Set Damage Dealt(Event Player, 0);
+        Set Damage Received(Event Player, 0);
+        Set Healing Dealt(Event Player, 0);
+        Set Healing Received(Event Player, 0);
+    }
+}
+
+rule ("Disable abilities") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    actions {
+        While(True);
+            Set Ability 1 Enabled(Event Player, False);
+            Set Ability 2 Enabled(Event Player, False);
+            Set Ultimate Ability Enabled(Event Player, False);
+            Wait(0.25, Ignore Condition);
+        End;
+    }
+}
+
+rule ("Lock heroes when the game starts") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Game In Progress == True;
+    }
+    actions {
+        Set Player Allowed Heroes(Event Player, Array(Hero Of(Event Player)));
+    }
+}
+
+rule ("Give starting coins") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == False;
+        Or(Is In Setup, Is Game In Progress) == True;
+        (Event Player).receivedStartingCoins == False;
+    }
+    actions {
+        Set Player Variable(Event Player, coins, 5);
+        Set Player Variable(Event Player, purchased, Empty Array);
+        Set Player Variable(Event Player, purchasedLevels, Empty Array);
+        Set Player Variable(Event Player, placedCount, 0);
+        Set Player Variable(Event Player, placedPositions, Empty Array);
+        Set Player Variable(Event Player, placedSlots, Empty Array);
+        Set Player Variable(Event Player, receivedStartingCoins, True);
+    }
+}
+
+rule ("Show coin balance") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == False;
+    }
+    actions {
+        Create HUD Text(Event Player, Null, Null, Custom String("{0}txc00000000008e02> {1}", Global.__holygrail__, (Event Player).coins), Right, 0, Color(White), Color(White), Color(White), Visible To and String, Default Visibility);
+    }
+}
+
+rule ("Show coin balance above heroes") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == False;
+    }
+    actions {
+        Create In-World Text(Remove From Array(All Players(All Teams), Event Player), Custom String("{0}txc00000000008e02> {1}", Global.__holygrail__, (Event Player).coins), Add(Eye Position(Event Player), Vector(0, 0.7, 0)), 1.2, Clip Against Surfaces, Visible To Position and String, Color(White), Default Visibility);
+    }
+}
+
+rule ("Shorten setup phase") {
+    event {
+        Ongoing - Global;
+    }
+    conditions {
+        Is In Setup == True;
+    }
+    actions {
+        Set Match Time(30);
+    }
+}
+
+rule ("Keep players off the point") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == False;
+    }
+    actions {
+        While(True);
+            Set Player Variable(Event Player, pointOffset, Vector(Subtract(X Component Of(Position Of(Event Player)), X Component Of(Objective Position(Objective Index))), 0, Subtract(Z Component Of(Position Of(Event Player)), Z Component Of(Objective Position(Objective Index)))));
+            If(Compare(Magnitude Of((Event Player).pointOffset), <, 14));
+                Apply Impulse(Event Player, If-Then-Else(Compare(Magnitude Of((Event Player).pointOffset), >, 0.01), Normalize((Event Player).pointOffset), Left), 12, To World, Cancel Contrary Motion XYZ);
+            End;
+            Wait(0.1, Ignore Condition);
+        End;
+    }
+}
+
+rule ("Show point debug info") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == False;
+    }
+    actions {
+        Create HUD Text(Event Player, Custom String("Point debug"), Custom String("Objective index: {0} | position: {1}", Objective Index, Objective Position(Objective Index)), Custom String("Distance from point: {0}", Magnitude Of(Vector(Subtract(X Component Of(Position Of(Event Player)), X Component Of(Objective Position(Objective Index))), 0, Subtract(Z Component Of(Position Of(Event Player)), Z Component Of(Objective Position(Objective Index)))))), Left, 1, Color(White), Color(White), Color(White), Visible To and String, Default Visibility);
+    }
+}
+
+rule ("Buying phase turns") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is In Setup == True;
+        Global.sellingActive == False;
+        Or(Not(Global.roundEnded), Global.sellingRan) == True;
+        Is Dummy Bot(Event Player) == False;
+        Event Player == First Of(Filtered Array(All Players(Team Of(Event Player)), Not(Is Dummy Bot(Current Array Element))));
+    }
+    actions {
+        Set Player Variable(Event Player, members, Filtered Array(All Players(Team Of(Event Player)), Not(Is Dummy Bot(Current Array Element))));
+        For Player Variable(Event Player, turnIndex, 0, Count Of((Event Player).members), 1);
+            Set Player Variable(Event Player, chooser, Value In Array((Event Player).members, (Event Player).turnIndex));
+            Set Player Variable(Event Player, botSlots, Empty Array);
+            Set Player Variable(Event Player, optionBots, Empty Array);
+            Set Player Variable(Event Player, optionPositions, Empty Array);
+            If(Compare(Count Of((Event Player).members), ==, 1));
+                Set Player Variable((Event Player).chooser, isBuyer, True);
+                Set Player Variable(Event Player, options, Randomized Array(Array(Random Value In Array(Array(Hero(Winston), Hero(Orisa), Hero(Reinhardt))), Random Value In Array(Array(Hero(Genji), Hero(Reaper), Hero(Hanzo), Hero(Mei), Hero(Junkrat), Hero(Pharah))), Random Value In Array(Array(Hero(Ana), Hero(Lúcio), Hero(Mercy), Hero(Brigitte))), Random Value In Array(Array(Hero(Winston), Hero(Orisa), Hero(Reinhardt), Hero(Genji), Hero(Reaper), Hero(Hanzo), Hero(Mei), Hero(Junkrat), Hero(Pharah), Hero(Ana), Hero(Lúcio), Hero(Mercy), Hero(Brigitte))), Random Value In Array(Array(Hero(Winston), Hero(Orisa), Hero(Reinhardt), Hero(Genji), Hero(Reaper), Hero(Hanzo), Hero(Mei), Hero(Junkrat), Hero(Pharah), Hero(Ana), Hero(Lúcio), Hero(Mercy), Hero(Brigitte))))));
+                Set Player Variable(Event Player, levelOrder, Randomized Array(Array(0, 1, 2, 3, 4)));
+                Set Player Variable(Event Player, level2Count, If-Then-Else(Compare(Global.roundsCompleted, ==, 0), Random Integer(0, 1), Min(Add(Global.roundsCompleted, 1), 4)));
+                Set Player Variable(Event Player, optionLevels, Mapped Array(Array(0, 1, 2, 3, 4), If-Then-Else(Compare(Index Of Array Value((Event Player).levelOrder, Current Array Element), <, (Event Player).level2Count), 2, 1)));
+                Set Player Variable(Event Player, facingAngle, Horizontal Angle From Direction(Facing Direction Of((Event Player).chooser)));
+                Set Player Variable(Event Player, rowCenter, Add(Position Of((Event Player).chooser), Multiply(5, Direction From Angles((Event Player).facingAngle, 0))));
+                For Player Variable(Event Player, optionIndex, 0, Count Of((Event Player).options), 1);
+                    Set Player Variable(Event Player, optionPosition, Add((Event Player).rowCenter, Multiply(Multiply(Subtract((Event Player).optionIndex, Divide(Subtract(Count Of((Event Player).options), 1), 2)), 2.5), Direction From Angles(Add((Event Player).facingAngle, 90), 0))));
+                    Create Dummy Bot(Value In Array((Event Player).options, (Event Player).optionIndex), Team Of(Event Player), -1, (Event Player).optionPosition, Direction Towards((Event Player).optionPosition, Position Of((Event Player).chooser)));
+                    Set Player Variable(Last Created Entity, isShopBot, True);
+                    Set Player Variable(Last Created Entity, botLevel, Value In Array((Event Player).optionLevels, (Event Player).optionIndex));
+                    Modify Player Variable(Event Player, optionBots, Append To Array, Last Created Entity);
+                    Modify Player Variable(Event Player, botSlots, Append To Array, Slot Of(Last Created Entity));
+                    Modify Player Variable(Event Player, optionPositions, Append To Array, (Event Player).optionPosition);
+                End;
+            End;
+            For Player Variable(Event Player, messageIndex, 0, 6, 1);
+                Big Message((Event Player).chooser, Custom String("Select your heroes"));
+                Big Message(Remove From Array((Event Player).members, (Event Player).chooser), Custom String("{0} selecting heroes", (Event Player).chooser));
+                Wait(5, Ignore Condition);
+            End;
+            For Player Variable(Event Player, optionIndex, 0, Count Of((Event Player).botSlots), 1);
+                If(Compare(Value In Array((Event Player).botSlots, (Event Player).optionIndex), >=, 0));
+                    Destroy In-World Text((Value In Array((Event Player).optionBots, (Event Player).optionIndex)).priceTextId);
+                    Destroy Dummy Bot(Team Of(Event Player), Value In Array((Event Player).botSlots, (Event Player).optionIndex));
+                End;
+            End;
+            If(Compare(Count Of((Event Player).members), ==, 1));
+                Set Player Variable((Event Player).chooser, isBuyer, False);
+            End;
+        End;
+    }
+}
+
+rule ("Buy a hero by gripping it") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        (Event Player).isBuyer != False;
+        Is Button Held(Event Player, Button(Interact)) == True;
+    }
+    actions {
+        Set Player Variable(Event Player, targetBot, First Of(Sorted Array(Filtered Array(All Living Players(Team Of(Event Player)), And(Has Spawned(Current Array Element), Compare(Current Array Element, !=, Event Player))), Angle Between Vectors(Facing Direction Of(Event Player), Subtract(Current Array Element, Eye Position(Event Player))))));
+        Set Player Variable(Event Player, targetIndex, Index Of Array Value((Event Player).optionBots, (Event Player).targetBot));
+        If(And(Compare((Event Player).targetIndex, >=, 0), Compare(Angle Between Vectors(Facing Direction Of(Event Player), Direction Towards(Eye Position(Event Player), Position Of((Event Player).targetBot))), <, 15)));
+            Set Player Variable(Event Player, targetLevel, Value In Array((Event Player).optionLevels, (Event Player).targetIndex));
+            Set Player Variable(Event Player, targetCost, (Event Player).targetLevel);
+            Set Player Variable(Event Player, mergeIndex, -1);
+            For Player Variable(Event Player, cleanupIndex, 0, Count Of((Event Player).purchased), 1);
+                If(And(And(Compare((Event Player).mergeIndex, <, 0), Compare(Value In Array((Event Player).purchased, (Event Player).cleanupIndex), ==, Value In Array((Event Player).options, (Event Player).targetIndex))), Compare(Value In Array((Event Player).purchasedLevels, (Event Player).cleanupIndex), ==, (Event Player).targetLevel)));
+                    Set Player Variable(Event Player, mergeIndex, (Event Player).cleanupIndex);
+                End;
+            End;
+            If(And(Compare(Count Of((Event Player).purchased), >=, 5), Compare((Event Player).mergeIndex, <, 0)));
+                Big Message(Event Player, Custom String("Too many heroes"));
+                Teleport((Event Player).targetBot, Value In Array((Event Player).optionPositions, (Event Player).targetIndex));
+            Else If(Compare((Event Player).coins, >=, (Event Player).targetCost));
+                Modify Player Variable(Event Player, coins, Subtract, (Event Player).targetCost);
+                If(Compare((Event Player).mergeIndex, >=, 0));
+                    Modify Player Variable At Index(Event Player, purchasedLevels, (Event Player).mergeIndex, Add, 1);
+                    Set Player Variable(Event Player, mateIndex, -1);
+                    For Player Variable(Event Player, cleanupIndex, 0, Count Of((Event Player).purchased), 1);
+                        If(And(And(And(And(Compare((Event Player).mateIndex, <, 0), Compare((Event Player).cleanupIndex, !=, (Event Player).mergeIndex)), Compare(Value In Array((Event Player).purchased, (Event Player).cleanupIndex), ==, Value In Array((Event Player).purchased, (Event Player).mergeIndex))), Compare(Value In Array((Event Player).purchasedLevels, (Event Player).cleanupIndex), ==, Value In Array((Event Player).purchasedLevels, (Event Player).mergeIndex))), Compare(Value In Array((Event Player).purchasedLevels, (Event Player).mergeIndex), <, 3)));
+                            Set Player Variable(Event Player, mateIndex, (Event Player).cleanupIndex);
+                        End;
+                    End;
+                    If(Compare((Event Player).mateIndex, >=, 0));
+                        Modify Player Variable At Index(Event Player, purchasedLevels, (Event Player).mergeIndex, Add, 1);
+                    End;
+                    Set Player Variable(Event Player, mergedLevel, Value In Array((Event Player).purchasedLevels, (Event Player).mergeIndex));
+                    Set Player Variable(Event Player, mergedHero, Value In Array((Event Player).purchased, (Event Player).mergeIndex));
+                    Big Message(Event Player, Custom String("{0} merged into level {1}", (Event Player).mergedHero, (Event Player).mergedLevel));
+                    If(Compare((Event Player).mateIndex, >=, 0));
+                        Set Player Variable(Event Player, keptHeroes, Empty Array);
+                        Set Player Variable(Event Player, keptLevels, Empty Array);
+                        For Player Variable(Event Player, cleanupIndex, 0, Count Of((Event Player).purchased), 1);
+                            If(Compare((Event Player).cleanupIndex, !=, (Event Player).mateIndex));
+                                Modify Player Variable(Event Player, keptHeroes, Append To Array, Value In Array((Event Player).purchased, (Event Player).cleanupIndex));
+                                Modify Player Variable(Event Player, keptLevels, Append To Array, Value In Array((Event Player).purchasedLevels, (Event Player).cleanupIndex));
+                            End;
+                        End;
+                        Set Player Variable(Event Player, purchased, (Event Player).keptHeroes);
+                        Set Player Variable(Event Player, purchasedLevels, (Event Player).keptLevels);
+                    End;
+                Else;
+                    Modify Player Variable(Event Player, purchased, Append To Array, Value In Array((Event Player).options, (Event Player).targetIndex));
+                    Modify Player Variable(Event Player, purchasedLevels, Append To Array, (Event Player).targetLevel);
+                End;
+                Play Effect(All Players(All Teams), Good Pickup Effect, Color(White), Position Of((Event Player).targetBot), 2);
+                Destroy In-World Text(((Event Player).targetBot).priceTextId);
+                Destroy Dummy Bot(Team Of(Event Player), Value In Array((Event Player).botSlots, (Event Player).targetIndex));
+                Set Player Variable At Index(Event Player, botSlots, (Event Player).targetIndex, -1);
+                If(Compare((Event Player).coins, <=, 0));
+                    For Player Variable(Event Player, cleanupIndex, 0, Count Of((Event Player).botSlots), 1);
+                        If(Compare(Value In Array((Event Player).botSlots, (Event Player).cleanupIndex), >=, 0));
+                            Destroy In-World Text((Value In Array((Event Player).optionBots, (Event Player).cleanupIndex)).priceTextId);
+                            Destroy Dummy Bot(Team Of(Event Player), Value In Array((Event Player).botSlots, (Event Player).cleanupIndex));
+                            Set Player Variable At Index(Event Player, botSlots, (Event Player).cleanupIndex, -1);
+                        End;
+                    End;
+                End;
+            Else;
+                Big Message(Event Player, Custom String("Not enough gold"));
+                Teleport((Event Player).targetBot, Value In Array((Event Player).optionPositions, (Event Player).targetIndex));
+            End;
+        End;
+        Wait Until(Not(Is Button Held(Event Player, Button(Interact))), 3);
+    }
+}
+
+rule ("Show purchased heroes") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == False;
+    }
+    actions {
+        Create HUD Text(If-Then-Else(Compare(Count Of((Event Player).purchased), >, 0), Event Player, Null), Null, Null, If-Then-Else(And((Event Player).isSeller, Compare(First Of((Event Player).sellSlots), <, 0)), Custom String("{0} {1}txc00000000008e02>{2}", First Of((Event Player).purchased), Global.__holygrail__, Custom String("{0}{1} sold", If-Then-Else(Compare(First Of((Event Player).purchasedLevels), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(First Of((Event Player).purchasedLevels), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")))), If-Then-Else(Compare(0, <, (Event Player).placedCount), Custom String("{0} {1}txc00000000008e02>{2}", First Of((Event Player).purchased), Global.__holygrail__, Custom String("{0}{1} placed at {2}", If-Then-Else(Compare(First Of((Event Player).purchasedLevels), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(First Of((Event Player).purchasedLevels), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), First Of((Event Player).placedPositions))), Custom String("{0} {1}txc00000000008e02>{2}", First Of((Event Player).purchased), Global.__holygrail__, Custom String("{0}{1} bought", If-Then-Else(Compare(First Of((Event Player).purchasedLevels), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(First Of((Event Player).purchasedLevels), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")))))), Right, 1, Color(White), Color(White), Color(White), Visible To Sort Order and String, Default Visibility);
+        Create HUD Text(If-Then-Else(Compare(Count Of((Event Player).purchased), >, 1), Event Player, Null), Null, Null, If-Then-Else(And((Event Player).isSeller, Compare(Value In Array((Event Player).sellSlots, 1), <, 0)), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 1), Global.__holygrail__, Custom String("{0}{1} sold", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 1), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 1), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")))), If-Then-Else(Compare(1, <, (Event Player).placedCount), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 1), Global.__holygrail__, Custom String("{0}{1} placed at {2}", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 1), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 1), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), Value In Array((Event Player).placedPositions, 1))), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 1), Global.__holygrail__, Custom String("{0}{1} bought", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 1), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 1), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")))))), Right, 2, Color(White), Color(White), Color(White), Visible To Sort Order and String, Default Visibility);
+        Create HUD Text(If-Then-Else(Compare(Count Of((Event Player).purchased), >, 2), Event Player, Null), Null, Null, If-Then-Else(And((Event Player).isSeller, Compare(Value In Array((Event Player).sellSlots, 2), <, 0)), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 2), Global.__holygrail__, Custom String("{0}{1} sold", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 2), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 2), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")))), If-Then-Else(Compare(2, <, (Event Player).placedCount), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 2), Global.__holygrail__, Custom String("{0}{1} placed at {2}", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 2), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 2), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), Value In Array((Event Player).placedPositions, 2))), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 2), Global.__holygrail__, Custom String("{0}{1} bought", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 2), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 2), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")))))), Right, 3, Color(White), Color(White), Color(White), Visible To Sort Order and String, Default Visibility);
+        Create HUD Text(If-Then-Else(Compare(Count Of((Event Player).purchased), >, 3), Event Player, Null), Null, Null, If-Then-Else(And((Event Player).isSeller, Compare(Value In Array((Event Player).sellSlots, 3), <, 0)), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 3), Global.__holygrail__, Custom String("{0}{1} sold", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 3), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 3), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")))), If-Then-Else(Compare(3, <, (Event Player).placedCount), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 3), Global.__holygrail__, Custom String("{0}{1} placed at {2}", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 3), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 3), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), Value In Array((Event Player).placedPositions, 3))), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 3), Global.__holygrail__, Custom String("{0}{1} bought", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 3), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 3), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")))))), Right, 4, Color(White), Color(White), Color(White), Visible To Sort Order and String, Default Visibility);
+        Create HUD Text(If-Then-Else(Compare(Count Of((Event Player).purchased), >, 4), Event Player, Null), Null, Null, If-Then-Else(And((Event Player).isSeller, Compare(Value In Array((Event Player).sellSlots, 4), <, 0)), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 4), Global.__holygrail__, Custom String("{0}{1} sold", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 4), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 4), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")))), If-Then-Else(Compare(4, <, (Event Player).placedCount), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 4), Global.__holygrail__, Custom String("{0}{1} placed at {2}", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 4), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 4), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), Value In Array((Event Player).placedPositions, 4))), Custom String("{0} {1}txc00000000008e02>{2}", Value In Array((Event Player).purchased, 4), Global.__holygrail__, Custom String("{0}{1} bought", If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 4), >=, 2), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")), If-Then-Else(Compare(Value In Array((Event Player).purchasedLevels, 4), >=, 3), Custom String("{0}txc00000000008e02>", Global.__holygrail__), Custom String("")))))), Right, 5, Color(White), Color(White), Color(White), Visible To Sort Order and String, Default Visibility);
+    }
+}
+
+rule ("Start match when teams are equal") {
+    event {
+        Ongoing - Global;
+    }
+    conditions {
+        Is Game In Progress == False;
+        Count Of(Filtered Array(All Players(Team 1), Not(Is Dummy Bot(Current Array Element)))) == Count Of(Filtered Array(All Players(Team 2), Not(Is Dummy Bot(Current Array Element))));
+        Count Of(Filtered Array(All Players(Team 1), Not(Is Dummy Bot(Current Array Element)))) > 0;
+    }
+    actions {
+        Start Game Mode;
+    }
+}
+
+rule ("Warn about unequal teams") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Create HUD Text(All Players(All Teams), If-Then-Else(And(Not(Is Game In Progress), Compare(Count Of(Filtered Array(All Players(Team 1), Not(Is Dummy Bot(Current Array Element)))), !=, Count Of(Filtered Array(All Players(Team 2), Not(Is Dummy Bot(Current Array Element)))))), Custom String("Both teams must have the same number of players"), Custom String("")), Null, Null, Top, 0, Custom Color(255, 112, 122, 255), Null, Null, Visible To and String, Default Visibility);
+    }
+}
+
+rule ("Show buying help") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == False;
+    }
+    actions {
+        Create HUD Text(If-Then-Else((Event Player).isBuyer, Event Player, Null), Custom String("Aim at a hero and press {0} to buy it", Input Binding String(Button(Interact))), Null, Null, Top, 1, Color(White), Color(White), Color(White), Visible To and String, Default Visibility);
+    }
+}
+
+rule ("Show shop hero price") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == True;
+        (Event Player).isShopBot != False;
+    }
+    actions {
+        Create In-World Text(All Players(All Teams), Custom String("{0}txc00000000008e02> {1}", Global.__holygrail__, (Event Player).botLevel), Add(Position Of(Event Player), Vector(0, 2.5, 0)), 1.2, Clip Against Surfaces, Visible To Position and String, Color(White), Default Visibility);
+        Set Player Variable(Event Player, priceTextId, Last Text ID);
+        While((Event Player).isShopBot);
+            Play Effect(All Players(All Teams), Ring Explosion, Color(White), Position Of(Event Player), 1.5);
+            Wait(1, Ignore Condition);
+        End;
+    }
+}
+
+rule ("Place a bought hero on the point") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == False;
+        Is Game In Progress == True;
+        Is In Setup == False;
+        Is Between Rounds == False;
+        Global.sellingActive == False;
+        (Event Player).placedCount < Count Of((Event Player).purchased);
+        Is Button Held(Event Player, Button(Interact)) == True;
+    }
+    actions {
+        Set Player Variable(Event Player, placePosition, Ray Cast Hit Position(Eye Position(Event Player), Add(Eye Position(Event Player), Multiply(Facing Direction Of(Event Player), 60)), Null, Event Player, False));
+        If(Compare(Distance Between(Vector(X Component Of((Event Player).placePosition), 0, Z Component Of((Event Player).placePosition)), Vector(X Component Of(Objective Position(Objective Index)), 0, Z Component Of(Objective Position(Objective Index)))), <=, 14));
+            Create Effect(Event Player, Sphere, Color(Green), (Event Player).placePosition, 1, Visible To Position and Radius);
+            Set Player Variable(Event Player, markerEffect, Last Created Entity);
+            Create In-World Text(Event Player, Custom String("Selected for {0}: {1}. Confirm by clicking {2}", Value In Array((Event Player).purchased, (Event Player).placedCount), (Event Player).placePosition, Input Binding String(Button(Interact))), Add(Eye Position(Event Player), Multiply(Facing Direction Of(Event Player), 3)), 1.5, Do Not Clip, Visible To Position and String, Color(White), Default Visibility);
+            Set Player Variable(Event Player, confirmTextId, Last Text ID);
+            Wait Until(Not(Is Button Held(Event Player, Button(Interact))), 3);
+            Wait Until(Is Button Held(Event Player, Button(Interact)), 1);
+            If(Is Button Held(Event Player, Button(Interact)));
+                Create Dummy Bot(Value In Array((Event Player).purchased, (Event Player).placedCount), Team Of(Event Player), -1, (Event Player).placePosition, Facing Direction Of(Event Player));
+                Play Effect(All Players(All Teams), Good Pickup Effect, Color(Green), (Event Player).placePosition, 2);
+                Modify Player Variable(Event Player, placedSlots, Append To Array, Slot Of(Last Created Entity));
+                Modify Player Variable(Event Player, placedPositions, Append To Array, (Event Player).placePosition);
+                Modify Player Variable(Event Player, placedCount, Add, 1);
+            End;
+            Destroy Effect((Event Player).markerEffect);
+            Destroy In-World Text((Event Player).confirmTextId);
+        Else;
+            Big Message(Event Player, Custom String("Place heroes on the point"));
+        End;
+        Wait Until(Not(Is Button Held(Event Player, Button(Interact))), 3);
+    }
+}
+
+rule ("Show placing help") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == False;
+    }
+    actions {
+        Create HUD Text(If-Then-Else(And(And(And(And(Is Game In Progress, Not(Is In Setup)), Not(Is Between Rounds)), Not(Global.sellingActive)), Compare((Event Player).placedCount, <, Count Of((Event Player).purchased))), Event Player, Null), Custom String("Point at a spot on the point and press {0} to mark it, then press {0} again within 1 second to place {1}", Input Binding String(Button(Interact)), Value In Array((Event Player).purchased, (Event Player).placedCount)), Null, Null, Top, 1, Color(White), Color(White), Color(White), Visible To and String, Default Visibility);
+    }
+}
+
+rule ("Detect end of round") {
+    event {
+        Ongoing - Global;
+    }
+    conditions {
+        Is Between Rounds == True;
+    }
+    actions {
+        Set Global Variable(roundEnded, True);
+    }
+}
+
+rule ("Award round gold") {
+    event {
+        Ongoing - Global;
+    }
+    conditions {
+        Is Between Rounds == True;
+    }
+    actions {
+        Modify Global Variable(roundsCompleted, Add, 1);
+        Set Global Variable(roundWinner, If-Then-Else(Compare(Team Score(Team 1), >, Global.lastScore1), Team 1, Team 2));
+        Set Global Variable(lastScore1, Team Score(Team 1));
+        Set Global Variable(lastScore2, Team Score(Team 2));
+        If(Compare(Global.roundsCompleted, <=, 4));
+            For Global Variable(roundIndex, 0, Number Of Players(All Teams), 1);
+                Set Global Variable(roundPlayer, Value In Array(All Players(All Teams), Global.roundIndex));
+                If(Not(Is Dummy Bot(Global.roundPlayer)));
+                    Modify Player Variable(Global.roundPlayer, coins, Add, Add(Add(1, Global.roundsCompleted), If-Then-Else(Compare(Team Of(Global.roundPlayer), ==, Global.roundWinner), 1, 0)));
+                    Big Message(Global.roundPlayer, Custom String("{0} gold for {1}", Add(Add(1, Global.roundsCompleted), If-Then-Else(Compare(Team Of(Global.roundPlayer), ==, Global.roundWinner), 1, 0)), If-Then-Else(Compare(Team Of(Global.roundPlayer), ==, Global.roundWinner), Custom String("winning"), Custom String("losing"))));
+                End;
+            End;
+    }
+}
+
+rule ("Reset selling for next round") {
+    event {
+        Ongoing - Global;
+    }
+    conditions {
+        Global.roundEnded != False;
+        Global.sellingRan != False;
+        Global.sellingActive == False;
+        Is In Setup == False;
+        Is Between Rounds == False;
+    }
+    actions {
+        Set Global Variable(roundEnded, False);
+        Set Global Variable(sellingRan, False);
+    }
+}
+
+rule ("Start selling phase") {
+    event {
+        Ongoing - Global;
+    }
+    conditions {
+        Global.roundEnded != False;
+        Is In Setup == True;
+        Global.sellingRan == False;
+    }
+    actions {
+        Set Global Variable(sellingRan, True);
+        Set Global Variable(sellingActive, True);
+        Big Message(All Players(All Teams), Custom String("Selling phase"));
+        For Global Variable(sellRemaining, 30, 0, -1);
+            If(Is In Setup);
+                Set Match Time(30);
+            End;
+            Wait(1, Ignore Condition);
+        End;
+        Set Global Variable(sellingActive, False);
+        Set Global Variable(sellRemaining, 0);
+        Big Message(All Players(All Teams), Custom String("Buying phase"));
+        If(Is In Setup);
+            Set Match Time(30);
+    }
+}
+
+rule ("Selling phase") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == False;
+        Global.sellingActive != False;
+    }
+    actions {
+        For Player Variable(Event Player, cleanupIndex, 0, Count Of((Event Player).placedSlots), 1);
+            Destroy Dummy Bot(Team Of(Event Player), Value In Array((Event Player).placedSlots, (Event Player).cleanupIndex));
+        End;
+        Set Player Variable(Event Player, placedSlots, Empty Array);
+        Set Player Variable(Event Player, placedPositions, Empty Array);
+        Set Player Variable(Event Player, placedCount, 0);
+        Set Player Variable(Event Player, sellBots, Empty Array);
+        Set Player Variable(Event Player, sellSlots, Empty Array);
+        Set Player Variable(Event Player, facingAngle, Horizontal Angle From Direction(Facing Direction Of(Event Player)));
+        Set Player Variable(Event Player, rowCenter, Add(Position Of(Event Player), Multiply(5, Direction From Angles((Event Player).facingAngle, 0))));
+        For Player Variable(Event Player, optionIndex, 0, Count Of((Event Player).purchased), 1);
+            Set Player Variable(Event Player, optionPosition, Add((Event Player).rowCenter, Multiply(Multiply(Subtract((Event Player).optionIndex, Divide(Subtract(Count Of((Event Player).purchased), 1), 2)), 2.5), Direction From Angles(Add((Event Player).facingAngle, 90), 0))));
+            Create Dummy Bot(Value In Array((Event Player).purchased, (Event Player).optionIndex), Team Of(Event Player), -1, (Event Player).optionPosition, Direction Towards((Event Player).optionPosition, Position Of(Event Player)));
+            Set Player Variable(Last Created Entity, isShopBot, True);
+            Set Player Variable(Last Created Entity, botLevel, Value In Array((Event Player).purchasedLevels, (Event Player).optionIndex));
+            Modify Player Variable(Event Player, sellBots, Append To Array, Last Created Entity);
+            Modify Player Variable(Event Player, sellSlots, Append To Array, Slot Of(Last Created Entity));
+        End;
+        Set Player Variable(Event Player, isSeller, True);
+        Wait Until(Not(Global.sellingActive), 35);
+        Set Player Variable(Event Player, isSeller, False);
+        For Player Variable(Event Player, cleanupIndex, 0, Count Of((Event Player).sellSlots), 1);
+            If(Compare(Value In Array((Event Player).sellSlots, (Event Player).cleanupIndex), >=, 0));
+                Destroy In-World Text((Value In Array((Event Player).sellBots, (Event Player).cleanupIndex)).priceTextId);
+                Destroy Dummy Bot(Team Of(Event Player), Value In Array((Event Player).sellSlots, (Event Player).cleanupIndex));
+            End;
+        End;
+        Set Player Variable(Event Player, keptHeroes, Empty Array);
+        Set Player Variable(Event Player, keptLevels, Empty Array);
+        For Player Variable(Event Player, cleanupIndex, 0, Count Of((Event Player).sellSlots), 1);
+            If(Compare(Value In Array((Event Player).sellSlots, (Event Player).cleanupIndex), >=, 0));
+                Modify Player Variable(Event Player, keptHeroes, Append To Array, Value In Array((Event Player).purchased, (Event Player).cleanupIndex));
+                Modify Player Variable(Event Player, keptLevels, Append To Array, Value In Array((Event Player).purchasedLevels, (Event Player).cleanupIndex));
+            End;
+        End;
+        Set Player Variable(Event Player, purchased, (Event Player).keptHeroes);
+        Set Player Variable(Event Player, purchasedLevels, (Event Player).keptLevels);
+        Set Player Variable(Event Player, sellBots, Empty Array);
+        Set Player Variable(Event Player, sellSlots, Empty Array);
+    }
+}
+
+rule ("Sell a hero by gripping it") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        (Event Player).isSeller != False;
+        Is Button Held(Event Player, Button(Interact)) == True;
+    }
+    actions {
+        Set Player Variable(Event Player, targetBot, First Of(Sorted Array(Filtered Array(All Living Players(Team Of(Event Player)), And(Has Spawned(Current Array Element), Compare(Current Array Element, !=, Event Player))), Angle Between Vectors(Facing Direction Of(Event Player), Subtract(Current Array Element, Eye Position(Event Player))))));
+        Set Player Variable(Event Player, targetIndex, Index Of Array Value((Event Player).sellBots, (Event Player).targetBot));
+        If(And(And(Compare((Event Player).targetIndex, >=, 0), Compare(Value In Array((Event Player).sellSlots, (Event Player).targetIndex), >=, 0)), Compare(Angle Between Vectors(Facing Direction Of(Event Player), Direction Towards(Eye Position(Event Player), Position Of((Event Player).targetBot))), <, 15)));
+            Modify Player Variable(Event Player, coins, Add, Value In Array((Event Player).purchasedLevels, (Event Player).targetIndex));
+            Play Effect(All Players(All Teams), Good Pickup Effect, Color(White), Position Of((Event Player).targetBot), 2);
+            Destroy In-World Text(((Event Player).targetBot).priceTextId);
+            Destroy Dummy Bot(Team Of(Event Player), Value In Array((Event Player).sellSlots, (Event Player).targetIndex));
+            Set Player Variable At Index(Event Player, sellSlots, (Event Player).targetIndex, -1);
+        End;
+        Wait Until(Not(Is Button Held(Event Player, Button(Interact))), 3);
+    }
+}
+
+rule ("Show selling phase") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Create HUD Text(All Players(All Teams), If-Then-Else(Global.sellingActive, Custom String("Selling phase: {0} s", Global.sellRemaining), Custom String("")), Null, Null, Top, 0, Color(Yellow), Null, Null, Visible To and String, Default Visibility);
+    }
+}
+
+rule ("Show selling help") {
+    event {
+        Ongoing - Each Player;
+        All;
+        All;
+    }
+    conditions {
+        Is Dummy Bot(Event Player) == False;
+    }
+    actions {
+        Create HUD Text(If-Then-Else((Event Player).isSeller, Event Player, Null), Custom String("Aim at a hero and press {0} to sell it for its level in gold", Input Binding String(Button(Interact))), Null, Null, Top, 2, Color(White), Color(White), Color(White), Visible To and String, Default Visibility);
+    }
+}

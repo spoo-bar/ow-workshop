@@ -1,0 +1,18 @@
+[package]
+name = "examples"
+description = "Example mods written with ow-workshop."
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+ow-workshop = { path = "../ow-workshop", version = "0.1.0", features = ["utils"] }
+
+[build-dependencies]
+ow-workshop = { path = "../ow-workshop", version = "0.1.0", features = ["utils"] }
+
+[lints]
+workspace = true

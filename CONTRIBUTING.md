@@ -1,34 +1,26 @@
 # Contributing
 
+The rewrite is tracked in [the epic](https://github.com/spoo-bar/ow-workshop/issues/244). Read its design section before picking up a sub-issue.
+
 ## Design
-- Typed values (`Expr<T>`); comparisons are methods (`eq`, `lt`, ...), not `PartialEq`.
-- Statements are recorded on an explicit `&mut Block`, never through hidden state.
-- Optional arguments use an args struct with `Default`, not long positional lists.
-- No preprocessor: reuse is plain Rust (functions, extension traits, modules).
-- Every public builder method that creates IR is `#[track_caller]` so diagnostics point at the user's source line. Closures break the chain: capture `Location::caller()` at the outermost public call and pass it down.
+- Root types are traits (`Workshop`, `Rule`, `Subroutine`, `Globals`, `Players`), each with a default concrete type.
+- `Event`, `Condition`, `Action` and `Value` are plain data. No closures, builder state, global or thread-local state.
+- A rule must not refer to a particular `Workshop`, so it can be shared between mods. Shared rules go in `ow_workshop::utils` behind the `utils` feature.
+- The build profile decides the output. Debug keeps everything and adds helpers. Release keeps only what runs.
+- Output is English only.
 
 ## Rust style
 - Idiomatic and clippy-clean (workspace lints). No `unsafe`.
-- No `unwrap`/`expect` outside tests.
 - Keep modules small.
-
-## Comments
-- One-line `///` doc on every public item.
-- Inline comments only for non-obvious edge cases (usually workshop quirks). No long prose.
-
-## Architecture
-- No global or thread-local mutable state.
-- The core does no I/O and no printing.
-- `ow-workshop` stays WASM-safe: no `std::fs`, `std::time`, `std::process`, threads or `getrandom`.
+- One-line `///` doc on every public item. Other comments only for a non-obvious reason.
 
 ## Workflow
 - PR titles follow [Conventional Commits](https://www.conventionalcommits.org/) (checked by `lint-pr.yml`).
-- Keep PRs under ~1000 changed lines.
-- Before pushing: `cargo fmt`, `cargo clippy --workspace --all-targets`, `cargo test --workspace`.
+- Keep PRs under about 1000 changed lines.
+- Before pushing: `cargo fmt --all`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test --workspace --all-features`.
 
 ## Game data
-The Rust tables are the source of truth; edit them directly when the game updates.
-- Hero: add a variant and its entry in `ow-workshop-data/src/generated/heroes.rs`, plus any hero settings in `hero_settings.rs`.
-- Map: add it in `ow-workshop-data/src/generated/maps.rs` (and `gamemodes.rs` if it belongs to a mode).
-- Action: add it in `ow-workshop-data/src/generated/actions.rs`, then the typed builder in `ow-workshop/src/generated/actions.rs`.
-- Add a test in the matching `ow-workshop-data/tests/` file, then run `cargo fmt`, `cargo clippy --workspace --all-targets` and `cargo test --workspace`.
+The tables in `ow-workshop-data` are the source of truth for spellings. Edit them directly when the game updates.
+- Hero: `ow-workshop-data/src/generated/heroes.rs`, plus hero settings in `hero_settings.rs`.
+- Map: `ow-workshop-data/src/generated/maps.rs`, and `gamemodes.rs` if it belongs to a mode.
+- Action or value: `ow-workshop-data/src/generated/actions.rs` or `values.rs`.
