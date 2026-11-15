@@ -7,6 +7,7 @@ name = "examples"
 version = "0.1.0"
 dependencies = [
  "ow-workshop",
+ "ow-workshop-golden",
 ]
 
 [[package]]
