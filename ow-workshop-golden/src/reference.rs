@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-/// Environment variable naming a checkout of the Marblr reference scripts.
+/// Environment variable naming a checkout of the external reference scripts.
 pub const REFERENCE_DIR_VAR: &str = "OW_REFERENCE_DIR";
 
 /// Reads `relative` (e.g. `Fall Damage/FallDamage.txt`) from the directory in

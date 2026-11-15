@@ -1,4 +1,4 @@
-//! The harness on a hand-built mod, the owner samples, and optional Marblr files.
+//! The harness on a hand-built mod, the owner samples, and optional external reference files.
 
 use ow_workshop::{Hero, Lobby, Mode, Profile, Rule, Workshop, script, utils};
 use ow_workshop_golden::{Options, assert_same_script, assert_same_script_with, reference_file};
@@ -119,9 +119,9 @@ fn owner_samples_are_stable_under_normalization() {
     );
 }
 
-/// Marblr files carry no licence, so they are read from `OW_REFERENCE_DIR`.
+/// The external reference files carry no licence, so they are read from `OW_REFERENCE_DIR`.
 #[test]
-fn marblr_references_are_stable_under_normalization() {
+fn external_references_are_stable_under_normalization() {
     use ow_workshop_golden::normalize;
     for file in [
         "Fall Damage/FallDamage.txt",
