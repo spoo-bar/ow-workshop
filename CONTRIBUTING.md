@@ -28,11 +28,10 @@ The tables in `ow-workshop-data` are the source of truth for spellings. Edit the
 ## Golden tests
 `ow-workshop-golden` compares a generated release script to a reference script after normalizing it (`assert_same_script`). The rules are documented in `ow-workshop-golden/src/normalize.rs`.
 
-The reference scripts in [Marblr/Overwatch-Workshop](https://github.com/Marblr/Overwatch-Workshop) have no licence file, so they are not vendored here (this repo is GPL-3.0-only). Tests that use them read them through `reference_file` and are skipped when `OW_REFERENCE_DIR` is unset. To run them:
+Some reference scripts have no licence file, so they are not vendored here (this repo is GPL-3.0-only). Tests that use them read them through `reference_file` and are skipped when `OW_REFERENCE_DIR` is unset. To run them, check out the reference repository listed in the epic and point the variable at it:
 
 ```bash
-git clone --depth 1 https://github.com/Marblr/Overwatch-Workshop ../Overwatch-Workshop
-OW_REFERENCE_DIR=../Overwatch-Workshop cargo test -p ow-workshop-golden
+OW_REFERENCE_DIR=/path/to/reference-checkout cargo test -p ow-workshop-golden
 ```
 
 The two owner-provided samples in `examples/samples/` are used directly.
