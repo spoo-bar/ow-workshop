@@ -4,7 +4,7 @@ use std::fmt::Write as _;
 
 use crate::script::{RuleData, Script, Trigger};
 use crate::settings::{Entry, quoted};
-use crate::{Action, Event, PlayerFilter, TeamFilter, Value};
+use crate::{Action, Chase, Event, PlayerFilter, TeamFilter, Value};
 
 pub(crate) fn write(script: &Script) -> String {
     let mut out = String::new();
@@ -104,22 +104,30 @@ fn variables(out: &mut String, script: &Script) {
         return;
     }
     out.push_str("variables {\n");
-    let mut section = |title: &str, names: Vec<&str>| {
+    let mut section = |title: &str, names: Vec<(u8, &str)>| {
         if names.is_empty() {
             return;
         }
         let _ = writeln!(out, "    {title}:");
-        for (index, name) in names.iter().enumerate() {
+        for (index, name) in names {
             let _ = writeln!(out, "        {index}: {name}");
         }
     };
     section(
         "global",
-        script.globals.iter().map(|var| var.name).collect(),
+        script
+            .globals
+            .iter()
+            .map(|var| (var.index, var.name))
+            .collect(),
     );
     section(
         "player",
-        script.players.iter().map(|var| var.name).collect(),
+        script
+            .players
+            .iter()
+            .map(|var| (var.index, var.name))
+            .collect(),
     );
     out.push_str("}\n");
 }
@@ -165,6 +173,7 @@ fn trigger_lines(trigger: &Trigger) -> Vec<String> {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn actions(out: &mut String, list: &[Action], depth: usize) {
     let pad = "    ".repeat(depth);
     for action in list {
@@ -184,6 +193,109 @@ fn actions(out: &mut String, list: &[Action], depth: usize) {
                 let _ = writeln!(
                     out,
                     "{pad}Set Player Variable({player}, {}, {v});",
+                    var.name
+                );
+            }
+            Action::SetGlobalAt {
+                var,
+                index,
+                value: v,
+            } => {
+                let (index, v) = (value(index), value(v));
+                let _ = writeln!(
+                    out,
+                    "{pad}Set Global Variable At Index({}, {index}, {v});",
+                    var.name
+                );
+            }
+            Action::SetPlayerVarAt {
+                player,
+                var,
+                index,
+                value: v,
+            } => {
+                let (player, index, v) = (value(player), value(index), value(v));
+                let _ = writeln!(
+                    out,
+                    "{pad}Set Player Variable At Index({player}, {}, {index}, {v});",
+                    var.name
+                );
+            }
+            Action::ModifyGlobal {
+                var,
+                index,
+                op,
+                value: v,
+            } => {
+                let (op, v) = (op.name(), value(v));
+                let _ = match index {
+                    None => writeln!(out, "{pad}Modify Global Variable({}, {op}, {v});", var.name),
+                    Some(index) => writeln!(
+                        out,
+                        "{pad}Modify Global Variable At Index({}, {}, {op}, {v});",
+                        var.name,
+                        value(index)
+                    ),
+                };
+            }
+            Action::ModifyPlayerVar {
+                player,
+                var,
+                index,
+                op,
+                value: v,
+            } => {
+                let (player, op, v) = (value(player), op.name(), value(v));
+                let _ = match index {
+                    None => writeln!(
+                        out,
+                        "{pad}Modify Player Variable({player}, {}, {op}, {v});",
+                        var.name
+                    ),
+                    Some(index) => writeln!(
+                        out,
+                        "{pad}Modify Player Variable At Index({player}, {}, {}, {op}, {v});",
+                        var.name,
+                        value(index)
+                    ),
+                };
+            }
+            Action::ChaseGlobal {
+                var,
+                destination,
+                mode,
+            } => {
+                let (kind, tail) = chase(mode);
+                let _ = writeln!(
+                    out,
+                    "{pad}Chase Global Variable {kind}({}, {}, {tail});",
+                    var.name,
+                    value(destination)
+                );
+            }
+            Action::ChasePlayerVar {
+                player,
+                var,
+                destination,
+                mode,
+            } => {
+                let (kind, tail) = chase(mode);
+                let _ = writeln!(
+                    out,
+                    "{pad}Chase Player Variable {kind}({}, {}, {}, {tail});",
+                    value(player),
+                    var.name,
+                    value(destination)
+                );
+            }
+            Action::StopChasingGlobal(var) => {
+                let _ = writeln!(out, "{pad}Stop Chasing Global Variable({});", var.name);
+            }
+            Action::StopChasingPlayerVar { player, var } => {
+                let _ = writeln!(
+                    out,
+                    "{pad}Stop Chasing Player Variable({}, {});",
+                    value(player),
                     var.name
                 );
             }
@@ -237,4 +349,21 @@ fn call(name: &str, args: &[Value]) -> String {
     }
     let args: Vec<String> = args.iter().map(value).collect();
     format!("{name}({})", args.join(", "))
+}
+
+/// The action-name suffix and the trailing arguments of a chase.
+fn chase(mode: &Chase) -> (&'static str, String) {
+    match mode {
+        Chase::AtRate { rate, reevaluation } => (
+            "At Rate",
+            format!("{}, {}", value(rate), reevaluation.name()),
+        ),
+        Chase::OverTime {
+            duration,
+            reevaluation,
+        } => (
+            "Over Time",
+            format!("{}, {}", value(duration), reevaluation.name()),
+        ),
+    }
 }
