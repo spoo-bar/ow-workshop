@@ -116,11 +116,16 @@ fn collect<M: Workshop>(workshop: &M, profile: Profile) -> Result<Script, Settin
         &M::heroes(),
     )?;
 
+    let mut global_vars = globals.vars();
+    global_vars.sort_by_key(|var| var.index);
+    let mut player_vars = players.vars();
+    player_vars.sort_by_key(|var| var.index);
+
     Ok(Script {
         settings,
         extensions,
-        globals: globals.vars(),
-        players: players.vars(),
+        globals: global_vars,
+        players: player_vars,
         subroutines,
         rules,
     })

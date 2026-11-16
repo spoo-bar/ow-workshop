@@ -1,20 +1,28 @@
 //! The script text a mod produces under each profile.
 
 use ow_workshop::{
-    Action, BasicRule, BasicSubroutine, CompareOp, Event, Global, Globals, Hero, Lobby, Mode,
-    PlayerVar, Players, Profile, Rule, Subroutine, Value, Workshop, script, utils,
+    Action, BasicRule, BasicSubroutine, Chase, ChaseRateReeval, ChaseTimeReeval, CompareOp, Event,
+    Global, Globals, Hero, Lobby, Mode, ModifyOp, PlayerVar, Players, Profile, Rule, Subroutine,
+    Value, ValueId, Workshop, script, utils,
 };
 
 #[derive(Globals)]
 struct G {
     #[debug(label = "Round", hud = Top)]
     round: Global,
+    #[var(index = 2)]
+    pinned: Global,
+    arr: Global,
+    #[var(index = 127)]
+    __holygrail__: Global,
 }
 
 #[derive(Players)]
 struct P {
     #[var(name = "SCORE")]
     score: PlayerVar,
+    coins: PlayerVar,
+    slots: PlayerVar,
 }
 
 struct Mod;
@@ -56,6 +64,41 @@ impl Workshop for Mod {
                 value: (&g.round).into(),
             }],
         };
+        let me = Value::event_player;
+        let last = Value::of(ValueId::GetLastCreatedEntity);
+        let variables = vec![
+            g.round.modify(ModifyOp::Add, 1),
+            g.arr.modify_at(1, ModifyOp::RemoveFromArrayByValue, 7),
+            g.arr.set_at(2, 5),
+            p.coins.modify(me(), ModifyOp::Subtract, p.score.of(me())),
+            p.coins.modify_at(me(), p.score.of(me()), ModifyOp::Add, 1),
+            p.slots.modify(
+                me(),
+                ModifyOp::AppendToArray,
+                Value::call(ValueId::GetSlot, [last]),
+            ),
+            p.slots.set_at(me(), p.score.of(me()), -1),
+            p.coins.set(p.score.of(g.pinned.get()), 0),
+            g.round.chase(10, Chase::at_rate(3)),
+            g.round.chase(
+                10,
+                Chase::OverTime {
+                    duration: 2.into(),
+                    reevaluation: ChaseTimeReeval::None,
+                },
+            ),
+            p.coins.chase(
+                me(),
+                100,
+                Chase::AtRate {
+                    rate: 5.into(),
+                    reevaluation: ChaseRateReeval::None,
+                },
+            ),
+            p.coins.chase(me(), 100, Chase::over_time(1.5)),
+            g.round.stop_chasing(),
+            p.coins.stop_chasing(me()),
+        ];
         vec![
             Box::new(utils::DisableDamageAndHealing),
             Box::new(BasicRule {
@@ -66,6 +109,10 @@ impl Workshop for Mod {
                 enabled: false,
                 actions: vec![branch],
                 ..BasicRule::new("Off", Event::OngoingGlobal)
+            }),
+            Box::new(BasicRule {
+                actions: variables,
+                ..BasicRule::new("Variables", Event::OngoingGlobal)
             }),
         ]
     }
@@ -117,8 +164,13 @@ const RELEASE: &str = r#"settings
 variables {
     global:
         0: round
+        1: arr
+        2: pinned
+        127: __holygrail__
     player:
         0: SCORE
+        1: coins
+        2: slots
 }
 subroutines {
     0: nextRound
@@ -150,6 +202,28 @@ rule ("Branch") {
         Else;
             Set Global Variable(round, Global.round);
         End;
+    }
+}
+
+rule ("Variables") {
+    event {
+        Ongoing - Global;
+    }
+    actions {
+        Modify Global Variable(round, Add, 1);
+        Modify Global Variable At Index(arr, 1, Remove From Array By Value, 7);
+        Set Global Variable At Index(arr, 2, 5);
+        Modify Player Variable(Event Player, coins, Subtract, (Event Player).SCORE);
+        Modify Player Variable At Index(Event Player, coins, (Event Player).SCORE, Add, 1);
+        Modify Player Variable(Event Player, slots, Append To Array, Slot Of(Last Created Entity));
+        Set Player Variable At Index(Event Player, slots, (Event Player).SCORE, -1);
+        Set Player Variable((Global.pinned).SCORE, coins, 0);
+        Chase Global Variable At Rate(round, 10, 3, Destination and Rate);
+        Chase Global Variable Over Time(round, 10, 2, None);
+        Chase Player Variable At Rate(Event Player, coins, 100, 5, None);
+        Chase Player Variable Over Time(Event Player, coins, 100, 1.5, Destination and Duration);
+        Stop Chasing Global Variable(round);
+        Stop Chasing Player Variable(Event Player, coins);
     }
 }
 

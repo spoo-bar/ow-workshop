@@ -19,11 +19,13 @@ mod value;
 mod vars;
 mod workshop;
 
-pub use action::Action;
+pub use action::{Action, Chase};
 pub use debug::{DebugOpts, HudLocation, WorkshopDebug};
 pub use event::{Event, PlayerEvent, PlayerFilter, TeamFilter};
 pub use ow_workshop_data as data;
-pub use ow_workshop_data::{ActionId, CompareOp, Extension, ValueId};
+pub use ow_workshop_data::{
+    ActionId, ChaseRateReeval, ChaseTimeReeval, CompareOp, Extension, ModifyOp, ValueId,
+};
 pub use ow_workshop_macros::{Globals, Players, WorkshopDebug};
 pub use rule::{BasicRule, BasicSubroutine, Condition, Rule, Subroutine};
 pub use script::{Profile, script, try_script};

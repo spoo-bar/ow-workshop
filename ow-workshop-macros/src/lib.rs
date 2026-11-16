@@ -9,7 +9,10 @@ use syn::{
 
 /// Implements `Globals` for a struct whose fields are `Global`.
 ///
-/// Field attributes: `#[var(name = "NAME")]` and `#[debug(...)]`.
+/// Field attributes: `#[var(name = "NAME", index = N)]` and `#[debug(...)]`.
+///
+/// Indices start at 0 in declaration order. `index` pins a variable; the others
+/// fill the lowest free indices. An index must be unique and at most 127.
 #[proc_macro_derive(Globals, attributes(var, debug))]
 pub fn globals(input: TokenStream) -> TokenStream {
     variables(&parse_macro_input!(input), "Globals", "Global")
@@ -17,7 +20,10 @@ pub fn globals(input: TokenStream) -> TokenStream {
 
 /// Implements `Players` for a struct whose fields are `PlayerVar`.
 ///
-/// Field attributes: `#[var(name = "NAME")]` and `#[debug(...)]`.
+/// Field attributes: `#[var(name = "NAME", index = N)]` and `#[debug(...)]`.
+///
+/// Indices start at 0 in declaration order. `index` pins a variable; the others
+/// fill the lowest free indices. An index must be unique and at most 127.
 #[proc_macro_derive(Players, attributes(var, debug))]
 pub fn players(input: TokenStream) -> TokenStream {
     variables(&parse_macro_input!(input), "Players", "PlayerVar")
@@ -63,14 +69,22 @@ fn expand_variables(input: &DeriveInput, trait_name: &str, handle: &str) -> syn:
     let handle = Ident::new(handle, proc_macro2::Span::call_site());
     let name = &input.ident;
 
-    let mut idents = Vec::new();
-    let mut inits = Vec::new();
+    let mut specs = Vec::new();
     for field in &fields.named {
         let ident = field.ident.as_ref().expect("named field");
-        let var_name = var_name(&field.attrs)?.unwrap_or_else(|| ident.to_string());
-        let debug = debug_opts(&field.attrs)?;
-        inits.push(quote! { #ident: ::ow_workshop::#handle { name: #var_name, debug: #debug } });
-        idents.push(ident);
+        let attr = var_attr(&field.attrs)?;
+        let var_name = attr.name.unwrap_or_else(|| ident.to_string());
+        specs.push((ident, var_name, attr.index, debug_opts(&field.attrs)?));
+    }
+    let indices = allocate(&specs.iter().map(|spec| spec.2.clone()).collect::<Vec<_>>())?;
+
+    let mut idents = Vec::new();
+    let mut inits = Vec::new();
+    for ((ident, var_name, _, debug), index) in specs.iter().zip(indices) {
+        inits.push(quote! {
+            #ident: ::ow_workshop::#handle { name: #var_name, index: #index, debug: #debug }
+        });
+        idents.push(*ident);
     }
     Ok(quote! {
         impl ::ow_workshop::#trait_name for #name {
@@ -84,19 +98,69 @@ fn expand_variables(input: &DeriveInput, trait_name: &str, handle: &str) -> syn:
     })
 }
 
-fn var_name(attrs: &[Attribute]) -> syn::Result<Option<String>> {
-    let mut name = None;
+struct VarAttr {
+    name: Option<String>,
+    index: Option<LitInt>,
+}
+
+fn var_attr(attrs: &[Attribute]) -> syn::Result<VarAttr> {
+    let mut found = VarAttr {
+        name: None,
+        index: None,
+    };
     for attr in attrs.iter().filter(|attr| attr.path().is_ident("var")) {
         attr.parse_nested_meta(|meta| {
             if meta.path.is_ident("name") {
-                name = Some(meta.value()?.parse::<LitStr>()?.value());
+                found.name = Some(meta.value()?.parse::<LitStr>()?.value());
+                Ok(())
+            } else if meta.path.is_ident("index") {
+                found.index = Some(meta.value()?.parse::<LitInt>()?);
                 Ok(())
             } else {
-                Err(meta.error("expected `name = \"...\"`"))
+                Err(meta.error("expected `name = \"...\"` or `index = N`"))
             }
         })?;
     }
-    Ok(name)
+    Ok(found)
+}
+
+/// The index of every variable: pinned ones as written, the rest in the lowest free slots.
+fn allocate(pins: &[Option<LitInt>]) -> syn::Result<Vec<u8>> {
+    const MAX: u8 = 127;
+    let mut taken = [false; MAX as usize + 1];
+    let mut pinned = Vec::new();
+    for pin in pins {
+        let Some(lit) = pin else {
+            pinned.push(None);
+            continue;
+        };
+        let index: u8 = lit
+            .base10_parse()
+            .ok()
+            .filter(|index| *index <= MAX)
+            .ok_or_else(|| syn::Error::new(lit.span(), "variable index must be at most 127"))?;
+        if std::mem::replace(&mut taken[usize::from(index)], true) {
+            return Err(syn::Error::new(
+                lit.span(),
+                format!("variable index {index} is used twice"),
+            ));
+        }
+        pinned.push(Some(index));
+    }
+    let mut free = (0..=MAX).filter(|index| !taken[usize::from(*index)]);
+    let mut out = Vec::new();
+    for pin in pinned {
+        out.push(match pin {
+            Some(index) => index,
+            None => free.next().ok_or_else(|| {
+                syn::Error::new(
+                    proc_macro2::Span::call_site(),
+                    "more than 128 variables; the workshop allows 128 of each kind",
+                )
+            })?,
+        });
+    }
+    Ok(out)
 }
 
 /// The `Option<DebugOpts>` expression for an item's `#[debug(...)]` attribute.
