@@ -32,10 +32,17 @@ pub trait Rule: WorkshopDebug {
     fn actions(&self) -> Vec<Action>;
 }
 
-/// A subroutine that rules call with [`Action::CallSubroutine`].
+/// A subroutine that rules call with [`Action::CallSubroutine`] or [`Action::StartRule`].
+///
+/// A mod lists its subroutines in [`Workshop::subroutines`](crate::Workshop::subroutines).
+/// Each one is written to the `subroutines` block and as a rule with the `Subroutine` event.
 pub trait Subroutine: WorkshopDebug {
-    /// The identifier used in `Call Subroutine`.
+    /// The identifier used in `Call Subroutine` and the `subroutines` block.
     fn name(&self) -> String;
+    /// The title of the subroutine's rule. Free text, independent of [`name`](Self::name).
+    fn title(&self) -> String {
+        format!("Subroutine: {}", self.name())
+    }
     /// The actions.
     fn actions(&self) -> Vec<Action>;
 }
@@ -100,10 +107,32 @@ impl Rule for BasicRule {
 pub struct BasicSubroutine {
     /// The identifier used in `Call Subroutine`.
     pub name: String,
+    /// The title of the subroutine's rule.
+    pub title: String,
     /// The actions.
     pub actions: Vec<Action>,
     /// How it is shown in debug builds.
     pub debug: Option<DebugOpts>,
+}
+
+impl BasicSubroutine {
+    /// A subroutine titled `Subroutine: <name>`, with no actions or debug display.
+    pub fn new(name: impl Into<String>) -> Self {
+        let name = name.into();
+        Self {
+            title: format!("Subroutine: {name}"),
+            name,
+            actions: Vec::new(),
+            debug: None,
+        }
+    }
+
+    /// Replaces the rule title.
+    #[must_use]
+    pub fn titled(mut self, title: impl Into<String>) -> Self {
+        self.title = title.into();
+        self
+    }
 }
 
 impl WorkshopDebug for BasicSubroutine {
@@ -115,6 +144,9 @@ impl WorkshopDebug for BasicSubroutine {
 impl Subroutine for BasicSubroutine {
     fn name(&self) -> String {
         self.name.clone()
+    }
+    fn title(&self) -> String {
+        self.title.clone()
     }
     fn actions(&self) -> Vec<Action> {
         self.actions.clone()

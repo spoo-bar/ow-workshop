@@ -9,6 +9,7 @@ mod action;
 pub mod build;
 mod debug;
 mod emit;
+mod error;
 mod event;
 mod rule;
 mod script;
@@ -21,10 +22,12 @@ mod workshop;
 
 pub use action::{Action, Chase};
 pub use debug::{DebugOpts, HudLocation, WorkshopDebug};
+pub use error::{BuildError, UndeclaredSubroutine};
 pub use event::{Event, PlayerEvent, PlayerFilter, TeamFilter};
 pub use ow_workshop_data as data;
 pub use ow_workshop_data::{
-    ActionId, ChaseRateReeval, ChaseTimeReeval, CompareOp, Extension, ModifyOp, ValueId,
+    ActionId, ChaseRateReeval, ChaseTimeReeval, CompareOp, Extension, ModifyOp, StartRuleBehavior,
+    ValueId,
 };
 pub use ow_workshop_macros::{Globals, Players, WorkshopDebug};
 pub use rule::{BasicRule, BasicSubroutine, Condition, Rule, Subroutine};

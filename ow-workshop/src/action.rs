@@ -1,4 +1,7 @@
-use crate::{ActionId, ChaseRateReeval, ChaseTimeReeval, Global, ModifyOp, PlayerVar, Value};
+use crate::{
+    ActionId, ChaseRateReeval, ChaseTimeReeval, Global, ModifyOp, PlayerVar, StartRuleBehavior,
+    Value,
+};
 
 /// How a chase action moves a variable toward its destination.
 #[derive(Clone, Debug, PartialEq)]
@@ -145,8 +148,15 @@ pub enum Action {
         /// Actions run otherwise. Empty means no `Else`.
         otherwise: Vec<Action>,
     },
-    /// `Call Subroutine(name)`.
+    /// `Call Subroutine(name)`: runs the subroutine and waits for it.
     CallSubroutine(String),
+    /// `Start Rule(name, behavior)`: runs the subroutine without waiting.
+    StartRule {
+        /// The subroutine started.
+        subroutine: String,
+        /// What happens when it is already running for this player or globally.
+        if_running: StartRuleBehavior,
+    },
     /// An action with a comment line above it. Comments are dropped in release builds.
     Commented {
         /// The comment text.
@@ -171,6 +181,19 @@ impl Action {
             cond,
             then: then.into_iter().collect(),
             otherwise: Vec::new(),
+        }
+    }
+
+    /// `Call Subroutine(name)`.
+    pub fn call_subroutine(name: impl Into<String>) -> Self {
+        Self::CallSubroutine(name.into())
+    }
+
+    /// `Start Rule(name, Restart Rule)`.
+    pub fn start_rule(name: impl Into<String>) -> Self {
+        Self::StartRule {
+            subroutine: name.into(),
+            if_running: StartRuleBehavior::Restart,
         }
     }
 
