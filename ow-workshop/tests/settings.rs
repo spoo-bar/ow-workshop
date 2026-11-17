@@ -1,9 +1,9 @@
 //! The settings block: reference samples, fragments and conflicts.
 
 use ow_workshop::{
-    Entry, Hero, HeroEntry, HeroSettings, Lobby, LobbySettings, Mode, ModeSettings, Profile, Rule,
-    SettingValue as V, SettingsConflict, SettingsError, UnknownSetting, Workshop, try_script,
-    utils,
+    BuildError, Entry, Hero, HeroEntry, HeroSettings, Lobby, LobbySettings, Mode, ModeSettings,
+    Profile, Rule, SettingValue as V, SettingsConflict, SettingsError, UnknownSetting, Workshop,
+    try_script, utils,
 };
 
 /// The `settings { .. }` block of a script as sorted, trimmed lines, without
@@ -26,16 +26,16 @@ fn settings_lines(text: &str) -> Vec<String> {
     lines
 }
 
-fn conflict(result: Result<String, SettingsError>) -> SettingsConflict {
+fn conflict(result: Result<String, BuildError>) -> SettingsConflict {
     match result.unwrap_err() {
-        SettingsError::Conflict(conflict) => conflict,
+        BuildError::Settings(SettingsError::Conflict(conflict)) => conflict,
         other => panic!("expected a conflict, got {other}"),
     }
 }
 
-fn unknown(result: Result<String, SettingsError>) -> UnknownSetting {
+fn unknown(result: Result<String, BuildError>) -> UnknownSetting {
     match result.unwrap_err() {
-        SettingsError::Unknown(unknown) => unknown,
+        BuildError::Settings(SettingsError::Unknown(unknown)) => unknown,
         other => panic!("expected an unknown setting, got {other}"),
     }
 }

@@ -315,6 +315,12 @@ fn actions(out: &mut String, list: &[Action], depth: usize) {
             Action::CallSubroutine(name) => {
                 let _ = writeln!(out, "{pad}Call Subroutine({name});");
             }
+            Action::StartRule {
+                subroutine,
+                if_running,
+            } => {
+                let _ = writeln!(out, "{pad}Start Rule({subroutine}, {});", if_running.name());
+            }
             Action::Commented { comment, action } => {
                 let _ = writeln!(out, "{pad}{}", quoted(comment));
                 actions(out, std::slice::from_ref(action), depth);

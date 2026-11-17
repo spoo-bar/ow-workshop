@@ -1,9 +1,10 @@
 //! The script text a mod produces under each profile.
 
 use ow_workshop::{
-    Action, BasicRule, BasicSubroutine, Chase, ChaseRateReeval, ChaseTimeReeval, CompareOp, Event,
-    Global, Globals, Hero, Lobby, Mode, ModifyOp, PlayerVar, Players, Profile, Rule, Subroutine,
-    Value, ValueId, Workshop, script, utils,
+    Action, BasicRule, BasicSubroutine, BuildError, Chase, ChaseRateReeval, ChaseTimeReeval,
+    CompareOp, Event, Global, Globals, Hero, Lobby, Mode, ModifyOp, PlayerVar, Players, Profile,
+    Rule, StartRuleBehavior, Subroutine, UndeclaredSubroutine, Value, ValueId, Workshop, script,
+    try_script, utils,
 };
 
 #[derive(Globals)]
@@ -44,21 +45,32 @@ impl Workshop for Mod {
     }
 
     fn subroutines(&self, g: &G, _: &P) -> Vec<Box<dyn Subroutine>> {
-        vec![Box::new(BasicSubroutine {
-            name: "nextRound".to_owned(),
-            actions: vec![Action::SetGlobal {
-                var: g.round.clone(),
-                value: 2.5.into(),
-            }],
-            debug: None,
-        })]
+        vec![
+            Box::new(BasicSubroutine {
+                actions: vec![Action::SetGlobal {
+                    var: g.round.clone(),
+                    value: 2.5.into(),
+                }],
+                ..BasicSubroutine::new("nextRound")
+            }),
+            Box::new(BasicSubroutine {
+                actions: vec![
+                    Action::start_rule("nextRound"),
+                    Action::StartRule {
+                        subroutine: "nextRound".to_owned(),
+                        if_running: StartRuleBehavior::Noop,
+                    },
+                ],
+                ..BasicSubroutine::new("resetRound").titled("Round: reset")
+            }),
+        ]
     }
 
     fn rules(&self, g: &G, p: &P) -> Vec<Box<dyn Rule>> {
         let score = p.score.of(Value::event_player());
         let branch = Action::If {
             cond: score.compare(CompareOp::Ge, 3),
-            then: vec![Action::CallSubroutine("nextRound".to_owned()).commented("advance")],
+            then: vec![Action::call_subroutine("nextRound").commented("advance")],
             otherwise: vec![Action::SetGlobal {
                 var: g.round.clone(),
                 value: (&g.round).into(),
@@ -174,6 +186,7 @@ variables {
 }
 subroutines {
     0: nextRound
+    1: resetRound
 }
 rule ("Disable damage and healing") {
     event {
@@ -237,6 +250,17 @@ rule ("Subroutine: nextRound") {
     }
 }
 
+rule ("Round: reset") {
+    event {
+        Subroutine;
+        resetRound;
+    }
+    actions {
+        Start Rule(nextRound, Restart Rule);
+        Start Rule(nextRound, Do Nothing);
+    }
+}
+
 "#;
 
 #[test]
@@ -258,4 +282,43 @@ fn debug_script_keeps_disabled_rules_comments_and_variable_panels() {
         "Create HUD Text(All Players(All Teams), Null, Null, Custom String(\"Round: {0}\", Global.round), Top, 0,"
     ));
     assert!(!debug.contains("Debug: player variables"));
+}
+
+struct Undeclared;
+
+impl Workshop for Undeclared {
+    const NAME: &'static str = "Undeclared";
+    const DESCRIPTION: &'static str = "";
+    type Globals = ();
+    type Players = ();
+
+    fn lobby() -> Lobby {
+        Lobby::new()
+    }
+    fn modes() -> Vec<Mode> {
+        Vec::new()
+    }
+    fn heroes() -> Vec<Hero> {
+        Vec::new()
+    }
+    fn rules(&self, (): &(), (): &()) -> Vec<Box<dyn Rule>> {
+        let nested = Action::when(true.into(), [Action::start_rule("missing").commented("x")]);
+        vec![Box::new(BasicRule {
+            actions: vec![nested],
+            ..BasicRule::new("Caller", Event::OngoingGlobal)
+        })]
+    }
+}
+
+#[test]
+fn calling_an_undeclared_subroutine_is_a_build_error() {
+    let error = try_script(&Undeclared, Profile::Debug).unwrap_err();
+    assert_eq!(
+        error,
+        BuildError::UndeclaredSubroutine(UndeclaredSubroutine {
+            subroutine: "missing".to_owned(),
+            rule: "Caller".to_owned(),
+        })
+    );
+    assert!(error.to_string().contains("`missing`"), "{error}");
 }

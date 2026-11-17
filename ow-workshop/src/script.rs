@@ -1,8 +1,8 @@
 //! Turns a [`Workshop`] into plain data, applies the build profile, and prints it.
 
 use crate::{
-    Action, ActionId, Condition, Event, Extension, Global, Globals, PlayerVar, Players,
-    SettingsError, Value, ValueId, Workshop, emit, settings,
+    Action, ActionId, BuildError, Condition, Event, Extension, Global, Globals, PlayerVar, Players,
+    UndeclaredSubroutine, Value, ValueId, Workshop, emit, settings,
 };
 
 /// Which kind of script to produce.
@@ -40,16 +40,17 @@ pub(crate) struct Script {
 ///
 /// # Panics
 ///
-/// Panics with the [`SettingsError`] message when two settings sources disagree or a name is unknown,
-/// which makes it a build error when called from a build script.
+/// Panics with the [`BuildError`] message, for example when two settings sources disagree
+/// or a rule calls an undeclared subroutine, which makes it a build error when called from a build script.
 pub fn script<M: Workshop>(workshop: &M, profile: Profile) -> String {
     try_script(workshop, profile).unwrap_or_else(|conflict| panic!("{conflict}"))
 }
 
-/// Like [`script`], returning a conflict between settings instead of panicking.
+/// Like [`script`], returning the [`BuildError`] instead of panicking.
 #[allow(clippy::result_large_err)]
-pub fn try_script<M: Workshop>(workshop: &M, profile: Profile) -> Result<String, SettingsError> {
+pub fn try_script<M: Workshop>(workshop: &M, profile: Profile) -> Result<String, BuildError> {
     let mut script = collect::<M>(workshop, profile)?;
+    check_calls(&script)?;
     match profile {
         Profile::Debug => script.rules.extend(variable_panels(&script)),
         Profile::Release => {
@@ -63,7 +64,7 @@ pub fn try_script<M: Workshop>(workshop: &M, profile: Profile) -> Result<String,
 }
 
 #[allow(clippy::result_large_err)]
-fn collect<M: Workshop>(workshop: &M, profile: Profile) -> Result<Script, SettingsError> {
+fn collect<M: Workshop>(workshop: &M, profile: Profile) -> Result<Script, BuildError> {
     let globals = M::Globals::declare();
     let players = M::Players::declare();
     let log = |name: &str, opts: Option<crate::DebugOpts>, actions: &mut Vec<Action>| {
@@ -89,11 +90,11 @@ fn collect<M: Workshop>(workshop: &M, profile: Profile) -> Result<Script, Settin
     }
     let mut subroutines = Vec::new();
     for subroutine in workshop.subroutines(&globals, &players) {
-        let name = subroutine.name();
+        let (name, title) = (subroutine.name(), subroutine.title());
         let mut actions = subroutine.actions();
-        log(&name, subroutine.debug_opts(), &mut actions);
+        log(&title, subroutine.debug_opts(), &mut actions);
         rules.push(RuleData {
-            name: format!("Subroutine: {name}"),
+            name: title,
             enabled: true,
             trigger: Trigger::Subroutine(name.clone()),
             conditions: Vec::new(),
@@ -129,6 +130,32 @@ fn collect<M: Workshop>(workshop: &M, profile: Profile) -> Result<Script, Settin
         subroutines,
         rules,
     })
+}
+
+/// Fails on the first call to a subroutine missing from the `subroutines` block.
+fn check_calls(script: &Script) -> Result<(), UndeclaredSubroutine> {
+    fn walk(actions: &[Action], declared: &[String]) -> Option<String> {
+        actions.iter().find_map(|action| match action {
+            Action::CallSubroutine(name)
+            | Action::StartRule {
+                subroutine: name, ..
+            } => (!declared.contains(name)).then(|| name.clone()),
+            Action::If {
+                then, otherwise, ..
+            } => walk(then, declared).or_else(|| walk(otherwise, declared)),
+            Action::Commented { action, .. } => walk(std::slice::from_ref(action), declared),
+            _ => None,
+        })
+    }
+    for rule in &script.rules {
+        if let Some(subroutine) = walk(&rule.actions, &script.subroutines) {
+            return Err(UndeclaredSubroutine {
+                subroutine,
+                rule: rule.name.clone(),
+            });
+        }
+    }
+    Ok(())
 }
 
 fn strip_comments(actions: Vec<Action>) -> Vec<Action> {
