@@ -23,7 +23,7 @@ The rewrite is tracked in [the epic](https://github.com/spoo-bar/ow-workshop/iss
 The tables in `ow-workshop-data` are the source of truth for spellings. Edit them directly when the game updates.
 - Hero: `ow-workshop-data/src/generated/heroes.rs`, plus hero settings in `hero_settings.rs`.
 - Map: `ow-workshop-data/src/generated/maps.rs`, and `gamemodes.rs` if it belongs to a mode.
-- Action or value: `ow-workshop-data/src/generated/actions.rs` or `values.rs`.
+- Action or value: `ow-workshop-data/src/generated/actions.rs` or `values.rs`. The `ow_workshop::values` constructors are generated from `values.rs` by `ow-workshop/build.rs`, so a new value needs no hand-written code.
 
 ## Golden tests
 `ow-workshop-golden` compares a generated release script to a reference script after normalizing it (`assert_same_script`). The rules are documented in `ow-workshop-golden/src/normalize.rs`.

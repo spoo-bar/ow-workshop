@@ -329,7 +329,7 @@ fn actions(out: &mut String, list: &[Action], depth: usize) {
     }
 }
 
-fn value(v: &Value) -> String {
+pub(crate) fn value(v: &Value) -> String {
     match v {
         Value::Number(n) => n.to_string(),
         Value::Bool(true) => "True".to_owned(),
