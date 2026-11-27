@@ -16,5 +16,8 @@ utils = []
 ow-workshop-data = { path = "../ow-workshop-data", version = "0.1.0" }
 ow-workshop-macros = { path = "../ow-workshop-macros", version = "0.1.0" }
 
+[build-dependencies]
+ow-workshop-data = { path = "../ow-workshop-data", version = "0.1.0" }
+
 [lints]
 workspace = true

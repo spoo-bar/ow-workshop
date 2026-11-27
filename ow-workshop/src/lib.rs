@@ -17,6 +17,7 @@ mod settings;
 #[cfg(feature = "utils")]
 pub mod utils;
 mod value;
+pub mod values;
 mod vars;
 mod workshop;
 
